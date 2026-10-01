@@ -1,4 +1,4 @@
-/* Packet Party is intentionally static: questions and progress stay in this browser. */
+/* Solo progress stays in this browser. Live rooms use the room API. */
 const $ = id => document.getElementById(id);
 const modeInfo = {
   all: { name: 'All questions', eyebrow: 'COMPLETE DECK', description: 'Play the complete deck in its original order.' },
@@ -98,7 +98,7 @@ function updateSoundButton() { const button = $('soundButton'); button.setAttrib
 function updateStats() { $('headerBest').textContent = formatNumber(app.stats.bestStreak); $('homeBest').textContent = formatNumber(app.stats.bestStreak); $('runsCount').textContent = formatNumber(app.stats.runs); $('totalCorrect').textContent = formatNumber(app.stats.correct); }
 function setView(view) {
   app.view = view;
-  for (const id of ['home', 'bank', 'game', 'result']) $(`${id}View`).hidden = id !== view;
+  for (const id of ['home', 'bank', 'game', 'live', 'result']) $(`${id}View`).hidden = id !== view;
   document.querySelectorAll('.nav-link').forEach(button => { const active = button.dataset.view === view; button.classList.toggle('is-active', active); if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
   if (view === 'bank') renderBank();
   scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
@@ -493,5 +493,297 @@ function attachEvents() {
     if (event.key === 'Enter' && app.game.answered) $('answerAction')?.click();
   });
 }
-updateSoundButton(); updateStats(); attachEvents(); loadQuestions();
+const live = {
+  code: null, token: null, playerId: null, room: null, name: '', serverOffset: 0,
+  pollTimer: null, clockTimer: null, fetching: false, pendingActions: new Set(),
+  requestSeq: 0, appliedSeq: 0, stageSignature: '', playersSignature: '', messagesSignature: '',
+  roundKey: '', submitted: false, selected: new Set(), seenReactions: new Set(),
+  sawReactions: false, revealKey: '', lastQuestion: null
+};
+
+function liveInviteURL(code = live.code) {
+  const url = new URL(location.href);
+  url.searchParams.set('room', code);
+  url.hash = '';
+  return url.toString();
+}
+function liveShowConnection(state) {
+  const element = $('liveConnection');
+  element.classList.toggle('is-connected', state === 'connected');
+  element.classList.toggle('is-offline', state === 'offline');
+  element.textContent = state === 'connected' ? '● Live connection' : state === 'offline' ? '● Reconnecting…' : '● Connecting…';
+}
+async function liveAPI(path, { method = 'GET', body, auth = true } = {}) {
+  const started = Date.now();
+  const headers = { Accept: 'application/json' };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (auth && live.token) headers.Authorization = `Bearer ${live.token}`;
+  let response;
+  try {
+    response = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store', signal: AbortSignal.timeout(12000) });
+  } catch (error) {
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') throw new Error('Connection timed out. Try again.');
+    throw error;
+  }
+  let data;
+  try { data = await response.json(); } catch { data = {}; }
+  if (!response.ok) {
+    const error = new Error(data.error || `Room request failed (${response.status}).`);
+    error.status = response.status;
+    throw error;
+  }
+  if (Number.isFinite(data.serverTime)) live.serverOffset = data.serverTime - Math.round((started + Date.now()) / 2);
+  return data;
+}
+function liveSaveSession() {
+  writeJSON('pp_live_session', { code: live.code, token: live.token, playerId: live.playerId, name: live.name });
+}
+function liveClearSession() {
+  clearInterval(live.pollTimer); clearInterval(live.clockTimer);
+  live.pollTimer = null; live.clockTimer = null;
+  live.code = null; live.token = null; live.playerId = null; live.room = null;
+  live.pendingActions = new Set();
+  live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
+  live.roundKey = ''; live.submitted = false; live.selected.clear();
+  live.seenReactions.clear(); live.sawReactions = false; live.revealKey = ''; live.lastQuestion = null;
+  try { localStorage.removeItem('pp_live_session'); } catch { /* Storage is optional. */ }
+  const url = new URL(location.href);
+  if (url.searchParams.has('room')) { url.searchParams.delete('room'); history.replaceState(null, '', url); }
+  $('liveEntry').hidden = false; $('liveRoom').hidden = true;
+}
+function liveApplyResponse(data, seq) {
+  if (seq < live.appliedSeq || !live.code || !data.room) return;
+  live.appliedSeq = seq;
+  live.room = data.room;
+  liveShowConnection('connected');
+  liveRender();
+}
+function liveEnter(data, name) {
+  if (!data?.token || !data?.room?.code || !data.playerId) throw new Error('The room did not return a player session.');
+  live.code = String(data.room.code).toUpperCase(); live.token = data.token; live.playerId = data.playerId; live.name = name;
+  live.pendingActions = new Set();
+  live.appliedSeq = 0; live.requestSeq = 0; live.room = null;
+  live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
+  live.roundKey = ''; live.submitted = false; live.selected.clear();
+  live.seenReactions.clear(); live.sawReactions = false; live.revealKey = ''; live.lastQuestion = null;
+  if (Number.isFinite(data.serverTime)) live.serverOffset = data.serverTime - Date.now();
+  liveSaveSession();
+  $('liveEntry').hidden = true; $('liveRoom').hidden = false;
+  $('liveRoomCode').textContent = live.code;
+  history.replaceState(null, '', liveInviteURL());
+  setView('live');
+  liveApplyResponse(data, 0);
+  clearInterval(live.pollTimer); clearInterval(live.clockTimer);
+  live.pollTimer = setInterval(livePoll, 1600);
+  live.clockTimer = setInterval(liveUpdateClock, 100);
+  liveUpdateClock();
+}
+async function liveCreate() {
+  const name = $('liveHostName').value.trim().slice(0, 24);
+  const questionCount = +$('liveQuestionCount').value;
+  if (!name) { toast('Add your name to create a room.'); return; }
+  const button = $('liveCreateForm').querySelector('button[type="submit"]'); button.disabled = true;
+  try {
+    const data = await liveAPI('/api/rooms', { method: 'POST', body: { name, questionCount }, auth: false });
+    writeJSON('pp_live_name', name); liveEnter(data, name); toast('Room created. Share the code with a friend!');
+  } catch (error) { toast(error.message); }
+  finally { button.disabled = false; }
+}
+async function liveJoin() {
+  const name = $('liveGuestName').value.trim().slice(0, 24);
+  const code = $('liveJoinCode').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  if (!name || code.length !== 6) { toast('Enter your name and a 6-character room code.'); return; }
+  const button = $('liveJoinForm').querySelector('button[type="submit"]'); button.disabled = true;
+  try {
+    const data = await liveAPI(`/api/rooms/${encodeURIComponent(code)}/join`, { method: 'POST', body: { name }, auth: false });
+    writeJSON('pp_live_name', name); liveEnter(data, name); toast('You joined the room!');
+  } catch (error) { toast(error.message); }
+  finally { button.disabled = false; }
+}
+async function livePoll() {
+  if (!live.code || live.fetching || live.pendingActions.size) return;
+  live.fetching = true; const seq = ++live.requestSeq; const code = live.code;
+  try {
+    const data = await liveAPI(`/api/rooms/${encodeURIComponent(code)}`);
+    if (live.code === code) liveApplyResponse(data, seq);
+  } catch (error) {
+    if (live.code !== code) return;
+    if (error.status === 401 || error.status === 403 || error.status === 404 || error.status === 410) {
+      liveClearSession(); toast(error.message || 'This room is no longer available.');
+    } else liveShowConnection('offline');
+  } finally { live.fetching = false; }
+}
+async function liveAction(action, body = {}) {
+  if (!live.code || !live.token || live.pendingActions.has(action)) return null;
+  const pending = live.pendingActions; pending.add(action);
+  const seq = ++live.requestSeq; const code = live.code;
+  try {
+    const data = await liveAPI(`/api/rooms/${encodeURIComponent(code)}/${action}`, { method: 'POST', body });
+    if (live.code === code) liveApplyResponse(data, seq);
+    return data;
+  } catch (error) { toast(error.message); return null; }
+  finally { pending.delete(action); }
+}
+async function liveLeaveRoom() {
+  if (!live.code) return;
+  const code = live.code;
+  try { await liveAPI(`/api/rooms/${encodeURIComponent(code)}/leave`, { method: 'POST', body: {} }); }
+  catch { /* Leaving the local room still works if the connection is unavailable. */ }
+  liveClearSession(); setView('live'); toast('You left the room.');
+}
+function liveCurrentPlayer() { return live.room?.players?.find(player => player.id === live.playerId) || null; }
+function liveRoundKey(room) { return `${room.code}:${room.questionIndex}:${room.currentQuestion?.id || ''}`; }
+function liveRender() {
+  const room = live.room; if (!room) return;
+  $('liveRoomCode').textContent = room.code || live.code;
+  if (room.currentQuestion) live.lastQuestion = room.currentQuestion;
+  const roundKey = liveRoundKey(room);
+  if (room.phase === 'question' && roundKey !== live.roundKey) {
+    live.roundKey = roundKey; live.selected.clear(); live.submitted = false;
+  }
+  if (room.phase === 'question') live.submitted = !!(liveCurrentPlayer()?.answered || room.myAnswer != null || live.submitted);
+  const phaseKey = room.phase === 'lobby' ? `${room.phase}:${room.players?.map(p => `${p.id}:${p.ready}`).join(',')}`
+    : `${room.phase}:${roundKey}:${live.submitted}:${JSON.stringify(room.myAnswer)}:${JSON.stringify(room.result?.players || [])}`;
+  if (phaseKey !== live.stageSignature) { live.stageSignature = phaseKey; liveRenderStage(); }
+  const playersKey = JSON.stringify((room.players || []).map(p => [p.id, p.name, p.score, p.streak, p.ready, p.answered]));
+  if (playersKey !== live.playersSignature) { live.playersSignature = playersKey; liveRenderPlayers(); }
+  const messagesKey = JSON.stringify((room.messages || []).map(m => m.id));
+  if (messagesKey !== live.messagesSignature) { live.messagesSignature = messagesKey; liveRenderMessages(); }
+  liveRenderReactions(); liveUpdateClock();
+  if (room.phase === 'reveal' && live.revealKey !== roundKey) {
+    live.revealKey = roundKey;
+    const mine = room.result?.players?.find(p => p.id === live.playerId);
+    if (mine?.correct) { playTone('good'); burst(); announce(`Correct! You earned ${mine.points || 0} points.`); }
+    else { playTone('bad'); announce(`Round complete. ${room.result?.correctAnswers?.join(', ') || 'Answer revealed.'}`); }
+  }
+  if (room.phase === 'finished' && live.revealKey !== 'finished') { live.revealKey = 'finished'; playTone('good'); burst(); }
+}
+function liveRenderStage() {
+  const room = live.room; if (!room) return;
+  const stage = $('liveStage');
+  if (room.phase === 'lobby') {
+    const me = liveCurrentPlayer(); const host = room.hostId === live.playerId; const count = room.players?.length || 0;
+    stage.innerHTML = `<span class="live-stage-kicker">WAITING ROOM · ${room.total || 10} QUESTION BATTLE</span><div class="live-lobby-icon" aria-hidden="true">◉</div><h2>${host ? 'Your arena is open.' : 'You are in the arena.'}</h2><p>${host ? 'Share this code. Once a friend joins, you can launch the round.' : 'Ready up, then wait for the host to start the battle.'}</p><div class="live-code-display" aria-label="Room code ${escapeHTML(room.code)}">${escapeHTML(room.code)}</div><div class="live-wait-message">${count < 2 ? 'Waiting for one more player to join…' : `${count} players connected. The round is ready when the host starts.`}</div><div class="live-lobby-bottom"><button type="button" class="button ${me?.ready ? 'button-outline' : 'button-live'}" data-live-action="ready">${me?.ready ? '✓ Ready · tap to undo' : 'Mark me ready'}</button>${host ? `<button type="button" class="button button-primary" data-live-action="start" ${count < 2 ? 'disabled' : ''}>Start battle ↗</button>` : ''}<span class="live-lobby-note">Same questions and timer for everyone.<br>Answers score more when you respond quickly.</span></div>`;
+    return;
+  }
+  if (room.phase === 'finished') {
+    const ranked = [...(room.players || [])].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+    const winner = ranked[0];
+    stage.innerHTML = `<span class="live-stage-kicker">BATTLE COMPLETE · ${room.total || 0} QUESTIONS</span><h2>${winner ? `${escapeHTML(winner.name)} takes the crown!` : 'That is a wrap!'}</h2><p>Every point is on the board. Share a rematch code and go again.</p><div class="live-podium">${ranked.slice(0, 3).map((p, i) => `<div class="live-podium-item"><span aria-hidden="true">${['👑', '🥈', '🥉'][i]}</span><strong>${escapeHTML(p.name)}</strong><small>${formatNumber(p.score)} pts</small></div>`).join('')}</div><button type="button" class="button button-live" data-live-action="new">Set up another room ↗</button>`;
+    return;
+  }
+  const q = room.currentQuestion || live.lastQuestion;
+  if (!q) { stage.innerHTML = '<span class="live-stage-kicker">ROUND STARTING</span><h2>Get ready…</h2>'; return; }
+  const isReveal = room.phase === 'reveal';
+  const answers = room.result?.correctAnswers || [];
+  const mine = room.result?.players?.find(p => p.id === live.playerId);
+  const answered = live.submitted || room.myAnswer != null || !!liveCurrentPlayer()?.answered;
+  const options = Array.isArray(q.options) ? q.options : [];
+  const typed = q.type === 'short_answer_question' || !options.length;
+  stage.innerHTML = `<div class="live-quiz-meta"><span class="live-stage-kicker">${isReveal ? 'ANSWER REVEAL' : 'LIVE ROUND'} · QUESTION ${(room.questionIndex ?? 0) + 1} / ${room.total || 10}</span><span id="liveTimer" class="live-timer">◷ <span>—</span></span></div><div class="live-clock-track" aria-hidden="true"><div id="liveClockFill" class="live-clock-fill"></div></div><div class="live-question-text">${safeQuestionHTML(q)}</div>${typed ? (isReveal ? '' : `<form id="liveAnswerForm" class="live-answer-form"><label class="sr-only" for="liveAnswerInput">Your answer</label><input id="liveAnswerInput" class="live-input" maxlength="200" placeholder="Type your answer…" ${answered ? 'disabled' : ''} required><button type="submit" class="button button-primary" ${answered ? 'disabled' : ''}>Send ↗</button></form>`) : `<div class="live-answer-grid">${options.map((option, index) => { const correct = answers.some(a => normalize(a) === normalize(option)); const chosen = (Array.isArray(room.myAnswer) ? room.myAnswer : [room.myAnswer]).some(a => a != null && normalize(a) === normalize(option)) || live.selected.has(index); const cls = isReveal ? correct ? 'is-correct' : chosen ? 'is-wrong' : '' : chosen ? 'is-selected' : ''; return `<button type="button" class="live-answer-option ${cls}" data-live-choice="${index}" ${isReveal || answered ? 'disabled' : ''} aria-pressed="${chosen}"><i>${String.fromCharCode(65 + index)}</i><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>${q.multiple && !isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-multi" ${answered || !live.selected.size ? 'disabled' : ''}>Lock in ${live.selected.size || ''} answer${live.selected.size === 1 ? '' : 's'} ↗</button></div>` : ''}`}${!isReveal && answered ? '<div class="live-answer-note is-success">✓ Answer locked in. Watch the board while the clock runs.</div>' : ''}${isReveal ? `<div class="live-reveal ${mine?.correct ? '' : 'is-wrong'}"><strong>${mine?.correct ? `Nice hit! +${formatNumber(mine.points || 0)} points` : 'Round complete'}</strong><span>Correct answer${answers.length > 1 ? 's' : ''}: ${escapeHTML(answers.join(' · '))}</span></div><p class="live-lobby-note">Next question starts automatically.</p>` : ''}`;
+  liveUpdateClock();
+}
+function liveRenderPlayers() {
+  const room = live.room; if (!room) return;
+  const players = [...(room.players || [])].sort((a, b) => (room.phase === 'lobby' ? 0 : b.score - a.score) || a.name.localeCompare(b.name));
+  $('livePlayerCount').textContent = `${players.length} player${players.length === 1 ? '' : 's'}`;
+  $('livePlayers').innerHTML = players.map((p, index) => `<div class="live-player ${p.id === live.playerId ? 'is-you' : ''}"><span class="live-player-rank">${room.phase === 'lobby' ? '◈' : index + 1}</span><span class="live-player-name">${escapeHTML(p.name)}${p.id === live.playerId ? ' · you' : ''}${p.id === room.hostId ? ' 👑' : ''}<small>${room.phase === 'lobby' ? p.ready ? '✓ ready' : 'waiting' : room.phase === 'question' ? p.answered ? '✓ locked in' : 'thinking…' : `${p.streak || 0} streak`}</small></span><span class="live-player-score">${formatNumber(p.score || 0)}<small>PTS</small></span></div>`).join('');
+}
+function liveRenderMessages() {
+  const feed = $('liveMessages'); const nearBottom = feed.scrollTop + feed.clientHeight >= feed.scrollHeight - 25;
+  const messages = (live.room?.messages || []).slice(-35);
+  feed.innerHTML = messages.length ? messages.map(m => `<div class="live-message ${m.playerId === live.playerId ? 'is-self' : ''}"><strong>${escapeHTML(m.name || 'Player')}</strong><span>${escapeHTML(m.text || '')}</span></div>`).join('') : '<div class="live-message-empty">First one here? Say hello. 👋</div>';
+  if (nearBottom) feed.scrollTop = feed.scrollHeight;
+}
+function liveRenderReactions() {
+  const reactions = live.room?.reactions || [];
+  if (!live.sawReactions) { reactions.forEach(r => live.seenReactions.add(r.id)); live.sawReactions = true; return; }
+  reactions.forEach(reaction => {
+    if (live.seenReactions.has(reaction.id)) return;
+    live.seenReactions.add(reaction.id);
+    const dot = document.createElement('span'); dot.className = 'live-floating-reaction'; dot.textContent = reaction.emoji || '✳';
+    dot.style.right = `${25 + Math.random() * 120}px`; dot.style.setProperty('--reaction-x', `${-50 + Math.random() * 100}px`);
+    $('liveReactionLayer').append(dot); setTimeout(() => dot.remove(), 2000);
+  });
+  if (live.seenReactions.size > 250) live.seenReactions = new Set(reactions.map(r => r.id));
+}
+function liveUpdateClock() {
+  const room = live.room; if (!room || !room.endsAt) return;
+  const remaining = Math.max(0, room.endsAt - (Date.now() + live.serverOffset));
+  const timer = $('liveTimer'); const fill = $('liveClockFill');
+  if (!timer || !fill) return;
+  timer.querySelector('span').textContent = `${(remaining / 1000).toFixed(1)}s`;
+  const duration = room.phase === 'question' ? 25000 : 5000;
+  fill.style.width = `${Math.min(100, remaining / duration * 100)}%`;
+  const urgent = room.phase === 'question' && remaining <= 6000;
+  timer.classList.toggle('is-urgent', urgent); fill.classList.toggle('is-urgent', urgent);
+}
+async function liveSubmitAnswer(answer) {
+  if (!live.room || live.room.phase !== 'question' || live.submitted) return;
+  live.submitted = true; liveRenderStage();
+  const result = await liveAction('answer', { answer });
+  if (!result) { live.submitted = false; liveRenderStage(); }
+}
+async function liveResume() {
+  const inviteCode = new URL(location.href).searchParams.get('room')?.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) || '';
+  const savedName = readJSON('pp_live_name', '');
+  $('liveHostName').value = savedName; $('liveGuestName').value = savedName;
+  if (inviteCode) { $('liveJoinCode').value = inviteCode; setView('live'); }
+  const session = readJSON('pp_live_session', null);
+  if (!session?.code || !session?.token || !session?.playerId || (inviteCode && inviteCode !== session.code)) return;
+  live.code = session.code; live.token = session.token; live.playerId = session.playerId; live.name = session.name || savedName;
+  liveShowConnection('connecting');
+  try {
+    const data = await liveAPI(`/api/rooms/${encodeURIComponent(live.code)}`);
+    liveEnter({ ...data, token: live.token, playerId: live.playerId }, live.name);
+  } catch {
+    liveClearSession();
+    if (inviteCode) { $('liveJoinCode').value = inviteCode; setView('live'); }
+  }
+}
+function attachLiveEvents() {
+  $('heroLive').addEventListener('click', () => setView('live'));
+  $('livePromo').addEventListener('click', () => setView('live'));
+  $('liveCreateForm').addEventListener('submit', event => { event.preventDefault(); liveCreate(); });
+  $('liveJoinForm').addEventListener('submit', event => { event.preventDefault(); liveJoin(); });
+  $('liveJoinCode').addEventListener('input', event => { event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); });
+  $('liveLeave').addEventListener('click', liveLeaveRoom);
+  $('liveCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(liveInviteURL()); toast('Invite link copied. Send it to a friend!'); } catch { toast(`Share this room code: ${live.code}`); } });
+  $('liveStage').addEventListener('click', event => {
+    const choice = event.target.closest('[data-live-choice]');
+    if (choice && live.room?.phase === 'question' && !live.submitted) {
+      const index = +choice.dataset.liveChoice, q = live.room.currentQuestion;
+      if (!q || !q.options?.[index]) return;
+      if (q.multiple) {
+        if (live.selected.has(index)) live.selected.delete(index); else live.selected.add(index);
+        liveRenderStage();
+      } else liveSubmitAnswer(q.options[index]);
+      return;
+    }
+    const action = event.target.closest('[data-live-action]')?.dataset.liveAction;
+    if (action === 'ready') liveAction('ready', { ready: !liveCurrentPlayer()?.ready });
+    else if (action === 'start') liveAction('start');
+    else if (action === 'submit-multi') {
+      const q = live.room?.currentQuestion;
+      if (q && live.selected.size) liveSubmitAnswer([...live.selected].map(index => q.options[index]));
+    } else if (action === 'new') liveLeaveRoom();
+  });
+  $('liveStage').addEventListener('submit', event => {
+    if (event.target.id !== 'liveAnswerForm') return;
+    event.preventDefault(); const answer = $('liveAnswerInput')?.value.trim(); if (answer) liveSubmitAnswer(answer);
+  });
+  $('liveChatForm').addEventListener('submit', async event => {
+    event.preventDefault(); const input = $('liveChatInput'); const text = input.value.trim();
+    if (!text || !live.code) return;
+    input.value = ''; const result = await liveAction('chat', { text });
+    if (!result && !input.value) input.value = text;
+  });
+  $('liveRoom').addEventListener('click', event => {
+    const emoji = event.target.closest('[data-live-emoji]')?.dataset.liveEmoji;
+    if (emoji) { playTone('click'); liveAction('react', { emoji }); }
+  });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && live.code) livePoll(); });
+}
+
+updateSoundButton(); updateStats(); attachEvents(); attachLiveEvents(); loadQuestions(); liveResume();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});

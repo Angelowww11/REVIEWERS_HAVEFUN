@@ -10,8 +10,9 @@ A playful, mobile-friendly networking quiz built from eight supplied question po
 - Try Level up, Boss blitz, Match maker, and Type it out for shorter rounds.
 - Build streaks, protect hearts, unlock one-use power-ups, request offline hints, and wager points before selected hard questions.
 - Export a completed run as a ghost file and share it with a friend to race their progress offline.
+- Host a live room for up to eight players. Friends join by code, answer the same timed questions, and see a shared leaderboard, chat, and reactions.
 
-Progress, preferences, and ghosts are stored in the browser on each device. No account or server is required.
+Solo progress, preferences, and ghosts are stored in the browser on each device. Live rooms use Vercel Functions and Redis. Players only need a nickname and room code.
 
 ## Question bank
 
@@ -19,6 +20,8 @@ Progress, preferences, and ghosts are stored in the browser on each device. No a
 
 The original saved course pages are not needed to run the site. The site preserves the question wording, choices, and labeled answers from the supplied files.
 
-## Online features
+## Live room setup
 
-Live multiplayer, voice chat, shared deck voting, and a model-backed tutor need accounts and a real-time backend. Packet Party currently provides local play, offline hints, and shareable ghost files.
+The live API is in `api/rooms.mjs`. In Vercel, connect the free Upstash for Redis integration to the project. The function reads `KV_REST_API_URL` and `KV_REST_API_TOKEN` from server-side environment variables. Never expose the token in browser code. Rooms expire after six hours.
+
+Voice chat, shared deck voting, and a model-backed tutor are not included. Hints remain local, and ghost files can be shared without an account.

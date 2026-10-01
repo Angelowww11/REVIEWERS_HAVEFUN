@@ -1,4 +1,4 @@
-const CACHE_NAME = 'packet-party-v1';
+const CACHE_NAME = 'packet-party-v2';
 const CORE_FILES = ['./', './index.html', './styles.css', './app.js', './questions.json'];
 
 self.addEventListener('install', event => {
@@ -25,7 +25,8 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const request = event.request;
-  if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
+  const url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     try {

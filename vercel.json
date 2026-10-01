@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "functions": {
+    "api/rooms.mjs": {
+      "includeFiles": "questions.json",
+      "regions": ["sin1"]
+    }
+  },
+  "rewrites": [
+    { "source": "/api/rooms/:code/:action", "destination": "/api/rooms?code=:code&action=:action" },
+    { "source": "/api/rooms/:code", "destination": "/api/rooms?code=:code" }
+  ]
+}
