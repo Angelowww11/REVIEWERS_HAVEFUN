@@ -1,0 +1,17 @@
+{
+  "name": "Packet Party — Networking Quiz Arcade",
+  "short_name": "Packet Party",
+  "description": "Study networking with arcade quizzes, streaks, and live battles.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#171c5b",
+  "theme_color": "#171c5b",
+  "orientation": "any",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -14,7 +14,7 @@ const quotes = [
   'A wrong answer is useful data', 'You know more than you think', 'Stay curious, stay connected'
 ];
 const app = {
-  questions: [], mode: 'shuffle', view: 'home', game: null, bankLimit: 16,
+  questions: [], explanations: {}, mode: 'shuffle', view: 'home', game: null, bankLimit: 16,
   bankAll: false, bankRevealAll: false, bankRevealed: new Set(), importedGhost: null,
   favorites: new Set(readJSON('pp_favorites', [])),
   stats: readJSON('pp_stats', { runs: 0, correct: 0, bestStreak: 0, bestScore: 0 }),
@@ -32,6 +32,7 @@ function typeName(q) { return q.type === 'true_false_question' ? 'True / false' 
 function hasImage(q) { return /<img\b/i.test(q.questionHtml || ''); }
 function isCorrectOption(q, option) { return (q.correctAnswers || []).some(a => normalize(a) === normalize(option)); }
 function answerText(q) { return (q.correctAnswers || []).join(' · '); }
+function explanationText(q) { return app.explanations[q.id] || 'Compare the key term in the question with the correct answer, then try this card again later.'; }
 function announce(message) { $('announcer').textContent = ''; setTimeout(() => { $('announcer').textContent = message; }, 10); }
 function toast(message) { const el = $('toast'); el.textContent = message; el.classList.add('is-visible'); clearTimeout(app.toastTimer); app.toastTimer = setTimeout(() => el.classList.remove('is-visible'), 2800); }
 
@@ -103,6 +104,7 @@ function setView(view) {
   document.querySelectorAll('.nav-link').forEach(button => { const active = button.dataset.view === view; button.classList.toggle('is-active', active); if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
   if (view === 'bank') renderBank();
   if (view === 'leaderboard') loadLeaderboard();
+  if (view === 'home') loadHomeLeaderboard();
   scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
 }
 
@@ -114,6 +116,7 @@ function renderHome() {
   updateStats();
   const ticker = [...quotes, ...quotes].map(q => `<span><b>✳</b>${escapeHTML(q)}</span>`).join('');
   $('quoteTrack').innerHTML = ticker;
+  loadHomeLeaderboard();
   const sourceSelect = $('bankSource');
   [...sources].sort((a, b) => { const an = +(a.match(/\d+/)?.[0] || 0), bn = +(b.match(/\d+/)?.[0] || 0); return an - bn; }).forEach(source => { const option = document.createElement('option'); option.value = source; option.textContent = source.replace(/\.html$/i, ''); sourceSelect.append(option); });
   if (!sources.size) sourceSelect.parentElement.hidden = true;
@@ -139,7 +142,7 @@ function renderBank() {
   $('bankList').innerHTML = visible.length ? visible.map(q => {
     const revealed = app.bankRevealAll || app.bankRevealed.has(q.id);
     const options = q.type === 'short_answer_question' ? [] : q.options || [];
-    return `<article class="bank-question" data-id="${q.id}"><div class="bank-q-top"><span class="bank-number">#${q.id}</span><span class="chip chip-source">${escapeHTML(sourceName(q))}</span><span class="chip">${escapeHTML(typeName(q))}</span><button type="button" class="star-button ${app.favorites.has(q.id) ? 'is-starred' : ''}" data-bank-action="star" aria-label="${app.favorites.has(q.id) ? 'Remove star from' : 'Star'} question ${q.id}" aria-pressed="${app.favorites.has(q.id)}">★</button></div><div class="bank-prompt">${safeQuestionHTML(q)}</div>${options.length ? `<div class="bank-choices">${options.map((option, index) => `<div class="bank-choice ${revealed && isCorrectOption(q, option) ? 'is-answer' : ''}"><i>${String.fromCharCode(65 + index)}</i><span>${escapeHTML(option)}</span></div>`).join('')}</div>` : ''}<div class="bank-actions"><button type="button" class="bank-reveal" data-bank-action="reveal">${revealed ? 'Hide answer' : 'Reveal answer'}</button>${revealed ? `<span class="bank-answer-note">✓ ${escapeHTML(answerText(q))}</span>` : ''}</div></article>`;
+    return `<article class="bank-question" data-id="${q.id}"><div class="bank-q-top"><span class="bank-number">#${q.id}</span><span class="chip chip-source">${escapeHTML(sourceName(q))}</span><span class="chip">${escapeHTML(typeName(q))}</span><button type="button" class="star-button ${app.favorites.has(q.id) ? 'is-starred' : ''}" data-bank-action="star" aria-label="${app.favorites.has(q.id) ? 'Remove star from' : 'Star'} question ${q.id}" aria-pressed="${app.favorites.has(q.id)}">★</button></div><div class="bank-prompt">${safeQuestionHTML(q)}</div>${options.length ? `<div class="bank-choices">${options.map((option, index) => `<div class="bank-choice ${revealed && isCorrectOption(q, option) ? 'is-answer' : ''}"><i>${String.fromCharCode(65 + index)}</i><span>${escapeHTML(option)}</span></div>`).join('')}</div>` : ''}<div class="bank-actions"><button type="button" class="bank-reveal" data-bank-action="reveal">${revealed ? 'Hide answer' : 'Reveal answer'}</button>${revealed ? `<span class="bank-answer-note">✓ ${escapeHTML(answerText(q))}</span>` : ''}</div>${revealed ? `<p class="bank-explanation">${escapeHTML(explanationText(q))}</p>` : ''}</article>`;
   }).join('') : `<div class="bank-empty"><strong>No questions found</strong>Try a different search or filter.</div>`;
 }
 
@@ -151,14 +154,14 @@ function openSetup(mode) {
   $('setupQuestionCount').textContent = `${count} questions`;
   $('heartLimitSelect').value = String(readJSON('pp_heart_limit', '3'));
   if (!['1', '3', '5', 'unlimited'].includes($('heartLimitSelect').value)) $('heartLimitSelect').value = '3';
-  $('correctFirstToggle').checked = readJSON('pp_correct_first', false);
+  $('correctFirstToggle').checked = false;
   $('correctFirstToggle').closest('.switch-row').hidden = mode === 'typing' || mode === 'matching';
   updateSetupRankNote();
   $('setupDialog').showModal();
 }
 function updateSetupRankNote() {
   const practice = !$('correctFirstToggle').closest('.switch-row').hidden && $('correctFirstToggle').checked;
-  $('setupNote').textContent = practice ? 'Practice mode · this score will not enter leaderboards.' : 'Ranked scores use your chosen hearts category.';
+  $('setupNote').textContent = practice ? 'Practice only · this run is unranked.' : app.mode === 'all' ? 'All questions runs can enter the public board.' : 'Play All questions to enter the public board.';
 }
 function typingPool() { return app.questions.filter(q => q.correctAnswers.length === 1 && q.correctAnswers[0].length <= 52 && !hasImage(q)); }
 function matchingPool() {
@@ -172,7 +175,7 @@ function prepareDifficulty() {
 }
 function complexity(q) { return String(q.question || '').length + (q.options || []).reduce((sum, option) => sum + String(option).length * .2, 0) + (hasImage(q) ? 55 : 0); }
 function startGame() {
-  const mode = app.mode; writeJSON('pp_correct_first', $('correctFirstToggle').checked);
+  const mode = app.mode;
   const heartLimit = ['1', '3', '5', 'unlimited'].includes($('heartLimitSelect').value) ? $('heartLimitSelect').value : '3';
   writeJSON('pp_heart_limit', heartLimit);
   const questions = app.questions;
@@ -316,21 +319,21 @@ function resolveAnswer(correct, response = '') {
     if (g.streak >= 2) g.unlocked.fifty = true;
     if (g.streak >= 3) g.unlocked.shield = true;
     if (g.streak >= 4) g.unlocked.freeze = true;
-    playTone('good'); burst();
+    playTone('good'); burst(); if (navigator.vibrate) navigator.vibrate(18);
   } else {
     g.hearts = Math.max(0, g.hearts - 1);
     if (g.activeShield) { g.activeShield = false; toast('Shield saved your streak!'); }
     else g.streak = 0;
     g.score = Math.max(0, g.score - g.wager);
     g.missed.push(q);
-    playTone('bad');
+    playTone('bad'); if (navigator.vibrate) navigator.vibrate([25, 35, 25]);
   }
   g.completed++;
   g.events.push({ t: Math.round(performance.now() - g.startedAt), score: g.score, completed: g.completed, correct, responseMs });
   updateHUD();
   const slot = $('feedbackSlot');
   const resultWord = correct ? ['Nice link!', 'You got it!', 'Great call!', 'That is the one!'][Math.floor(Math.random() * 4)] : 'Keep going — you are learning.';
-  slot.innerHTML = `<div class="feedback ${correct ? 'is-correct' : 'is-wrong'}"><strong>${resultWord}</strong>${correct ? `+${formatNumber(points)} points${g.wager ? ` · ${formatNumber(g.wager)} wager won` : ''}` : `${response ? 'Your answer: ' + escapeHTML(response) + '. ' : ''}${g.wager ? `${formatNumber(g.wager)} points lost. ` : ''}<span class="answer-line">Correct answer: ${escapeHTML(answerText(q))}</span>`}</div>`;
+  slot.innerHTML = `<div class="feedback ${correct ? 'is-correct' : 'is-wrong'}"><strong>${resultWord}</strong>${correct ? `+${formatNumber(points)} points${g.wager ? ` · ${formatNumber(g.wager)} wager won` : ''}` : `${response ? 'Your answer: ' + escapeHTML(response) + '. ' : ''}${g.wager ? `${formatNumber(g.wager)} points lost. ` : ''}<span class="answer-line">Correct answer: ${escapeHTML(answerText(q))}</span>`}<span class="feedback-explanation">${escapeHTML(explanationText(q))}</span></div>`;
   document.querySelectorAll('.choice-button').forEach(button => {
     const index = +button.dataset.choiceIndex, option = g.displayOptions[index];
     button.disabled = true;
@@ -383,7 +386,7 @@ function renderMatchBoard() {
   const group = g.order.slice(g.completed, g.completed + Math.min(4, g.total - g.completed));
   g.matchPairs = group.map(q => ({ q, matched: false })); g.matchChoice = { left: null, right: null };
   const answers = shuffle(group);
-  $('gameContent').innerHTML = `<div class="match-card"><span class="question-tag">MATCH MAKER · ROUND ${Math.floor(g.completed / 4) + 1}</span><h2>Connect the dots.</h2><p>Tap a question, then its answer.</p><div class="match-grid"><div class="match-column"><h3>QUESTIONS</h3>${group.map(q => `<button type="button" class="match-option" data-match-side="left" data-match-id="${q.id}">${escapeHTML(q.question)}</button>`).join('')}</div><div class="match-column"><h3>ANSWERS</h3>${answers.map(q => `<button type="button" class="match-option" data-match-side="right" data-match-id="${q.id}">${escapeHTML(answerText(q))}</button>`).join('')}</div></div></div>`;
+  $('gameContent').innerHTML = `<div class="match-card"><span class="question-tag">MATCH MAKER · ROUND ${Math.floor(g.completed / 4) + 1}</span><h2>Connect the dots.</h2><p>Tap a question, then its answer.</p><div class="match-grid"><div class="match-column"><h3>QUESTIONS</h3>${group.map(q => `<button type="button" class="match-option" data-match-side="left" data-match-id="${q.id}">${escapeHTML(q.question)}</button>`).join('')}</div><div class="match-column"><h3>ANSWERS</h3>${answers.map(q => `<button type="button" class="match-option" data-match-side="right" data-match-id="${q.id}">${escapeHTML(answerText(q))}</button>`).join('')}</div></div><div id="matchFeedback" class="match-feedback" role="status"></div></div>`;
   announce(`Match maker round ${Math.floor(g.completed / 4) + 1}. Match four questions with their answers.`);
   updateHUD();
 }
@@ -396,6 +399,7 @@ function handleMatchClick(button) {
   if (g.matchChoice.left === null || g.matchChoice.right === null) return;
   const left = document.querySelector(`[data-match-side="left"][data-match-id="${g.matchChoice.left}"]`);
   const right = document.querySelector(`[data-match-side="right"][data-match-id="${g.matchChoice.right}"]`);
+  const selectedQuestion = g.matchPairs.find(pair => pair.q.id === g.matchChoice.left)?.q;
   if (g.matchChoice.left === g.matchChoice.right) {
     left.classList.remove('is-selected'); right.classList.remove('is-selected');
     left.classList.add('is-matched'); right.classList.add('is-matched'); left.disabled = true; right.disabled = true;
@@ -403,12 +407,14 @@ function handleMatchClick(button) {
     if (g.streak >= 2) g.unlocked.fifty = true; if (g.streak >= 3) g.unlocked.shield = true;
     g.events.push({ t: Math.round(performance.now() - g.startedAt), score: g.score, completed: g.completed, correct: true, responseMs: 0 });
     playTone('good'); burst(); announce(`Matched. ${g.streak} streak.`);
-    if (g.matchPairs.every(pair => document.querySelector(`[data-match-side="left"][data-match-id="${pair.q.id}"]`)?.disabled)) setTimeout(() => { if (app.game === g) renderMatchBoard(); }, 850);
+    if (selectedQuestion) $('matchFeedback').innerHTML = `<strong>Nice match!</strong><span>${escapeHTML(explanationText(selectedQuestion))}</span>`;
+    if (g.matchPairs.every(pair => document.querySelector(`[data-match-side="left"][data-match-id="${pair.q.id}"]`)?.disabled)) setTimeout(() => { if (app.game === g) renderMatchBoard(); }, 2400);
   } else {
     g.attempts++; g.hearts = Math.max(0, g.hearts - 1); g.streak = 0; playTone('bad');
     g.events.push({ t: Math.round(performance.now() - g.startedAt), score: g.score, completed: g.completed, correct: false, responseMs: 0 });
     left.classList.add('is-error'); right.classList.add('is-error');
     toast('Not a match. Try another connection.'); announce(`Not a match. ${heartsRemaining(g)} remain.`);
+    if (selectedQuestion) $('matchFeedback').innerHTML = `<strong>Correct pair: ${escapeHTML(answerText(selectedQuestion))}</strong><span>${escapeHTML(explanationText(selectedQuestion))}</span>`;
     setTimeout(() => { left?.classList.remove('is-error', 'is-selected'); right?.classList.remove('is-error', 'is-selected'); if (g.hearts <= 0 && app.game === g) finishGame(); }, 480);
   }
   g.matchChoice = { left: null, right: null }; updateHUD();
@@ -427,36 +433,53 @@ function finishGame() {
   const won = g.completed === g.total && g.hearts > 0;
   const accuracy = g.attempts ? Math.round((g.correct / g.attempts) * 100) : 0;
   const savedName = readJSON('pp_leaderboard_name', readJSON('pp_live_name', ''));
-  const scoreForm = g.firstCorrect
+  const scoreForm = g.mode !== 'all'
+    ? '<p class="rank-note">Only All questions runs appear on the public board.</p>'
+    : g.firstCorrect
     ? '<p class="rank-note">Practice run · correct answer first is unranked.</p>'
     : g.score <= 0
       ? '<p class="rank-note">Earn points to post a score.</p>'
-      : `<form id="scoreSubmitForm" class="score-submit"><label for="scoreName">Post to ${escapeHTML(modeInfo[g.mode].name)} · ${g.heartLimit === 'unlimited' ? 'Unlimited hearts' : `${g.heartLimit} heart${g.heartLimit === '1' ? '' : 's'}`}</label><div><input id="scoreName" maxlength="24" minlength="2" value="${escapeHTML(savedName)}" placeholder="Your name" autocomplete="nickname" required><button type="submit" class="button button-primary">Post score ↗</button></div><small>Your name and score will be public.</small></form>`;
+      : `<form id="scoreSubmitForm" class="score-submit"><label for="scoreName">Post your All questions score</label><div><input id="scoreName" maxlength="24" minlength="2" value="${escapeHTML(savedName)}" placeholder="Your name" autocomplete="nickname" required><button type="submit" class="button button-primary">Post score ↗</button></div><small>${g.heartLimit === 'unlimited' ? 'Unlimited hearts' : `${g.heartLimit} heart${g.heartLimit === '1' ? '' : 's'}`} · Your name and score will be public.</small></form>`;
   $('resultContent').innerHTML = `<div class="result-card"><div class="result-burst" aria-hidden="true">✳</div><span class="section-kicker">RUN COMPLETE</span><h1>${won ? 'Deck cleared!' : 'Nice run.'}</h1><div class="result-metrics"><div><strong>${formatNumber(g.score)}</strong><span>POINTS</span></div><div><strong>${accuracy}%</strong><span>ACCURACY</span></div><div><strong>${g.bestStreak}</strong><span>BEST STREAK</span></div><div><strong>${elapsedTime(duration)}</strong><span>TIME</span></div></div>${scoreForm}<div class="result-actions"><button type="button" class="button button-primary" data-result="again">Play again ↗</button><button type="button" class="button button-outline" data-result="leaderboard">Leaderboards</button><button type="button" class="button button-outline" data-result="export">Export ghost ↓</button></div>${g.missed.length ? `<details class="review-details"><summary>Review missed questions (${g.missed.length})</summary><div class="review-list">${g.missed.slice(0, 8).map(q => `<div class="review-item"><strong>#${q.id} ${escapeHTML(q.question)}</strong><span>Answer: ${escapeHTML(answerText(q))}</span></div>`).join('')}</div></details>` : ''}</div>`;
   setView('result'); announce(`Run complete. ${g.score} points, ${accuracy} percent accuracy.`);
 }
 let leaderboardRequest = 0;
+function heartsLabel(value) { return value === 'unlimited' ? '∞ hearts' : `${value} heart${String(value) === '1' ? '' : 's'}`; }
+function leaderboardGraph(entries) {
+  const leaders = entries.slice(0, 5), max = Math.max(1, ...leaders.map(e => Number(e.score) || 0));
+  $('leaderboardGraph').innerHTML = `<div class="graph-heading"><strong>Top scores</strong><span>Points earned</span></div>${leaders.length ? leaders.map((entry, index) => `<div class="graph-row"><span class="graph-name">${index + 1}. ${escapeHTML(entry.name || 'Player')}</span><span class="graph-track"><i style="width:${Math.max(3, (Number(entry.score) || 0) / max * 100)}%"></i></span><b>${formatNumber(entry.score)}</b></div>`).join('') : '<p class="graph-empty">Finish an All questions run to draw the first bar.</p>'}`;
+}
+async function loadHomeLeaderboard() {
+  try {
+    const response = await fetch('/api/leaderboard?mode=all&hearts=all', { cache: 'no-store', signal: AbortSignal.timeout(12000) });
+    if (!response.ok) throw new Error('Scores unavailable');
+    const data = await response.json(), entries = Array.isArray(data.entries) ? data.entries.slice(0, 3) : [];
+    $('homeLeadersList').innerHTML = entries.length ? entries.map((entry, index) => `<div class="home-leader"><span class="home-rank">${index + 1}</span><strong>${escapeHTML(entry.name || 'Player')}</strong><small>${heartsLabel(entry.hearts)}</small><b>${formatNumber(entry.score)} <em>pts</em></b></div>`).join('') : '<span class="home-leaders-empty">No scores yet. Start an All questions run to claim the first spot.</span>';
+  } catch { $('homeLeadersList').innerHTML = '<span class="home-leaders-empty">Scores are taking a break. You can still play.</span>'; }
+}
 async function loadLeaderboard() {
-  const mode = $('leaderboardMode').value, hearts = $('leaderboardHearts').value;
+  const hearts = $('leaderboardHearts').value;
   const request = ++leaderboardRequest;
   $('leaderboardStatus').textContent = 'Loading scores…';
   $('leaderboardList').innerHTML = '';
   try {
-    const response = await fetch(`/api/leaderboard?mode=${encodeURIComponent(mode)}&hearts=${encodeURIComponent(hearts)}`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
+    const response = await fetch(`/api/leaderboard?mode=all&hearts=${encodeURIComponent(hearts)}`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Could not load scores.');
     if (request !== leaderboardRequest) return;
     const entries = Array.isArray(data.entries) ? data.entries : [];
-    $('leaderboardStatus').textContent = entries.length ? `${entries.length} ranked run${entries.length === 1 ? '' : 's'}` : 'No scores here yet. Be the first!';
-    $('leaderboardList').innerHTML = entries.map((entry, index) => `<li class="leaderboard-row"><span class="leaderboard-rank">${index + 1}</span><strong>${escapeHTML(entry.name || 'Player')}</strong><span class="leaderboard-detail">${Number(entry.correct) || 0}/${Number(entry.total) || 0} right · ${elapsedTime(Number(entry.duration) || 0)}</span><b>${formatNumber(entry.score)}</b></li>`).join('');
+    $('leaderboardStatus').textContent = entries.length ? `${entries.length} ranked run${entries.length === 1 ? '' : 's'}` : 'No scores yet. Be the first!';
+    leaderboardGraph(entries);
+    $('leaderboardList').innerHTML = entries.map((entry, index) => `<li class="leaderboard-row"><span class="leaderboard-rank">${index + 1}</span><strong>${escapeHTML(entry.name || 'Player')}</strong><span class="leaderboard-detail">${Number(entry.correct) || 0}/${Number(entry.total) || 0} right · ${heartsLabel(entry.hearts || hearts)} · ${elapsedTime(Number(entry.duration) || 0)}</span><b>${formatNumber(entry.score)}</b></li>`).join('');
   } catch (error) {
     if (request !== leaderboardRequest) return;
-    $('leaderboardStatus').textContent = error.name === 'TimeoutError' ? 'Scores took too long to load. Try another category.' : (error.message || 'Could not load scores.');
+    $('leaderboardStatus').textContent = error.name === 'TimeoutError' ? 'Scores took too long to load. Try again.' : (error.message || 'Could not load scores.');
+    $('leaderboardGraph').innerHTML = '';
   }
 }
 async function submitSoloScore() {
   const g = app.game, form = $('scoreSubmitForm');
-  if (!g || !form || g.firstCorrect || g.scoreSubmitted || !g.record || g.score <= 0) return;
+  if (!g || !form || g.mode !== 'all' || g.firstCorrect || g.scoreSubmitted || !g.record || g.score <= 0) return;
   const name = $('scoreName').value.trim().slice(0, 24);
   if (name.length < 2) { toast('Use a name with at least 2 characters.'); return; }
   const button = form.querySelector('button[type="submit"]'); button.disabled = true;
@@ -487,6 +510,7 @@ async function loadQuestions() {
   try {
     const response = await fetch('./questions.json', { cache: 'no-cache' }); if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json(); if (!Array.isArray(data.questions)) throw new Error('Missing questions');
+    try { const notesResponse = await fetch('./explanations.json', { cache: 'no-cache' }); if (notesResponse.ok) app.explanations = await notesResponse.json(); } catch { /* Quiz still works if the notes are unavailable. */ }
     app.questions = data.questions.filter(q => q && q.question && Array.isArray(q.correctAnswers) && q.correctAnswers.length && Array.isArray(q.options)).map((q, index) => ({ ...q, id: Number(q.id) || index + 1 }));
     prepareDifficulty(); renderHome(); renderBank();
   } catch (error) {
@@ -503,8 +527,8 @@ function attachEvents() {
   $('closeSetup').addEventListener('click', () => $('setupDialog').close());
   $('setupForm').addEventListener('submit', event => { event.preventDefault(); $('setupDialog').close(); startGame(); });
   $('correctFirstToggle').addEventListener('change', updateSetupRankNote);
-  $('leaderboardMode').addEventListener('change', loadLeaderboard);
   $('leaderboardHearts').addEventListener('change', loadLeaderboard);
+  $('homeLeaderboardLink').addEventListener('click', () => setView('leaderboard'));
   $('ghostFile').addEventListener('change', async event => {
     const file = event.target.files?.[0]; if (!file) return;
     if (file.size > 1000000) { toast('That ghost file is too large.'); return; }
@@ -543,7 +567,7 @@ function attachEvents() {
   });
   $('gameContent').addEventListener('input', event => { if (event.target.id === 'answerInput') $('answerAction').disabled = !event.target.value.trim(); });
   $('gameContent').addEventListener('keydown', event => { if (event.target.id === 'answerInput' && event.key === 'Enter') { event.preventDefault(); checkAnswer(); } });
-  $('resultContent').addEventListener('click', event => { const action = event.target.closest('[data-result]')?.dataset.result; if (action === 'again') openSetup(app.mode); else if (action === 'leaderboard') { $('leaderboardMode').value = app.game?.mode || 'adaptive'; $('leaderboardHearts').value = app.game?.heartLimit || '3'; setView('leaderboard'); } else if (action === 'export') exportGhost(); });
+  $('resultContent').addEventListener('click', event => { const action = event.target.closest('[data-result]')?.dataset.result; if (action === 'again') openSetup(app.mode); else if (action === 'leaderboard') { $('leaderboardHearts').value = 'all'; setView('leaderboard'); } else if (action === 'export') exportGhost(); });
   $('resultContent').addEventListener('submit', event => { if (event.target.id === 'scoreSubmitForm') { event.preventDefault(); submitSoloScore(); } });
   document.addEventListener('keydown', event => {
     if (app.view !== 'game' || !app.game || event.target.matches('input, textarea, select') || $('setupDialog').open) return;
@@ -743,7 +767,7 @@ function liveRenderStage() {
   const answered = live.submitted || room.myAnswer != null || !!liveCurrentPlayer()?.answered;
   const options = Array.isArray(q.options) ? q.options : [];
   const typed = q.type === 'short_answer_question' || !options.length;
-  stage.innerHTML = `<div class="live-quiz-meta"><span class="live-stage-kicker">${isReveal ? 'ANSWER REVEAL' : 'LIVE ROUND'} · QUESTION ${(room.questionIndex ?? 0) + 1} / ${room.total || 10}</span><span id="liveTimer" class="live-timer">◷ <span>—</span></span></div><div class="live-clock-track" aria-hidden="true"><div id="liveClockFill" class="live-clock-fill"></div></div><div class="live-question-text">${safeQuestionHTML(q)}</div>${typed ? (isReveal ? '' : `<form id="liveAnswerForm" class="live-answer-form"><label class="sr-only" for="liveAnswerInput">Your answer</label><input id="liveAnswerInput" class="live-input" maxlength="200" placeholder="Type your answer…" ${answered ? 'disabled' : ''} required><button type="submit" class="button button-primary" ${answered ? 'disabled' : ''}>Send ↗</button></form>`) : `<div class="live-answer-grid">${options.map((option, index) => { const correct = answers.some(a => normalize(a) === normalize(option)); const chosen = (Array.isArray(room.myAnswer) ? room.myAnswer : [room.myAnswer]).some(a => a != null && normalize(a) === normalize(option)) || live.selected.has(index); const cls = isReveal ? correct ? 'is-correct' : chosen ? 'is-wrong' : '' : chosen ? 'is-selected' : ''; return `<button type="button" class="live-answer-option ${cls}" data-live-choice="${index}" ${isReveal || answered ? 'disabled' : ''} aria-pressed="${chosen}"><i>${String.fromCharCode(65 + index)}</i><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>${q.multiple && !isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-multi" ${answered || !live.selected.size ? 'disabled' : ''}>Lock in ${live.selected.size || ''} answer${live.selected.size === 1 ? '' : 's'} ↗</button></div>` : ''}`}${!isReveal && answered ? '<div class="live-answer-note is-success">✓ Answer locked in. Watch the board while the clock runs.</div>' : ''}${isReveal ? `<div class="live-reveal ${mine?.correct ? '' : 'is-wrong'}"><strong>${mine?.correct ? `Nice hit! +${formatNumber(mine.points || 0)} points` : 'Round complete'}</strong><span>Correct answer${answers.length > 1 ? 's' : ''}: ${escapeHTML(answers.join(' · '))}</span></div><p class="live-lobby-note">Next question starts automatically.</p>` : ''}`;
+  stage.innerHTML = `<div class="live-quiz-meta"><span class="live-stage-kicker">${isReveal ? 'ANSWER REVEAL' : 'LIVE ROUND'} · QUESTION ${(room.questionIndex ?? 0) + 1} / ${room.total || 10}</span><span id="liveTimer" class="live-timer">◷ <span>—</span></span></div><div class="live-clock-track" aria-hidden="true"><div id="liveClockFill" class="live-clock-fill"></div></div><div class="live-question-text">${safeQuestionHTML(q)}</div>${typed ? (isReveal ? '' : `<form id="liveAnswerForm" class="live-answer-form"><label class="sr-only" for="liveAnswerInput">Your answer</label><input id="liveAnswerInput" class="live-input" maxlength="200" placeholder="Type your answer…" ${answered ? 'disabled' : ''} required><button type="submit" class="button button-primary" ${answered ? 'disabled' : ''}>Send ↗</button></form>`) : `<div class="live-answer-grid">${options.map((option, index) => { const correct = answers.some(a => normalize(a) === normalize(option)); const chosen = (Array.isArray(room.myAnswer) ? room.myAnswer : [room.myAnswer]).some(a => a != null && normalize(a) === normalize(option)) || live.selected.has(index); const cls = isReveal ? correct ? 'is-correct' : chosen ? 'is-wrong' : '' : chosen ? 'is-selected' : ''; return `<button type="button" class="live-answer-option ${cls}" data-live-choice="${index}" ${isReveal || answered ? 'disabled' : ''} aria-pressed="${chosen}"><i>${String.fromCharCode(65 + index)}</i><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>${q.multiple && !isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-multi" ${answered || !live.selected.size ? 'disabled' : ''}>Lock in ${live.selected.size || ''} answer${live.selected.size === 1 ? '' : 's'} ↗</button></div>` : ''}`}${!isReveal && answered ? '<div class="live-answer-note is-success">✓ Answer locked in. Watch the board while the clock runs.</div>' : ''}${isReveal ? `<div class="live-reveal ${mine?.correct ? '' : 'is-wrong'}"><strong>${mine?.correct ? `Nice hit! +${formatNumber(mine.points || 0)} points` : 'Round complete'}</strong><span>Correct answer${answers.length > 1 ? 's' : ''}: ${escapeHTML(answers.join(' · '))}</span><span class="feedback-explanation">${escapeHTML(explanationText(q))}</span></div><p class="live-lobby-note">Next question starts automatically.</p>` : ''}`;
   liveUpdateClock();
 }
 function liveRenderPlayers() {
@@ -847,5 +871,24 @@ function attachLiveEvents() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden && live.code) livePoll(); });
 }
 
-updateSoundButton(); updateStats(); attachEvents(); attachLiveEvents(); loadQuestions(); liveResume();
+let deferredInstall = null;
+function setupInstall() {
+  const button = $('installButton');
+  if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) return;
+  window.addEventListener('beforeinstallprompt', event => {
+    event.preventDefault(); deferredInstall = event; button.hidden = false;
+  });
+  if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) button.hidden = false;
+  button.addEventListener('click', async () => {
+    if (deferredInstall) {
+      const prompt = deferredInstall; deferredInstall = null;
+      await prompt.prompt();
+      const result = await prompt.userChoice;
+      if (result?.outcome === 'accepted') button.hidden = true;
+    } else toast('On iPhone: tap Share, then Add to Home Screen.');
+  });
+  window.addEventListener('appinstalled', () => { button.hidden = true; deferredInstall = null; toast('Packet Party is installed!'); });
+}
+
+updateSoundButton(); updateStats(); attachEvents(); attachLiveEvents(); setupInstall(); loadQuestions(); liveResume();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});

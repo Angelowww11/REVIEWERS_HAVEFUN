@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { isIP } from 'node:net';
 
-const MODES = new Set(['all', 'shuffle', 'adaptive', 'blitz', 'matching', 'typing']);
+const MODES = new Set(['all']);
 const HEARTS = new Set(['1', '3', '5', 'unlimited']);
 const SAVE_SCORE = `
 redis.call('ZADD', KEYS[1], tonumber(ARGV[1]), ARGV[2])
@@ -85,15 +85,19 @@ async function limitSubmissions(request) {
 
 async function listScores(request) {
   const url = new URL(request.url);
-  const { mode, hearts, key } = category(url.searchParams.get('mode'), url.searchParams.get('hearts'));
-  const members = await redis(['ZREVRANGE', key, 0, 49]);
-  const entries = (members || []).flatMap(raw => {
+  const mode = url.searchParams.get('mode') || 'all';
+  const hearts = url.searchParams.get('hearts') || 'all';
+  if (mode !== 'all' || (hearts !== 'all' && !HEARTS.has(hearts))) throw new ApiError(400, 'Choose a valid hearts category.');
+  const categories = hearts === 'all' ? [...HEARTS] : [hearts];
+  const boards = await Promise.all(categories.map(value => redis(['ZREVRANGE', category(mode, value).key, 0, 49])));
+  const entries = boards.flatMap((members, boardIndex) => (members || []).flatMap(raw => {
     try {
       const entry = JSON.parse(raw);
-      return [{ name: entry.name, score: entry.score, correct: entry.correct, total: entry.total, duration: entry.duration, at: entry.at }];
+      return [{ name: entry.name, score: entry.score, correct: entry.correct, total: entry.total, duration: entry.duration, hearts: entry.hearts || categories[boardIndex], at: entry.at }];
     } catch { return []; }
-  });
-  return json({ mode, hearts, entries });
+  }));
+  entries.sort((a, b) => b.score - a.score || b.correct - a.correct || a.duration - b.duration || a.at - b.at);
+  return json({ mode, hearts, entries: entries.slice(0, 50) });
 }
 
 async function submitScore(request) {

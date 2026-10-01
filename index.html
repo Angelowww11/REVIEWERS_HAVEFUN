@@ -4,17 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#171c5b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <meta name="description" content="Turn the networking question pool into an arcade study session: browse every question, shuffle the deck, race the clock, and build a streak.">
   <title>Packet Party — Networking quiz arcade</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23171c5b'/%3E%3Ccircle cx='18' cy='33' r='7' fill='%23ffb45c'/%3E%3Ccircle cx='46' cy='18' r='7' fill='%23a7f2ed'/%3E%3Ccircle cx='45' cy='47' r='7' fill='%23f58fca'/%3E%3Cpath d='M24 30 40 21M24 36l15 9' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
+  <script src="ambient.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <div class="ambient ambient-a" aria-hidden="true"></div>
   <div class="ambient ambient-b" aria-hidden="true"></div>
   <div id="particleLayer" class="particle-layer" aria-hidden="true"></div>
+  <canvas id="networkCanvas" class="network-canvas" aria-hidden="true"></canvas>
 
   <div class="app-shell">
     <header class="topbar">
@@ -29,6 +35,7 @@
         <button type="button" class="nav-link nav-live" data-view="live"><span class="live-pip" aria-hidden="true"></span> Live arena</button>
       </nav>
       <div class="top-actions">
+        <button type="button" id="installButton" class="install-button" hidden>Install app <span aria-hidden="true">↗</span></button>
         <span class="top-streak" title="Your best streak"><span aria-hidden="true">⚡</span> <span id="headerBest">0</span> best</span>
         <button type="button" id="soundButton" class="icon-button" aria-label="Turn sound on" aria-pressed="false" title="Sound off">♪<span class="sound-slash" aria-hidden="true">/</span></button>
       </div>
@@ -73,6 +80,11 @@
           <button type="button" class="mode-card mode-matching" data-mode="matching"><span class="mode-icon" aria-hidden="true">◈</span><strong>Match maker</strong><span>Pair questions and answers</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
           <button type="button" class="mode-card mode-typing" data-mode="typing"><span class="mode-icon" aria-hidden="true">⌨</span><strong>Type it out</strong><span>Answer from memory</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
         </div>
+
+        <section class="home-leaders" aria-labelledby="homeLeadersTitle">
+          <div class="home-leaders-heading"><div><span class="section-kicker">FULL DECK · PUBLIC SCORES</span><h2 id="homeLeadersTitle">Top of the board<span class="title-period">.</span></h2></div><button type="button" id="homeLeaderboardLink" class="small-button">View leaderboard ↗</button></div>
+          <div id="homeLeadersList" class="home-leaders-list" aria-live="polite">Loading top scores…</div>
+        </section>
       </section>
 
       <section id="bankView" class="view bank-view" hidden>
@@ -89,13 +101,14 @@
       </section>
 
       <section id="leaderboardView" class="view leaderboard-view" hidden>
-        <div class="page-intro"><div><span class="section-kicker">TOP SCORES</span><h1>Leaderboards<span class="title-period">.</span></h1></div></div>
+        <div class="page-intro"><div><span class="section-kicker">ALL QUESTIONS</span><h1>Leaderboard<span class="title-period">.</span></h1><p class="leaderboard-intro">All questions mode only. Every hearts setting counts; correct-answer-first practice is unranked.</p></div></div>
         <div class="leaderboard-panel">
           <div class="leaderboard-controls">
-            <label>Mode<select id="leaderboardMode"><option value="adaptive">Level up</option><option value="blitz">Boss blitz</option><option value="shuffle">Shuffle run</option><option value="all">All questions</option><option value="matching">Match maker</option><option value="typing">Type it out</option></select></label>
-            <label>Hearts<select id="leaderboardHearts"><option value="3">3 hearts</option><option value="1">1 heart</option><option value="5">5 hearts</option><option value="unlimited">Unlimited hearts</option></select></label>
+            <span class="leaderboard-control-title">Full-deck high scores</span>
+            <label class="leaderboard-filter">Show<select id="leaderboardHearts"><option value="all">Everyone</option><option value="unlimited">Unlimited hearts</option><option value="3">3 hearts</option><option value="5">5 hearts</option><option value="1">1 heart</option></select></label>
           </div>
           <p id="leaderboardStatus" class="leaderboard-status" role="status">Loading scores…</p>
+          <div id="leaderboardGraph" class="leaderboard-graph" aria-label="Top score comparison"></div>
           <ol id="leaderboardList" class="leaderboard-list"></ol>
         </div>
       </section>
@@ -136,7 +149,7 @@
       <label class="setup-field" for="heartLimitSelect">Hearts<select id="heartLimitSelect"><option value="3">♥ ♥ ♥ · Classic</option><option value="1">♥ · Challenge</option><option value="5">♥ ♥ ♥ ♥ ♥ · Relaxed</option><option value="unlimited">∞ · Unlimited</option></select></label>
       <label class="switch-row"><span><strong>Correct answer first</strong><small>Practice only · unranked</small></span><input type="checkbox" id="correctFirstToggle" role="switch"><i aria-hidden="true"></i></label>
       <details class="setup-more"><summary>Ghost racer</summary><label class="switch-row"><span><strong>Race a ghost</strong><small>Your last run or a friend's file</small></span><input type="checkbox" id="ghostToggle" role="switch"><i aria-hidden="true"></i></label><div class="ghost-upload"><label for="ghostFile" class="small-button">Import run</label><input id="ghostFile" type="file" accept="application/json,.json"><span id="ghostFileName">No file chosen</span></div></details>
-      <p class="setup-note" id="setupNote">Ranked scores use your chosen hearts category.</p>
+      <p class="setup-note" id="setupNote">Complete all questions to join the public board.</p>
       <button type="submit" class="button button-primary setup-start">Start playing <span aria-hidden="true">↗</span></button>
     </form>
   </dialog>

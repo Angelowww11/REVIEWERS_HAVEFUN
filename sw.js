@@ -1,5 +1,5 @@
-const CACHE_NAME = 'packet-party-v3';
-const CORE_FILES = ['./', './index.html', './styles.css', './app.js', './questions.json'];
+const CACHE_NAME = 'packet-party-v4';
+const CORE_FILES = ['./', './index.html', './styles.css', './app.js', './ambient.js', './questions.json', './explanations.json', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
