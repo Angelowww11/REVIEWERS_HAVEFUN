@@ -1,12 +1,12 @@
-/* Solo progress stays in this browser. Live rooms use the room API. */
+/* Solo progress stays in this browser; ranked scores and live rooms use the API. */
 const $ = id => document.getElementById(id);
 const modeInfo = {
-  all: { name: 'All questions', eyebrow: 'COMPLETE DECK', description: 'Play the complete deck in its original order.' },
-  shuffle: { name: 'Shuffle run', eyebrow: 'FRESH EACH TIME', description: 'Play every question in a new order.' },
-  adaptive: { name: 'Level up', eyebrow: '20 QUESTION SPRINT', description: 'The original questions get longer when you are answering quickly.' },
-  blitz: { name: 'Boss blitz', eyebrow: 'BEAT THE CLOCK', description: 'Survive 15 questions while each countdown gets shorter.' },
-  matching: { name: 'Match maker', eyebrow: 'TAP TO PAIR', description: 'Connect 12 short question cards to their original answers.' },
-  typing: { name: 'Type it out', eyebrow: 'NO CHOICES', description: 'Recall short original answers without seeing the choices.' }
+  all: { name: 'All questions', eyebrow: 'COMPLETE DECK', description: 'The full deck, in order.' },
+  shuffle: { name: 'Shuffle run', eyebrow: 'FRESH EACH TIME', description: 'The full deck, reshuffled.' },
+  adaptive: { name: 'Level up', eyebrow: '20 QUESTION SPRINT', description: '20 questions that respond to your pace.' },
+  blitz: { name: 'Boss blitz', eyebrow: 'BEAT THE CLOCK', description: '15 questions against the clock.' },
+  matching: { name: 'Match maker', eyebrow: 'TAP TO PAIR', description: 'Pair questions with answers.' },
+  typing: { name: 'Type it out', eyebrow: 'NO CHOICES', description: 'Answer from memory.' }
 };
 const quotes = [
   'One packet at a time', 'Small wins add up', 'Your next answer is a fresh start',
@@ -95,12 +95,14 @@ function burst() {
   }
 }
 function updateSoundButton() { const button = $('soundButton'); button.setAttribute('aria-pressed', String(app.soundOn)); button.setAttribute('aria-label', `Turn sound ${app.soundOn ? 'off' : 'on'}`); button.title = `Sound ${app.soundOn ? 'on' : 'off'}`; }
-function updateStats() { $('headerBest').textContent = formatNumber(app.stats.bestStreak); $('homeBest').textContent = formatNumber(app.stats.bestStreak); $('runsCount').textContent = formatNumber(app.stats.runs); $('totalCorrect').textContent = formatNumber(app.stats.correct); }
+function updateStats() { $('headerBest').textContent = formatNumber(app.stats.bestStreak); $('runsCount').textContent = formatNumber(app.stats.runs); }
 function setView(view) {
   app.view = view;
-  for (const id of ['home', 'bank', 'game', 'live', 'result']) $(`${id}View`).hidden = id !== view;
+  document.body.dataset.view = view;
+  for (const id of ['home', 'bank', 'leaderboard', 'game', 'live', 'result']) $(`${id}View`).hidden = id !== view;
   document.querySelectorAll('.nav-link').forEach(button => { const active = button.dataset.view === view; button.classList.toggle('is-active', active); if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
   if (view === 'bank') renderBank();
+  if (view === 'leaderboard') loadLeaderboard();
   scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
 }
 
@@ -112,8 +114,6 @@ function renderHome() {
   updateStats();
   const ticker = [...quotes, ...quotes].map(q => `<span><b>✳</b>${escapeHTML(q)}</span>`).join('');
   $('quoteTrack').innerHTML = ticker;
-  let index = 0;
-  setInterval(() => { index = (index + 1) % quotes.length; $('motivationText').textContent = quotes[index] + '.'; }, 13000);
   const sourceSelect = $('bankSource');
   [...sources].sort((a, b) => { const an = +(a.match(/\d+/)?.[0] || 0), bn = +(b.match(/\d+/)?.[0] || 0); return an - bn; }).forEach(source => { const option = document.createElement('option'); option.value = source; option.textContent = source.replace(/\.html$/i, ''); sourceSelect.append(option); });
   if (!sources.size) sourceSelect.parentElement.hidden = true;
@@ -149,10 +149,16 @@ function openSetup(mode) {
   $('setupTitle').textContent = info.name; $('setupDescription').textContent = info.description;
   const count = mode === 'typing' ? Math.min(20, typingPool().length) : mode === 'matching' ? Math.min(12, matchingPool().length) : mode === 'adaptive' ? Math.min(20, app.questions.length) : mode === 'blitz' ? Math.min(15, app.questions.length) : app.questions.length;
   $('setupQuestionCount').textContent = `${count} questions`;
+  $('heartLimitSelect').value = String(readJSON('pp_heart_limit', '3'));
+  if (!['1', '3', '5', 'unlimited'].includes($('heartLimitSelect').value)) $('heartLimitSelect').value = '3';
   $('correctFirstToggle').checked = readJSON('pp_correct_first', false);
   $('correctFirstToggle').closest('.switch-row').hidden = mode === 'typing' || mode === 'matching';
-  $('setupNote').textContent = mode === 'blitz' ? 'Freeze Time unlocks during a streak. The clock starts when a question appears.' : 'Your progress is saved on this device.';
+  updateSetupRankNote();
   $('setupDialog').showModal();
+}
+function updateSetupRankNote() {
+  const practice = !$('correctFirstToggle').closest('.switch-row').hidden && $('correctFirstToggle').checked;
+  $('setupNote').textContent = practice ? 'Practice mode · this score will not enter leaderboards.' : 'Ranked scores use your chosen hearts category.';
 }
 function typingPool() { return app.questions.filter(q => q.correctAnswers.length === 1 && q.correctAnswers[0].length <= 52 && !hasImage(q)); }
 function matchingPool() {
@@ -167,6 +173,8 @@ function prepareDifficulty() {
 function complexity(q) { return String(q.question || '').length + (q.options || []).reduce((sum, option) => sum + String(option).length * .2, 0) + (hasImage(q) ? 55 : 0); }
 function startGame() {
   const mode = app.mode; writeJSON('pp_correct_first', $('correctFirstToggle').checked);
+  const heartLimit = ['1', '3', '5', 'unlimited'].includes($('heartLimitSelect').value) ? $('heartLimitSelect').value : '3';
+  writeJSON('pp_heart_limit', heartLimit);
   const questions = app.questions;
   let order = mode === 'all' ? [...questions] : mode === 'shuffle' ? shuffle(questions) : mode === 'typing' ? shuffle(typingPool()).slice(0, 20) : mode === 'matching' ? matchingPool().slice(0, 12) : mode === 'blitz' ? shuffle(questions).slice(0, 15) : [];
   if (mode === 'matching' && order.length < 4) { toast('Not enough matching pairs in this deck.'); return; }
@@ -180,11 +188,11 @@ function startGame() {
   }
   app.game = {
     mode, order, remaining: mode === 'adaptive' ? shuffle(questions) : [], total, completed: 0, current: null,
-    score: 0, streak: 0, bestStreak: 0, correct: 0, attempts: 0, hearts: 3, missed: [], selected: new Set(),
+    score: 0, streak: 0, bestStreak: 0, correct: 0, attempts: 0, hearts: heartLimit === 'unlimited' ? Infinity : Number(heartLimit), heartLimit, missed: [], selected: new Set(),
     answered: false, wager: 0, hiddenChoices: new Set(), hintStep: 0, coachOpen: false,
     unlocked: { fifty: false, shield: false, freeze: false }, used: { fifty: false, shield: false, freeze: false }, activeShield: false,
     startedAt: performance.now(), questionAt: performance.now(), timerLast: performance.now(), remainingTime: 0, freezeUntil: 0,
-    events: [], ghost, firstCorrect: $('correctFirstToggle').checked, matchPairs: [], matchChoice: { left: null, right: null }
+    events: [], ghost, firstCorrect: !['typing', 'matching'].includes(mode) && $('correctFirstToggle').checked, matchPairs: [], matchChoice: { left: null, right: null }
   };
   $('gameModeEyebrow').textContent = modeInfo[mode].eyebrow; $('gameModeName').textContent = modeInfo[mode].name;
   $('ghostBadge').hidden = !ghost;
@@ -218,7 +226,7 @@ function nextQuestion() {
 }
 function renderWager() {
   const g = app.game;
-  $('gameContent').innerHTML = `<div class="wager-card"><div class="wager-coin" aria-hidden="true">◉</div><span class="section-kicker" style="color:#686cbb">HIGH STAKES ROUND</span><h2>Wager your points?</h2><p>A tougher original question is coming. Pick a stake before you see it. Win extra points or lose your wager.</p><span class="wager-balance">Current score: ${formatNumber(g.score)}</span><div class="wager-options"><button type="button" data-wager="0">Play safe</button><button type="button" data-wager="25">25% stake</button><button type="button" data-wager="50">50% stake</button></div></div>`;
+  $('gameContent').innerHTML = `<div class="wager-card"><div class="wager-coin" aria-hidden="true">◉</div><span class="section-kicker" style="color:#686cbb">HIGH STAKES ROUND</span><h2>Wager points?</h2><p>Win bonus points or lose your stake.</p><span class="wager-balance">Score: ${formatNumber(g.score)}</span><div class="wager-options"><button type="button" data-wager="0">No wager</button><button type="button" data-wager="25">25%</button><button type="button" data-wager="50">50%</button></div></div>`;
   announce('High stakes question. Choose a wager before the question appears.');
 }
 function optionOrder(q, firstCorrect) {
@@ -332,7 +340,7 @@ function resolveAnswer(correct, response = '') {
   const input = $('answerInput'); if (input) { input.disabled = true; input.classList.add(correct ? 'is-correct' : 'is-wrong'); }
   document.querySelectorAll('.power-button,.hint-button').forEach(button => { button.disabled = true; });
   $('answerAction').disabled = false; $('answerAction').dataset.action = 'next'; $('answerAction').textContent = g.hearts <= 0 || g.completed >= g.total ? 'See results ↗' : 'Next question ↗';
-  announce(`${correct ? 'Correct' : 'Incorrect'}. ${correct ? points + ' points earned.' : 'Correct answer: ' + answerText(q)} ${g.hearts} hearts remain.`);
+  announce(`${correct ? 'Correct' : 'Incorrect'}. ${correct ? points + ' points earned.' : 'Correct answer: ' + answerText(q)} ${heartsRemaining(g)} remain.`);
   if (g.mode === 'blitz' && correct) setTimeout(() => { if (app.game === g && g.answered && app.view === 'game') nextQuestion(); }, 1000);
 }
 function tick() {
@@ -346,10 +354,11 @@ function tick() {
   updateHUD();
 }
 function elapsedTime(ms) { const seconds = Math.floor(ms / 1000); return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`; }
+function heartsRemaining(g) { return g.heartLimit === 'unlimited' ? 'unlimited hearts' : `${g.hearts} heart${g.hearts === 1 ? '' : 's'}`; }
 function updateHUD() {
   const g = app.game; if (!g) return;
-  $('heartsDisplay').textContent = '♥ '.repeat(g.hearts) + '♡ '.repeat(3 - g.hearts);
-  $('heartsDisplay').setAttribute('aria-label', `${g.hearts} hearts remaining`);
+  $('heartsDisplay').textContent = g.heartLimit === 'unlimited' ? '∞' : '♥ '.repeat(g.hearts) + '♡ '.repeat(Number(g.heartLimit) - g.hearts);
+  $('heartsDisplay').setAttribute('aria-label', `${heartsRemaining(g)} remaining`);
   $('streakDisplay').textContent = `⚡ ${g.streak}`; $('scoreDisplay').textContent = formatNumber(g.score);
   $('timerDisplay').textContent = g.mode === 'blitz' ? (performance.now() < g.freezeUntil ? `❄ ${Math.ceil(g.remainingTime)}s` : `${Math.ceil(g.remainingTime)}s`) : elapsedTime(performance.now() - g.startedAt);
   $('timerDisplay').parentElement.classList.toggle('is-urgent', g.mode === 'blitz' && g.remainingTime <= 4 && !g.answered);
@@ -374,7 +383,7 @@ function renderMatchBoard() {
   const group = g.order.slice(g.completed, g.completed + Math.min(4, g.total - g.completed));
   g.matchPairs = group.map(q => ({ q, matched: false })); g.matchChoice = { left: null, right: null };
   const answers = shuffle(group);
-  $('gameContent').innerHTML = `<div class="match-card"><span class="question-tag">MATCH MAKER · ROUND ${Math.floor(g.completed / 4) + 1}</span><h2>Connect the dots.</h2><p>Tap a question, then its answer. Each correct pair earns points.</p><div class="match-grid"><div class="match-column"><h3>QUESTIONS</h3>${group.map(q => `<button type="button" class="match-option" data-match-side="left" data-match-id="${q.id}">${escapeHTML(q.question)}</button>`).join('')}</div><div class="match-column"><h3>ANSWERS</h3>${answers.map(q => `<button type="button" class="match-option" data-match-side="right" data-match-id="${q.id}">${escapeHTML(answerText(q))}</button>`).join('')}</div></div></div>`;
+  $('gameContent').innerHTML = `<div class="match-card"><span class="question-tag">MATCH MAKER · ROUND ${Math.floor(g.completed / 4) + 1}</span><h2>Connect the dots.</h2><p>Tap a question, then its answer.</p><div class="match-grid"><div class="match-column"><h3>QUESTIONS</h3>${group.map(q => `<button type="button" class="match-option" data-match-side="left" data-match-id="${q.id}">${escapeHTML(q.question)}</button>`).join('')}</div><div class="match-column"><h3>ANSWERS</h3>${answers.map(q => `<button type="button" class="match-option" data-match-side="right" data-match-id="${q.id}">${escapeHTML(answerText(q))}</button>`).join('')}</div></div></div>`;
   announce(`Match maker round ${Math.floor(g.completed / 4) + 1}. Match four questions with their answers.`);
   updateHUD();
 }
@@ -399,7 +408,7 @@ function handleMatchClick(button) {
     g.attempts++; g.hearts = Math.max(0, g.hearts - 1); g.streak = 0; playTone('bad');
     g.events.push({ t: Math.round(performance.now() - g.startedAt), score: g.score, completed: g.completed, correct: false, responseMs: 0 });
     left.classList.add('is-error'); right.classList.add('is-error');
-    toast('Not a match. Try another connection.'); announce(`Not a match. ${g.hearts} hearts remain.`);
+    toast('Not a match. Try another connection.'); announce(`Not a match. ${heartsRemaining(g)} remain.`);
     setTimeout(() => { left?.classList.remove('is-error', 'is-selected'); right?.classList.remove('is-error', 'is-selected'); if (g.hearts <= 0 && app.game === g) finishGame(); }, 480);
   }
   g.matchChoice = { left: null, right: null }; updateHUD();
@@ -410,15 +419,62 @@ function validGhost(record) {
 function finishGame() {
   const g = app.game; if (!g || app.view === 'result') return;
   clearInterval(app.timer); app.timer = null;
-  const duration = Math.round(performance.now() - g.startedAt);
+  const duration = Math.max(1, Math.round(performance.now() - g.startedAt));
   const record = { version: 1, mode: g.mode, total: g.total, completed: g.completed, score: g.score, duration, events: g.events };
   writeJSON(`pp_ghost_${g.mode}`, record);
   app.stats.runs++; app.stats.correct += g.correct; app.stats.bestStreak = Math.max(app.stats.bestStreak, g.bestStreak); app.stats.bestScore = Math.max(app.stats.bestScore, g.score); writeJSON('pp_stats', app.stats); updateStats();
-  g.record = record;
+  g.record = record; g.scoreSubmitted = false;
   const won = g.completed === g.total && g.hearts > 0;
   const accuracy = g.attempts ? Math.round((g.correct / g.attempts) * 100) : 0;
-  $('resultContent').innerHTML = `<div class="result-card"><div class="result-burst" aria-hidden="true">✳</div><span class="section-kicker" style="color:#676ac0">RUN COMPLETE</span><h1>${won ? 'You cleared the deck!' : 'One more run?'} </h1><p>${won ? 'That was a clean finish. Your next personal best is waiting.' : 'Every attempt makes the next answer easier. Your progress is saved here.'}</p><div class="result-metrics"><div><strong>${formatNumber(g.score)}</strong><span>POINTS</span></div><div><strong>${accuracy}%</strong><span>ACCURACY</span></div><div><strong>${g.bestStreak}</strong><span>BEST STREAK</span></div><div><strong>${elapsedTime(duration)}</strong><span>TIME</span></div></div><div class="result-actions"><button type="button" class="button button-primary" data-result="again">Play again ↗</button><button type="button" class="button button-outline" data-result="bank">Browse questions</button><button type="button" class="button button-outline" data-result="export">Export ghost ↓</button></div>${g.missed.length ? `<div class="review-list"><h2>Worth another look</h2>${g.missed.slice(0, 8).map(q => `<div class="review-item"><strong>#${q.id} ${escapeHTML(q.question)}</strong><span>Answer: ${escapeHTML(answerText(q))}</span></div>`).join('')}</div>` : ''}<p class="result-note">Ghost files store your time and score only. Share a file to race a friend offline.</p></div>`;
+  const savedName = readJSON('pp_leaderboard_name', readJSON('pp_live_name', ''));
+  const scoreForm = g.firstCorrect
+    ? '<p class="rank-note">Practice run · correct answer first is unranked.</p>'
+    : g.score <= 0
+      ? '<p class="rank-note">Earn points to post a score.</p>'
+      : `<form id="scoreSubmitForm" class="score-submit"><label for="scoreName">Post to ${escapeHTML(modeInfo[g.mode].name)} · ${g.heartLimit === 'unlimited' ? 'Unlimited hearts' : `${g.heartLimit} heart${g.heartLimit === '1' ? '' : 's'}`}</label><div><input id="scoreName" maxlength="24" minlength="2" value="${escapeHTML(savedName)}" placeholder="Your name" autocomplete="nickname" required><button type="submit" class="button button-primary">Post score ↗</button></div><small>Your name and score will be public.</small></form>`;
+  $('resultContent').innerHTML = `<div class="result-card"><div class="result-burst" aria-hidden="true">✳</div><span class="section-kicker">RUN COMPLETE</span><h1>${won ? 'Deck cleared!' : 'Nice run.'}</h1><div class="result-metrics"><div><strong>${formatNumber(g.score)}</strong><span>POINTS</span></div><div><strong>${accuracy}%</strong><span>ACCURACY</span></div><div><strong>${g.bestStreak}</strong><span>BEST STREAK</span></div><div><strong>${elapsedTime(duration)}</strong><span>TIME</span></div></div>${scoreForm}<div class="result-actions"><button type="button" class="button button-primary" data-result="again">Play again ↗</button><button type="button" class="button button-outline" data-result="leaderboard">Leaderboards</button><button type="button" class="button button-outline" data-result="export">Export ghost ↓</button></div>${g.missed.length ? `<details class="review-details"><summary>Review missed questions (${g.missed.length})</summary><div class="review-list">${g.missed.slice(0, 8).map(q => `<div class="review-item"><strong>#${q.id} ${escapeHTML(q.question)}</strong><span>Answer: ${escapeHTML(answerText(q))}</span></div>`).join('')}</div></details>` : ''}</div>`;
   setView('result'); announce(`Run complete. ${g.score} points, ${accuracy} percent accuracy.`);
+}
+let leaderboardRequest = 0;
+async function loadLeaderboard() {
+  const mode = $('leaderboardMode').value, hearts = $('leaderboardHearts').value;
+  const request = ++leaderboardRequest;
+  $('leaderboardStatus').textContent = 'Loading scores…';
+  $('leaderboardList').innerHTML = '';
+  try {
+    const response = await fetch(`/api/leaderboard?mode=${encodeURIComponent(mode)}&hearts=${encodeURIComponent(hearts)}`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not load scores.');
+    if (request !== leaderboardRequest) return;
+    const entries = Array.isArray(data.entries) ? data.entries : [];
+    $('leaderboardStatus').textContent = entries.length ? `${entries.length} ranked run${entries.length === 1 ? '' : 's'}` : 'No scores here yet. Be the first!';
+    $('leaderboardList').innerHTML = entries.map((entry, index) => `<li class="leaderboard-row"><span class="leaderboard-rank">${index + 1}</span><strong>${escapeHTML(entry.name || 'Player')}</strong><span class="leaderboard-detail">${Number(entry.correct) || 0}/${Number(entry.total) || 0} right · ${elapsedTime(Number(entry.duration) || 0)}</span><b>${formatNumber(entry.score)}</b></li>`).join('');
+  } catch (error) {
+    if (request !== leaderboardRequest) return;
+    $('leaderboardStatus').textContent = error.name === 'TimeoutError' ? 'Scores took too long to load. Try another category.' : (error.message || 'Could not load scores.');
+  }
+}
+async function submitSoloScore() {
+  const g = app.game, form = $('scoreSubmitForm');
+  if (!g || !form || g.firstCorrect || g.scoreSubmitted || !g.record || g.score <= 0) return;
+  const name = $('scoreName').value.trim().slice(0, 24);
+  if (name.length < 2) { toast('Use a name with at least 2 characters.'); return; }
+  const button = form.querySelector('button[type="submit"]'); button.disabled = true;
+  try {
+    const response = await fetch('/api/leaderboard', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ name, mode: g.mode, hearts: g.heartLimit, score: g.score, correct: g.correct, total: g.total, duration: g.record.duration, firstCorrect: false }),
+      signal: AbortSignal.timeout(12000)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not post your score.');
+    g.scoreSubmitted = true; writeJSON('pp_leaderboard_name', name);
+    form.outerHTML = '<div class="rank-saved">✓ Score posted to the leaderboard.</div>';
+    toast('Score posted!');
+  } catch (error) {
+    toast(error.name === 'TimeoutError' ? 'Posting timed out. Try again.' : (error.message || 'Could not post your score.'));
+    button.disabled = false;
+  }
 }
 function exportGhost() {
   const record = app.game?.record; if (!record) return;
@@ -442,12 +498,13 @@ function attachEvents() {
   $('brandButton').addEventListener('click', () => setView('home'));
   document.querySelectorAll('.nav-link').forEach(button => button.addEventListener('click', () => { if (app.game && app.view === 'game') clearInterval(app.timer); setView(button.dataset.view); }));
   $('heroStart').addEventListener('click', () => openSetup('shuffle'));
-  $('heroBrowse').addEventListener('click', () => setView('bank'));
-  $('progressBrowse').addEventListener('click', () => setView('bank'));
   document.querySelectorAll('.mode-card').forEach(button => button.addEventListener('click', () => openSetup(button.dataset.mode)));
   $('soundButton').addEventListener('click', () => { app.soundOn = !app.soundOn; writeJSON('pp_sound', app.soundOn); updateSoundButton(); if (app.soundOn) playTone('click'); });
   $('closeSetup').addEventListener('click', () => $('setupDialog').close());
   $('setupForm').addEventListener('submit', event => { event.preventDefault(); $('setupDialog').close(); startGame(); });
+  $('correctFirstToggle').addEventListener('change', updateSetupRankNote);
+  $('leaderboardMode').addEventListener('change', loadLeaderboard);
+  $('leaderboardHearts').addEventListener('change', loadLeaderboard);
   $('ghostFile').addEventListener('change', async event => {
     const file = event.target.files?.[0]; if (!file) return;
     if (file.size > 1000000) { toast('That ghost file is too large.'); return; }
@@ -486,7 +543,8 @@ function attachEvents() {
   });
   $('gameContent').addEventListener('input', event => { if (event.target.id === 'answerInput') $('answerAction').disabled = !event.target.value.trim(); });
   $('gameContent').addEventListener('keydown', event => { if (event.target.id === 'answerInput' && event.key === 'Enter') { event.preventDefault(); checkAnswer(); } });
-  $('resultContent').addEventListener('click', event => { const action = event.target.closest('[data-result]')?.dataset.result; if (action === 'again') openSetup(app.mode); else if (action === 'bank') setView('bank'); else if (action === 'export') exportGhost(); });
+  $('resultContent').addEventListener('click', event => { const action = event.target.closest('[data-result]')?.dataset.result; if (action === 'again') openSetup(app.mode); else if (action === 'leaderboard') { $('leaderboardMode').value = app.game?.mode || 'adaptive'; $('leaderboardHearts').value = app.game?.heartLimit || '3'; setView('leaderboard'); } else if (action === 'export') exportGhost(); });
+  $('resultContent').addEventListener('submit', event => { if (event.target.id === 'scoreSubmitForm') { event.preventDefault(); submitSoloScore(); } });
   document.addEventListener('keydown', event => {
     if (app.view !== 'game' || !app.game || event.target.matches('input, textarea, select') || $('setupDialog').open) return;
     if (event.key >= '1' && event.key <= '9') { const choice = document.querySelector(`[data-choice-index="${+event.key - 1}"]`); if (choice && !choice.disabled) choice.click(); }
@@ -495,7 +553,7 @@ function attachEvents() {
 }
 const live = {
   code: null, token: null, playerId: null, room: null, name: '', serverOffset: 0,
-  pollTimer: null, clockTimer: null, fetching: false, pendingActions: new Set(),
+  pollTimer: null, clockTimer: null, fetching: false, lastPollAt: 0, pendingActions: new Set(),
   requestSeq: 0, appliedSeq: 0, stageSignature: '', playersSignature: '', messagesSignature: '',
   roundKey: '', submitted: false, selected: new Set(), seenReactions: new Set(),
   sawReactions: false, revealKey: '', lastQuestion: null
@@ -542,6 +600,7 @@ function liveClearSession() {
   clearInterval(live.pollTimer); clearInterval(live.clockTimer);
   live.pollTimer = null; live.clockTimer = null;
   live.code = null; live.token = null; live.playerId = null; live.room = null;
+  live.lastPollAt = 0;
   live.pendingActions = new Set();
   live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
   live.roundKey = ''; live.submitted = false; live.selected.clear();
@@ -561,6 +620,7 @@ function liveApplyResponse(data, seq) {
 function liveEnter(data, name) {
   if (!data?.token || !data?.room?.code || !data.playerId) throw new Error('The room did not return a player session.');
   live.code = String(data.room.code).toUpperCase(); live.token = data.token; live.playerId = data.playerId; live.name = name;
+  live.lastPollAt = 0;
   live.pendingActions = new Set();
   live.appliedSeq = 0; live.requestSeq = 0; live.room = null;
   live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
@@ -574,7 +634,7 @@ function liveEnter(data, name) {
   setView('live');
   liveApplyResponse(data, 0);
   clearInterval(live.pollTimer); clearInterval(live.clockTimer);
-  live.pollTimer = setInterval(livePoll, 1600);
+  live.pollTimer = setInterval(livePoll, 900);
   live.clockTimer = setInterval(liveUpdateClock, 100);
   liveUpdateClock();
 }
@@ -601,7 +661,10 @@ async function liveJoin() {
   finally { button.disabled = false; }
 }
 async function livePoll() {
-  if (!live.code || live.fetching || live.pendingActions.size) return;
+  if (!live.code || document.hidden || live.fetching || live.pendingActions.size) return;
+  const interval = live.room?.phase === 'finished' ? 10000 : live.room?.phase === 'lobby' ? 1600 : 900;
+  if (Date.now() - live.lastPollAt < interval) return;
+  live.lastPollAt = Date.now();
   live.fetching = true; const seq = ++live.requestSeq; const code = live.code;
   try {
     const data = await liveAPI(`/api/rooms/${encodeURIComponent(code)}`);
@@ -663,13 +726,13 @@ function liveRenderStage() {
   const stage = $('liveStage');
   if (room.phase === 'lobby') {
     const me = liveCurrentPlayer(); const host = room.hostId === live.playerId; const count = room.players?.length || 0;
-    stage.innerHTML = `<span class="live-stage-kicker">WAITING ROOM · ${room.total || 10} QUESTION BATTLE</span><div class="live-lobby-icon" aria-hidden="true">◉</div><h2>${host ? 'Your arena is open.' : 'You are in the arena.'}</h2><p>${host ? 'Share this code. Once a friend joins, you can launch the round.' : 'Ready up, then wait for the host to start the battle.'}</p><div class="live-code-display" aria-label="Room code ${escapeHTML(room.code)}">${escapeHTML(room.code)}</div><div class="live-wait-message">${count < 2 ? 'Waiting for one more player to join…' : `${count} players connected. The round is ready when the host starts.`}</div><div class="live-lobby-bottom"><button type="button" class="button ${me?.ready ? 'button-outline' : 'button-live'}" data-live-action="ready">${me?.ready ? '✓ Ready · tap to undo' : 'Mark me ready'}</button>${host ? `<button type="button" class="button button-primary" data-live-action="start" ${count < 2 ? 'disabled' : ''}>Start battle ↗</button>` : ''}<span class="live-lobby-note">Same questions and timer for everyone.<br>Answers score more when you respond quickly.</span></div>`;
+    stage.innerHTML = `<span class="live-stage-kicker">WAITING ROOM · ${room.total || 10} QUESTIONS</span><h2>${host ? 'Share this code.' : 'You joined!'}</h2><div class="live-code-display" aria-label="Room code ${escapeHTML(room.code)}">${escapeHTML(room.code)}</div><div class="live-wait-message">${count < 2 ? 'Waiting for a friend…' : `${count} players ready to race.`}</div><div class="live-lobby-bottom"><button type="button" class="button ${me?.ready ? 'button-outline' : 'button-live'}" data-live-action="ready">${me?.ready ? '✓ Ready' : 'Mark me ready'}</button>${host ? `<button type="button" class="button button-primary" data-live-action="start" ${count < 2 ? 'disabled' : ''}>Start battle ↗</button>` : ''}<span class="live-lobby-note">Answers reveal when everyone locks in · 25s max</span></div>`;
     return;
   }
   if (room.phase === 'finished') {
     const ranked = [...(room.players || [])].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
     const winner = ranked[0];
-    stage.innerHTML = `<span class="live-stage-kicker">BATTLE COMPLETE · ${room.total || 0} QUESTIONS</span><h2>${winner ? `${escapeHTML(winner.name)} takes the crown!` : 'That is a wrap!'}</h2><p>Every point is on the board. Share a rematch code and go again.</p><div class="live-podium">${ranked.slice(0, 3).map((p, i) => `<div class="live-podium-item"><span aria-hidden="true">${['👑', '🥈', '🥉'][i]}</span><strong>${escapeHTML(p.name)}</strong><small>${formatNumber(p.score)} pts</small></div>`).join('')}</div><button type="button" class="button button-live" data-live-action="new">Set up another room ↗</button>`;
+    stage.innerHTML = `<span class="live-stage-kicker">BATTLE COMPLETE · ${room.total || 0} QUESTIONS</span><h2>${winner ? `${escapeHTML(winner.name)} wins!` : 'Round complete!'}</h2><div class="live-podium">${ranked.slice(0, 3).map((p, i) => `<div class="live-podium-item"><span aria-hidden="true">${['👑', '🥈', '🥉'][i]}</span><strong>${escapeHTML(p.name)}</strong><small>${formatNumber(p.score)} pts</small></div>`).join('')}</div><button type="button" class="button button-live" data-live-action="new">Play again ↗</button>`;
     return;
   }
   const q = room.currentQuestion || live.lastQuestion;
@@ -743,7 +806,6 @@ async function liveResume() {
 }
 function attachLiveEvents() {
   $('heroLive').addEventListener('click', () => setView('live'));
-  $('livePromo').addEventListener('click', () => setView('live'));
   $('liveCreateForm').addEventListener('submit', event => { event.preventDefault(); liveCreate(); });
   $('liveJoinForm').addEventListener('submit', event => { event.preventDefault(); liveJoin(); });
   $('liveJoinCode').addEventListener('input', event => { event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); });

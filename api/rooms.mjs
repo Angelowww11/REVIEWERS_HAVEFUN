@@ -139,22 +139,18 @@ function normalizeAnswer(value) {
 
 function phaseAt(state, now) {
   if (!state.startedAt) return { status: 'lobby', phase: 'lobby', index: 0, endsAt: null };
-  const elapsed = Math.max(0, now - state.startedAt);
-  const index = Math.floor(elapsed / ROUND_MS);
-  if (index >= state.sequence.length) return {
-    status: 'finished', phase: 'finished', index: state.sequence.length,
-    endsAt: null
-  };
-  const offset = elapsed % ROUND_MS;
-  const roundStart = state.startedAt + index * ROUND_MS;
-  if (offset < QUESTION_MS) return {
-    status: 'live', phase: 'question', index,
-    endsAt: roundStart + QUESTION_MS
-  };
-  return {
-    status: 'live', phase: 'reveal', index,
-    endsAt: roundStart + ROUND_MS
-  };
+  for (let index = 0; index < state.sequence.length; index++) {
+    const round = state.sequence[index];
+    const questionEndsAt = round.revealAt ?? state.startedAt + index * ROUND_MS + QUESTION_MS;
+    const revealEndsAt = round.endsAt ?? questionEndsAt + REVEAL_MS;
+    if (now < questionEndsAt) return {
+      status: 'live', phase: 'question', index, endsAt: questionEndsAt
+    };
+    if (now < revealEndsAt) return {
+      status: 'live', phase: 'reveal', index, endsAt: revealEndsAt
+    };
+  }
+  return { status: 'finished', phase: 'finished', index: state.sequence.length, endsAt: null };
 }
 
 function roundQuestion(state, index) {
@@ -338,9 +334,11 @@ function handleStart(room, player, now) {
   if (phaseAt(room, now).status !== 'lobby') throw new ApiError(409, 'The match has already started.');
   if (room.players.length < 2) throw new ApiError(409, 'Invite at least one friend to start.');
   const selected = shuffled(questionBank).slice(0, room.questionCount);
-  room.sequence = selected.map(question => ({
+  room.sequence = selected.map((question, index) => ({
     id: question.id,
-    optionOrder: shuffled(question.options.map((_, index) => index))
+    optionOrder: shuffled(question.options.map((_, optionIndex) => optionIndex)),
+    revealAt: now + index * ROUND_MS + QUESTION_MS,
+    endsAt: now + (index + 1) * ROUND_MS
   }));
   room.startedAt = now;
 }
@@ -353,6 +351,22 @@ function normalizeSubmittedAnswer(value) {
   const trimmed = answers.map(answer => answer.trim()).filter(Boolean);
   if (trimmed.length !== answers.length) throw new ApiError(400, 'Choose an answer before submitting.');
   return Array.isArray(value) ? trimmed : trimmed[0];
+}
+
+function revealIfEveryoneAnswered(room, now) {
+  const time = phaseAt(room, now);
+  if (time.phase !== 'question' || !room.players.length ||
+      !room.players.every(contender => contender.answers[time.index])) return;
+  const round = room.sequence[time.index];
+  const scheduledReveal = round.revealAt ?? room.startedAt + time.index * ROUND_MS + QUESTION_MS;
+  const savedTime = Math.max(0, scheduledReveal - now);
+  round.revealAt = scheduledReveal - savedTime;
+  round.endsAt = (round.endsAt ?? scheduledReveal + REVEAL_MS) - savedTime;
+  for (let index = time.index + 1; index < room.sequence.length; index++) {
+    const laterRound = room.sequence[index];
+    laterRound.revealAt = (laterRound.revealAt ?? room.startedAt + index * ROUND_MS + QUESTION_MS) - savedTime;
+    laterRound.endsAt = (laterRound.endsAt ?? room.startedAt + (index + 1) * ROUND_MS) - savedTime;
+  }
 }
 
 function handleAnswer(room, player, now, body) {
@@ -376,6 +390,7 @@ function handleAnswer(room, player, now, body) {
   const points = correct ? 100 + Math.round((secondsLeft / QUESTION_MS) * 50) + Math.min(player.streak, 5) * 10 : 0;
   player.score += points;
   player.answers[time.index] = { answer, correct, points, at: now };
+  revealIfEveryoneAnswered(room, now);
 }
 
 function handleChat(room, player, now, body) {
@@ -396,9 +411,10 @@ function handleReact(room, player, now, body) {
   room.reactions = room.reactions.filter(reaction => now - reaction.at < 7000).slice(-32);
 }
 
-function handleLeave(room, player) {
+function handleLeave(room, player, now) {
   room.players = room.players.filter(existing => existing.id !== player.id);
   if (room.hostId === player.id) room.hostId = room.players[0]?.id || null;
+  revealIfEveryoneAnswered(room, now);
 }
 
 async function roomAction(code, action, request) {

@@ -24,7 +24,8 @@
       </button>
       <nav class="topnav" aria-label="Main navigation">
         <button type="button" class="nav-link is-active" data-view="home" aria-current="page">Home</button>
-        <button type="button" class="nav-link" data-view="bank">Question bank</button>
+        <button type="button" class="nav-link" data-view="bank">Questions</button>
+        <button type="button" class="nav-link" data-view="leaderboard">Leaderboards</button>
         <button type="button" class="nav-link nav-live" data-view="live"><span class="live-pip" aria-hidden="true"></span> Live arena</button>
       </nav>
       <div class="top-actions">
@@ -39,18 +40,17 @@
       <section id="homeView" class="view home-view">
         <div class="hero">
           <div class="hero-copy">
-            <div class="eyebrow"><span class="status-dot"></span> YOUR NETWORKING STUDY ARCADE</div>
+            <div class="eyebrow"><span class="status-dot"></span> NETWORKING QUIZ ARCADE</div>
             <h1>Make every<br><span class="hero-word">answer</span> count<span class="hero-spark">✳</span></h1>
-            <p class="hero-lede">The complete question pool, turned into a game. Build a streak, beat your best run, and actually enjoy one more round.</p>
+            <p class="hero-lede">Study the real questions. Play solo or race friends.</p>
             <div class="hero-actions">
-              <button type="button" id="heroStart" class="button button-primary">Start a shuffled run <span aria-hidden="true">↗</span></button>
-              <button type="button" id="heroBrowse" class="button button-outline">See every question</button>
+              <button type="button" id="heroStart" class="button button-primary">Play solo <span aria-hidden="true">↗</span></button>
               <button type="button" id="heroLive" class="button button-live">Play with friends <span aria-hidden="true">↗</span></button>
             </div>
             <div class="hero-facts">
-              <div><strong id="questionCount">—</strong><span>verified questions</span></div>
-              <div><strong id="sourceCount">—</strong><span>question pools</span></div>
-              <div><strong id="homeBest">0</strong><span>best streak</span></div>
+              <div><strong id="questionCount">—</strong><span>questions</span></div>
+              <div><strong id="sourceCount">—</strong><span>pools</span></div>
+              <div><strong id="runsCount">0</strong><span>runs played</span></div>
             </div>
           </div>
           <div class="hero-stage" aria-label="Illustration of connected networking cards">
@@ -61,30 +61,22 @@
             <div class="stage-node stage-node-c"><span>03</span><strong>Routing</strong><i></i></div>
             <div class="stage-node stage-node-d"><span>04</span><strong>DHCP</strong><i></i></div>
             <div class="stage-center"><span class="mini-label">YOUR MISSION</span><strong>Connect<br>the dots.</strong><span class="center-arrow" aria-hidden="true">↗</span></div>
-            <div class="stage-pill">+100 XP <span aria-hidden="true">✦</span></div>
           </div>
         </div>
 
-        <div class="section-heading"><div><span class="section-kicker">PICK YOUR PACE</span><h2>Choose a mode</h2></div><p>Every mode uses the original questions and answer keys.</p></div>
+        <div class="section-heading"><div><span class="section-kicker">SOLO PLAY</span><h2>Choose a mode</h2></div></div>
         <div class="mode-grid">
-          <button type="button" class="mode-card mode-all" data-mode="all"><span class="mode-icon" aria-hidden="true">▦</span><span class="mode-tag">COMPLETE DECK</span><strong>All questions</strong><span>Take the full pool in its source order. A proper start-to-finish mission.</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
-          <button type="button" class="mode-card mode-shuffle" data-mode="shuffle"><span class="mode-icon" aria-hidden="true">⤨</span><span class="mode-tag">FRESH EACH TIME</span><strong>Shuffle run</strong><span>Every question, remixed into a new order for a true recall test.</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
-          <button type="button" class="mode-card mode-adaptive" data-mode="adaptive"><span class="mode-icon" aria-hidden="true">↗</span><span class="mode-tag">20 QUESTION SPRINT</span><strong>Level up</strong><span>The questions get longer and tougher when you answer quickly.</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
-          <button type="button" class="mode-card mode-blitz" data-mode="blitz"><span class="mode-icon" aria-hidden="true">⌁</span><span class="mode-tag">BEAT THE CLOCK</span><strong>Boss blitz</strong><span>Survive 15 rapid questions while the timer speeds up.</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
-          <button type="button" class="mode-card mode-matching" data-mode="matching"><span class="mode-icon" aria-hidden="true">◈</span><span class="mode-tag">TAP TO PAIR</span><strong>Match maker</strong><span>Connect four question cards with their answers, fast.</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
-          <button type="button" class="mode-card mode-typing" data-mode="typing"><span class="mode-icon" aria-hidden="true">⌨</span><span class="mode-tag">NO CHOICES</span><strong>Type it out</strong><span>Practice short answers from memory, one key at a time.</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
-        </div>
-
-        <button type="button" id="livePromo" class="live-promo"><span class="live-promo-icon" aria-hidden="true">◉</span><span><small>NEW · LIVE ARENA</small><strong>Bring the whole party.</strong><em>Host a timed room, race the leaderboard, and cheer in chat.</em></span><b aria-hidden="true">↗</b></button>
-
-        <div class="home-bottom">
-          <div class="tip-card"><span class="tip-asterisk" aria-hidden="true">✳</span><div><span class="section-kicker">A LITTLE REMINDER</span><p id="motivationText">You do not need to know it all yet. You just need the next answer.</p></div></div>
-          <div class="progress-card"><span class="section-kicker">YOUR PROGRESS</span><div class="progress-card-row"><strong id="runsCount">0</strong><span>runs played</span><strong id="totalCorrect">0</strong><span>right answers</span></div><button type="button" id="progressBrowse">Find a question to practice <span aria-hidden="true">↗</span></button></div>
+          <button type="button" class="mode-card mode-all" data-mode="all"><span class="mode-icon" aria-hidden="true">▦</span><strong>All questions</strong><span>Original order</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="mode-card mode-shuffle" data-mode="shuffle"><span class="mode-icon" aria-hidden="true">⤨</span><strong>Shuffle run</strong><span>New order each time</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="mode-card mode-adaptive" data-mode="adaptive"><span class="mode-icon" aria-hidden="true">↗</span><strong>Level up</strong><span>20 adaptive questions</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="mode-card mode-blitz" data-mode="blitz"><span class="mode-icon" aria-hidden="true">⌁</span><strong>Boss blitz</strong><span>15 timed questions</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="mode-card mode-matching" data-mode="matching"><span class="mode-icon" aria-hidden="true">◈</span><strong>Match maker</strong><span>Pair questions and answers</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="mode-card mode-typing" data-mode="typing"><span class="mode-icon" aria-hidden="true">⌨</span><strong>Type it out</strong><span>Answer from memory</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
         </div>
       </section>
 
       <section id="bankView" class="view bank-view" hidden>
-        <div class="page-intro"><div><span class="section-kicker">THE WHOLE DECK</span><h1>Question bank<span class="title-period">.</span></h1><p>Browse the original questions and choices. Reveal answers when you are ready.</p></div><span class="count-badge" id="bankCountBadge">— questions</span></div>
+        <div class="page-intro"><div><span class="section-kicker">THE WHOLE DECK</span><h1>Question bank<span class="title-period">.</span></h1></div><span class="count-badge" id="bankCountBadge">— questions</span></div>
         <div class="bank-toolbar">
           <label class="search-field"><span aria-hidden="true">⌕</span><span class="sr-only">Search questions and choices</span><input id="bankSearch" type="search" placeholder="Search a topic, question, or choice…"></label>
           <label class="select-field"><span class="sr-only">Filter by question pool</span><select id="bankSource"><option value="all">All pools</option></select></label>
@@ -94,6 +86,18 @@
         <div class="bank-summary"><span id="bankResultText">Loading questions…</span><button type="button" id="bankShowAll" class="text-button">Show all at once</button></div>
         <div id="bankList" class="bank-list"></div>
         <div class="bank-footer"><button type="button" id="bankMore" class="button button-outline">Show more questions</button></div>
+      </section>
+
+      <section id="leaderboardView" class="view leaderboard-view" hidden>
+        <div class="page-intro"><div><span class="section-kicker">TOP SCORES</span><h1>Leaderboards<span class="title-period">.</span></h1></div></div>
+        <div class="leaderboard-panel">
+          <div class="leaderboard-controls">
+            <label>Mode<select id="leaderboardMode"><option value="adaptive">Level up</option><option value="blitz">Boss blitz</option><option value="shuffle">Shuffle run</option><option value="all">All questions</option><option value="matching">Match maker</option><option value="typing">Type it out</option></select></label>
+            <label>Hearts<select id="leaderboardHearts"><option value="3">3 hearts</option><option value="1">1 heart</option><option value="5">5 hearts</option><option value="unlimited">Unlimited hearts</option></select></label>
+          </div>
+          <p id="leaderboardStatus" class="leaderboard-status" role="status">Loading scores…</p>
+          <ol id="leaderboardList" class="leaderboard-list"></ol>
+        </div>
       </section>
 
       <section id="gameView" class="view game-view" hidden>
@@ -106,10 +110,10 @@
       </section>
 
       <section id="liveView" class="view live-view" hidden>
-        <div class="live-intro"><div><span class="section-kicker"><span class="live-pip" aria-hidden="true"></span> PLAY TOGETHER · LIVE</span><h1>Enter the <span>arena.</span></h1><p>One question at a time. Everyone sees the same clock. Fast, correct answers climb the board.</p></div><div class="live-orbit" aria-hidden="true"><span>⚡</span><span>✳</span><span>◈</span></div></div>
+        <div class="live-intro"><div><span class="section-kicker"><span class="live-pip" aria-hidden="true"></span> PLAY TOGETHER · LIVE</span><h1>Enter the <span>arena.</span></h1></div><div class="live-orbit" aria-hidden="true"><span>⚡</span><span>✳</span><span>◈</span></div></div>
         <div id="liveEntry" class="live-entry">
-          <div class="live-form-card"><span class="live-card-number">01 / HOST</span><h2>Start the party</h2><p>Pick your name and the round length. Invite friends with a room code.</p><form id="liveCreateForm"><label class="live-label" for="liveHostName">Your name</label><input id="liveHostName" class="live-input" maxlength="24" autocomplete="nickname" placeholder="e.g. Packet Ninja" required><label class="live-label" for="liveQuestionCount">Round length</label><select id="liveQuestionCount" class="live-input"><option value="10">10 questions · quick match</option><option value="20">20 questions · full battle</option></select><button type="submit" class="button button-primary live-form-submit">Create room <span aria-hidden="true">↗</span></button></form></div>
-          <div class="live-form-card live-join-card"><span class="live-card-number">02 / JOIN</span><h2>Got a code?</h2><p>Jump into a friend's room and see who knows the deck best.</p><form id="liveJoinForm"><label class="live-label" for="liveGuestName">Your name</label><input id="liveGuestName" class="live-input" maxlength="24" autocomplete="nickname" placeholder="e.g. VLAN Wizard" required><label class="live-label" for="liveJoinCode">Room code</label><input id="liveJoinCode" class="live-input live-code-input" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" required><button type="submit" class="button button-live live-form-submit">Join room <span aria-hidden="true">↗</span></button></form></div>
+          <div class="live-form-card"><span class="live-card-number">HOST</span><h2>Create room</h2><form id="liveCreateForm"><label class="live-label" for="liveHostName">Your name</label><input id="liveHostName" class="live-input" maxlength="24" autocomplete="nickname" placeholder="Packet Ninja" required><label class="live-label" for="liveQuestionCount">Round length</label><select id="liveQuestionCount" class="live-input"><option value="10">10 questions</option><option value="20">20 questions</option></select><button type="submit" class="button button-primary live-form-submit">Create room <span aria-hidden="true">↗</span></button></form></div>
+          <div class="live-form-card live-join-card"><span class="live-card-number">JOIN</span><h2>Join room</h2><form id="liveJoinForm"><label class="live-label" for="liveGuestName">Your name</label><input id="liveGuestName" class="live-input" maxlength="24" autocomplete="nickname" placeholder="VLAN Wizard" required><label class="live-label" for="liveJoinCode">Room code</label><input id="liveJoinCode" class="live-input live-code-input" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" required><button type="submit" class="button button-live live-form-submit">Join room <span aria-hidden="true">↗</span></button></form></div>
         </div>
         <div id="liveRoom" class="live-room" hidden>
           <div class="live-room-top"><button type="button" id="liveLeave" class="text-button">← Leave room</button><div class="live-room-id"><span>ROOM CODE</span><strong id="liveRoomCode">—</strong><button type="button" id="liveCopy" class="live-copy-button">Copy invite link ↗</button></div><span id="liveConnection" class="live-connection">Connecting…</span></div>
@@ -121,18 +125,18 @@
       <section id="resultView" class="view result-view" hidden><div id="resultContent"></div></section>
     </main>
 
-    <footer class="site-footer"><span>Made for the next right answer <span aria-hidden="true">✳</span></span><span>Packet Party · Study at your own pace</span></footer>
+    <footer class="site-footer"><span>Packet Party <span aria-hidden="true">✳</span></span><span>Study at your own pace</span></footer>
   </div>
 
   <dialog id="setupDialog" class="setup-dialog">
     <form method="dialog" id="setupForm">
-      <div class="dialog-head"><span class="section-kicker">READY, PLAYER ONE?</span><button type="button" id="closeSetup" class="icon-button close-button" aria-label="Close">×</button></div>
+      <div class="dialog-head"><span class="section-kicker">SOLO SETUP</span><button type="button" id="closeSetup" class="icon-button close-button" aria-label="Close">×</button></div>
       <h2 id="setupTitle">Shuffle run</h2><p id="setupDescription">Every question in a new order.</p>
-      <div class="setup-statline"><span id="setupQuestionCount">— questions</span><span>♥ 3 hearts</span><span>⚡ streak rewards</span></div>
-      <label class="switch-row"><span><strong>Put the correct choice first</strong><small>For easier review. All correct choices lead when a question has several.</small></span><input type="checkbox" id="correctFirstToggle" role="switch"><i aria-hidden="true"></i></label>
-      <label class="switch-row"><span><strong>Race a ghost</strong><small>Compare with your last run or a friend's exported run.</small></span><input type="checkbox" id="ghostToggle" role="switch"><i aria-hidden="true"></i></label>
-      <div class="ghost-upload"><label for="ghostFile" class="small-button">Import a friend's run</label><input id="ghostFile" type="file" accept="application/json,.json"><span id="ghostFileName">No run imported</span></div>
-      <p class="setup-note" id="setupNote">Your progress is saved on this device.</p>
+      <div class="setup-statline"><span id="setupQuestionCount">— questions</span></div>
+      <label class="setup-field" for="heartLimitSelect">Hearts<select id="heartLimitSelect"><option value="3">♥ ♥ ♥ · Classic</option><option value="1">♥ · Challenge</option><option value="5">♥ ♥ ♥ ♥ ♥ · Relaxed</option><option value="unlimited">∞ · Unlimited</option></select></label>
+      <label class="switch-row"><span><strong>Correct answer first</strong><small>Practice only · unranked</small></span><input type="checkbox" id="correctFirstToggle" role="switch"><i aria-hidden="true"></i></label>
+      <details class="setup-more"><summary>Ghost racer</summary><label class="switch-row"><span><strong>Race a ghost</strong><small>Your last run or a friend's file</small></span><input type="checkbox" id="ghostToggle" role="switch"><i aria-hidden="true"></i></label><div class="ghost-upload"><label for="ghostFile" class="small-button">Import run</label><input id="ghostFile" type="file" accept="application/json,.json"><span id="ghostFileName">No file chosen</span></div></details>
+      <p class="setup-note" id="setupNote">Ranked scores use your chosen hearts category.</p>
       <button type="submit" class="button button-primary setup-start">Start playing <span aria-hidden="true">↗</span></button>
     </form>
   </dialog>

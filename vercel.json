@@ -5,6 +5,9 @@
     "api/rooms.mjs": {
       "includeFiles": "questions.json",
       "regions": ["sin1"]
+    },
+    "api/leaderboard.mjs": {
+      "regions": ["sin1"]
     }
   },
   "rewrites": [

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'packet-party-v2';
+const CACHE_NAME = 'packet-party-v3';
 const CORE_FILES = ['./', './index.html', './styles.css', './app.js', './questions.json'];
 
 self.addEventListener('install', event => {
