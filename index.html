@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171c5b">
+  <meta name="description" content="Turn the networking question pool into an arcade study session: browse every question, shuffle the deck, race the clock, and build a streak.">
+  <title>Packet Party — Networking quiz arcade</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23171c5b'/%3E%3Ccircle cx='18' cy='33' r='7' fill='%23ffb45c'/%3E%3Ccircle cx='46' cy='18' r='7' fill='%23a7f2ed'/%3E%3Ccircle cx='45' cy='47' r='7' fill='%23f58fca'/%3E%3Cpath d='M24 30 40 21M24 36l15 9' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="ambient ambient-a" aria-hidden="true"></div>
+  <div class="ambient ambient-b" aria-hidden="true"></div>
+  <div id="particleLayer" class="particle-layer" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <button type="button" id="brandButton" class="brand" aria-label="Packet Party home">
+        <span class="brand-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>packet<span class="brand-pop">party</span><small>NETWORKING ARCADE</small></span>
+      </button>
+      <nav class="topnav" aria-label="Main navigation">
+        <button type="button" class="nav-link is-active" data-view="home" aria-current="page">Home</button>
+        <button type="button" class="nav-link" data-view="bank">Question bank</button>
+      </nav>
+      <div class="top-actions">
+        <span class="top-streak" title="Your best streak"><span aria-hidden="true">⚡</span> <span id="headerBest">0</span> best</span>
+        <button type="button" id="soundButton" class="icon-button" aria-label="Turn sound on" aria-pressed="false" title="Sound off">♪<span class="sound-slash" aria-hidden="true">/</span></button>
+      </div>
+    </header>
+
+    <div class="quote-strip" aria-hidden="true"><div class="quote-track" id="quoteTrack"></div></div>
+
+    <main id="main">
+      <section id="homeView" class="view home-view">
+        <div class="hero">
+          <div class="hero-copy">
+            <div class="eyebrow"><span class="status-dot"></span> YOUR NETWORKING STUDY ARCADE</div>
+            <h1>Make every<br><span class="hero-word">answer</span> count<span class="hero-spark">✳</span></h1>
+            <p class="hero-lede">The complete question pool, turned into a game. Build a streak, beat your best run, and actually enjoy one more round.</p>
+            <div class="hero-actions">
+              <button type="button" id="heroStart" class="button button-primary">Start a shuffled run <span aria-hidden="true">↗</span></button>
+              <button type="button" id="heroBrowse" class="button button-outline">See every question</button>
+            </div>
+            <div class="hero-facts">
+              <div><strong id="questionCount">—</strong><span>verified questions</span></div>
+              <div><strong id="sourceCount">—</strong><span>question pools</span></div>
+              <div><strong id="homeBest">0</strong><span>best streak</span></div>
+            </div>
+          </div>
+          <div class="hero-stage" aria-label="Illustration of connected networking cards">
+            <div class="stage-glow"></div>
+            <svg class="stage-lines" viewBox="0 0 500 450" fill="none" aria-hidden="true"><path d="M94 202 229 91l156 94M95 205l153 150 137-167M229 91l19 264" stroke="currentColor" stroke-width="3" stroke-dasharray="7 11" stroke-linecap="round"/></svg>
+            <div class="stage-node stage-node-a"><span>01</span><strong>VLANs</strong><i></i></div>
+            <div class="stage-node stage-node-b"><span>02</span><strong>STP</strong><i></i></div>
+            <div class="stage-node stage-node-c"><span>03</span><strong>Routing</strong><i></i></div>
+            <div class="stage-node stage-node-d"><span>04</span><strong>DHCP</strong><i></i></div>
+            <div class="stage-center"><span class="mini-label">YOUR MISSION</span><strong>Connect<br>the dots.</strong><span class="center-arrow" aria-hidden="true">↗</span></div>
+            <div class="stage-pill">+100 XP <span aria-hidden="true">✦</span></div>
+          </div>
+        </div>
+
+        <div class="section-heading"><div><span class="section-kicker">PICK YOUR PACE</span><h2>Choose a mode</h2></div><p>Every mode uses the original questions and answer keys.</p></div>
+        <div class="mode-grid">
+          <button type="button" class="mode-card mode-all" data-mode="all"><span class="mode-icon" aria-hidden="true">▦</span><span class="mode-tag">COMPLETE DECK</span><strong>All questions</strong><span>Take the full pool in its source order. A proper start-to-finish mission.</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="mode-card mode-shuffle" data-mode="shuffle"><span class="mode-icon" aria-hidden="true">⤨</span><span class="mode-tag">FRESH EACH TIME</span><strong>Shuffle run</strong><span>Every question, remixed into a new order for a true recall test.</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="mode-card mode-adaptive" data-mode="adaptive"><span class="mode-icon" aria-hidden="true">↗</span><span class="mode-tag">20 QUESTION SPRINT</span><strong>Level up</strong><span>The questions get longer and tougher when you answer quickly.</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="mode-card mode-blitz" data-mode="blitz"><span class="mode-icon" aria-hidden="true">⌁</span><span class="mode-tag">BEAT THE CLOCK</span><strong>Boss blitz</strong><span>Survive 15 rapid questions while the timer speeds up.</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="mode-card mode-matching" data-mode="matching"><span class="mode-icon" aria-hidden="true">◈</span><span class="mode-tag">TAP TO PAIR</span><strong>Match maker</strong><span>Connect four question cards with their answers, fast.</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="mode-card mode-typing" data-mode="typing"><span class="mode-icon" aria-hidden="true">⌨</span><span class="mode-tag">NO CHOICES</span><strong>Type it out</strong><span>Practice short answers from memory, one key at a time.</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+        </div>
+
+        <div class="home-bottom">
+          <div class="tip-card"><span class="tip-asterisk" aria-hidden="true">✳</span><div><span class="section-kicker">A LITTLE REMINDER</span><p id="motivationText">You do not need to know it all yet. You just need the next answer.</p></div></div>
+          <div class="progress-card"><span class="section-kicker">YOUR PROGRESS</span><div class="progress-card-row"><strong id="runsCount">0</strong><span>runs played</span><strong id="totalCorrect">0</strong><span>right answers</span></div><button type="button" id="progressBrowse">Find a question to practice <span aria-hidden="true">↗</span></button></div>
+        </div>
+      </section>
+
+      <section id="bankView" class="view bank-view" hidden>
+        <div class="page-intro"><div><span class="section-kicker">THE WHOLE DECK</span><h1>Question bank<span class="title-period">.</span></h1><p>Browse the original questions and choices. Reveal answers when you are ready.</p></div><span class="count-badge" id="bankCountBadge">— questions</span></div>
+        <div class="bank-toolbar">
+          <label class="search-field"><span aria-hidden="true">⌕</span><span class="sr-only">Search questions and choices</span><input id="bankSearch" type="search" placeholder="Search a topic, question, or choice…"></label>
+          <label class="select-field"><span class="sr-only">Filter by question pool</span><select id="bankSource"><option value="all">All pools</option></select></label>
+          <label class="select-field"><span class="sr-only">Filter by question type</span><select id="bankType"><option value="all">All types</option><option value="multiple_choice_question">Multiple choice</option><option value="true_false_question">True / false</option><option value="short_answer_question">Short answer</option><option value="favorites">Starred questions</option></select></label>
+          <button type="button" id="revealAllButton" class="small-button" aria-pressed="false">Reveal answers</button>
+        </div>
+        <div class="bank-summary"><span id="bankResultText">Loading questions…</span><button type="button" id="bankShowAll" class="text-button">Show all at once</button></div>
+        <div id="bankList" class="bank-list"></div>
+        <div class="bank-footer"><button type="button" id="bankMore" class="button button-outline">Show more questions</button></div>
+      </section>
+
+      <section id="gameView" class="view game-view" hidden>
+        <div class="game-top"><button type="button" id="leaveGame" class="text-button back-button">← Leave run</button><div class="game-mode-title"><span id="gameModeEyebrow">QUIZ MODE</span><strong id="gameModeName">Shuffle run</strong></div><span id="ghostBadge" class="ghost-badge" hidden>👻 Ghost ready</span></div>
+        <div class="hud"><div class="hud-unit"><span>HEARTS</span><strong id="heartsDisplay" aria-label="3 hearts">♥ ♥ ♥</strong></div><div class="hud-unit"><span>STREAK</span><strong id="streakDisplay">⚡ 0</strong></div><div class="hud-unit"><span>SCORE</span><strong id="scoreDisplay">0</strong></div><div class="hud-unit timer-unit"><span>TIME</span><strong id="timerDisplay">—</strong></div></div>
+        <div class="progress-track" role="progressbar" aria-label="Run progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progressFill"></span></div>
+        <div id="raceTrack" class="race-track" hidden aria-label="Player and ghost progress"><div class="race-lane"><span>YOU</span><div><i id="playerRaceFill"></i></div></div><div class="race-lane"><span>GHOST</span><div><i id="ghostRaceFill"></i></div></div></div>
+        <div class="game-subline"><span id="questionPosition">Question 1 of 20</span><span id="ghostProgress"></span></div>
+        <div id="gameContent" class="game-content"></div>
+      </section>
+
+      <section id="resultView" class="view result-view" hidden><div id="resultContent"></div></section>
+    </main>
+
+    <footer class="site-footer"><span>Made for the next right answer <span aria-hidden="true">✳</span></span><span>Packet Party · Study at your own pace</span></footer>
+  </div>
+
+  <dialog id="setupDialog" class="setup-dialog">
+    <form method="dialog" id="setupForm">
+      <div class="dialog-head"><span class="section-kicker">READY, PLAYER ONE?</span><button type="button" id="closeSetup" class="icon-button close-button" aria-label="Close">×</button></div>
+      <h2 id="setupTitle">Shuffle run</h2><p id="setupDescription">Every question in a new order.</p>
+      <div class="setup-statline"><span id="setupQuestionCount">— questions</span><span>♥ 3 hearts</span><span>⚡ streak rewards</span></div>
+      <label class="switch-row"><span><strong>Put the correct choice first</strong><small>For easier review. All correct choices lead when a question has several.</small></span><input type="checkbox" id="correctFirstToggle" role="switch"><i aria-hidden="true"></i></label>
+      <label class="switch-row"><span><strong>Race a ghost</strong><small>Compare with your last run or a friend's exported run.</small></span><input type="checkbox" id="ghostToggle" role="switch"><i aria-hidden="true"></i></label>
+      <div class="ghost-upload"><label for="ghostFile" class="small-button">Import a friend's run</label><input id="ghostFile" type="file" accept="application/json,.json"><span id="ghostFileName">No run imported</span></div>
+      <p class="setup-note" id="setupNote">Your progress is saved on this device.</p>
+      <button type="submit" class="button button-primary setup-start">Start playing <span aria-hidden="true">↗</span></button>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
+</body>
+</html>
