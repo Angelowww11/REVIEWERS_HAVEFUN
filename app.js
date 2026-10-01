@@ -446,7 +446,7 @@ function finishGame() {
   setView('result'); announce(`Run complete. ${g.score} points, ${accuracy} percent accuracy.`);
 }
 let leaderboardRequest = 0, homeLeaderboardRequest = 0, leaderboardMode = 'all', homeLeaderboardMode = 'all';
-function heartsLabel(value) { return value === 'unlimited' ? '∞ hearts' : `${value} heart${String(value) === '1' ? '' : 's'}`; }
+function heartsLabel(value) { return value === 'unlimited' ? 'Unlimited hearts' : `${value} heart${String(value) === '1' ? '' : 's'}`; }
 function renderLeaderboardModeTabs() {
   for (const [container, selected] of [[$('homeLeadersModes'), homeLeaderboardMode], [$('leaderboardModes'), leaderboardMode]]) {
     container.innerHTML = rankedModes.map(mode => `<button type="button" data-board-mode="${mode}" aria-pressed="${mode === selected}">${escapeHTML(modeInfo[mode].name)}</button>`).join('');
@@ -468,9 +468,9 @@ async function loadHomeLeaderboard() {
     if (!response.ok) throw new Error('Scores unavailable');
     const data = await response.json(), entries = Array.isArray(data.entries) ? data.entries.slice(0, 3) : [];
     if (request !== homeLeaderboardRequest) return;
-    $('homeLeadersList').innerHTML = entries.length ? entries.map((entry, index) => `<div class="home-leader"><span class="home-rank">${index + 1}</span><strong>${escapeHTML(entry.name || 'Player')}</strong><small>${heartsLabel(entry.hearts)}</small><b>${formatNumber(entry.score)} <em>pts</em></b></div>`).join('') : `<div class="home-leaders-empty"><strong>First place is open.</strong><span>No ${escapeHTML(modeInfo[mode].name)} score yet.</span><button type="button" data-home-play>Play this mode ↗</button></div>`;
+    $('homeLeadersList').innerHTML = entries.length ? entries.map((entry, index) => `<div class="home-leader"><span class="home-rank">${index + 1}</span><strong>${escapeHTML(entry.name || 'Player')}</strong><small>${heartsLabel(entry.hearts)}</small><b>${formatNumber(entry.score)} <em>pts</em></b></div>`).join('') + Array.from({ length: 3 - entries.length }, (_, index) => `<div class="home-leader is-open"><span class="home-rank">${entries.length + index + 1}</span><strong>Open spot</strong><small>Your name could go here</small><button type="button" data-home-play>Challenge ↗</button></div>`).join('') : `<div class="home-leaders-empty"><strong>First place is open.</strong><span>No ${escapeHTML(modeInfo[mode].name)} score yet.</span><button type="button" data-home-play>Play this mode ↗</button></div>`;
     const max = Math.max(1, ...entries.map(entry => Number(entry.score) || 0));
-    $('homeLeadersChart').innerHTML = entries.length ? entries.map((entry, index) => `<div class="home-chart-row"><span>${index + 1}</span><i style="width:${Math.max(3, (Number(entry.score) || 0) / max * 100)}%"></i><b>${formatNumber(entry.score)}</b></div>`).join('') : emptyHomeChart('First score starts the race.');
+    $('homeLeadersChart').innerHTML = entries.length ? Array.from({ length: 3 }, (_, index) => entries[index] ? `<div class="home-chart-row"><span>${index + 1}</span><i style="width:${Math.max(3, (Number(entries[index].score) || 0) / max * 100)}%"></i><b>${formatNumber(entries[index].score)}</b></div>` : `<div class="home-chart-row is-open"><span>${index + 1}</span><i></i><b>Open</b></div>`).join('') : emptyHomeChart('First score starts the race.');
   } catch { if (request === homeLeaderboardRequest) { $('homeLeadersList').innerHTML = '<div class="home-leaders-empty"><strong>Scores are unavailable.</strong><span>You can still play this mode.</span><button type="button" data-home-play>Play this mode ↗</button></div>'; $('homeLeadersChart').innerHTML = emptyHomeChart('Scores will appear here when connected.'); } }
 }
 async function loadLeaderboard() {
