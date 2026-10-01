@@ -71,20 +71,21 @@
           </div>
         </div>
 
+        <section class="home-leaders" aria-labelledby="homeLeadersTitle">
+          <div class="home-leaders-heading"><div><span class="section-kicker">THE SCOREBOARD</span><h2 id="homeLeadersTitle">Who’s leading<span class="title-period">?</span></h2></div><button type="button" id="homeLeaderboardLink" class="small-button">Full leaderboard ↗</button></div>
+          <div id="homeLeadersModes" class="home-leaders-modes" role="group" aria-label="Preview leaderboard mode"></div>
+          <div class="home-leaders-body"><div class="home-leaders-feature"><span id="homeLeadersModeLabel" class="home-leaders-mode-label">ALL QUESTIONS</span><div id="homeLeadersList" class="home-leaders-list" aria-live="polite">Loading top scores…</div></div><div class="home-leaders-chart"><div class="home-chart-title"><strong>Score race</strong><span>Top 3</span></div><div id="homeLeadersChart" class="home-chart-bars" aria-label="Top three score comparison"></div></div></div>
+        </section>
+
         <div class="section-heading"><div><span class="section-kicker">SOLO PLAY</span><h2>Choose a mode</h2></div></div>
         <div class="mode-grid">
-          <button type="button" class="mode-card mode-all" data-mode="all"><span class="mode-icon" aria-hidden="true">▦</span><strong>All questions</strong><span>Original order</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
-          <button type="button" class="mode-card mode-shuffle" data-mode="shuffle"><span class="mode-icon" aria-hidden="true">⤨</span><strong>Shuffle run</strong><span>New order each time</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
-          <button type="button" class="mode-card mode-adaptive" data-mode="adaptive"><span class="mode-icon" aria-hidden="true">↗</span><strong>Level up</strong><span>20 adaptive questions</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
-          <button type="button" class="mode-card mode-blitz" data-mode="blitz"><span class="mode-icon" aria-hidden="true">⌁</span><strong>Boss blitz</strong><span>15 timed questions</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
-          <button type="button" class="mode-card mode-matching" data-mode="matching"><span class="mode-icon" aria-hidden="true">◈</span><strong>Match maker</strong><span>Pair questions and answers</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
-          <button type="button" class="mode-card mode-typing" data-mode="typing"><span class="mode-icon" aria-hidden="true">⌨</span><strong>Type it out</strong><span>Answer from memory</span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="mode-card mode-all" data-mode="all"><span class="mode-card-top"><span class="mode-icon" aria-hidden="true">▦</span><span class="mode-card-status">RANKED</span></span><span class="mode-visual visual-stack" aria-hidden="true"><i></i><i></i><i></i></span><span class="mode-card-copy"><strong>All questions</strong><small>Every card, original order</small></span><span class="mode-card-bottom"><em>Full deck</em><span>Play ↗</span></span></button>
+          <button type="button" class="mode-card mode-shuffle" data-mode="shuffle"><span class="mode-card-top"><span class="mode-icon" aria-hidden="true">⤨</span><span class="mode-card-status">RANKED</span></span><span class="mode-visual visual-shuffle" aria-hidden="true"><i>↗</i><i>↘</i><i>↖</i></span><span class="mode-card-copy"><strong>Shuffle run</strong><small>A fresh route through the deck</small></span><span class="mode-card-bottom"><em>Full deck</em><span>Play ↗</span></span></button>
+          <button type="button" class="mode-card mode-adaptive" data-mode="adaptive"><span class="mode-card-top"><span class="mode-icon" aria-hidden="true">↗</span><span class="mode-card-status">RANKED</span></span><span class="mode-visual visual-level" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="mode-card-copy"><strong>Level up</strong><small>Questions adapt to your pace</small></span><span class="mode-card-bottom"><em>20 questions</em><span>Play ↗</span></span></button>
+          <button type="button" class="mode-card mode-blitz" data-mode="blitz"><span class="mode-card-top"><span class="mode-icon" aria-hidden="true">⌁</span><span class="mode-card-status">RANKED</span></span><span class="mode-visual visual-blitz" aria-hidden="true"><i>15</i></span><span class="mode-card-copy"><strong>Boss blitz</strong><small>Beat the shrinking clock</small></span><span class="mode-card-bottom"><em>15 questions</em><span>Play ↗</span></span></button>
+          <button type="button" class="mode-card mode-matching" data-mode="matching"><span class="mode-card-top"><span class="mode-icon" aria-hidden="true">◈</span><span class="mode-card-status is-practice">PRACTICE</span></span><span class="mode-visual visual-match" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="mode-card-copy"><strong>Match maker</strong><small>Connect each question to its answer</small></span><span class="mode-card-bottom"><em>12 pairs</em><span>Play ↗</span></span></button>
+          <button type="button" class="mode-card mode-typing" data-mode="typing"><span class="mode-card-top"><span class="mode-icon" aria-hidden="true">⌨</span><span class="mode-card-status is-practice">PRACTICE</span></span><span class="mode-visual visual-typing" aria-hidden="true"><i>A</i><i>B</i><i>↵</i></span><span class="mode-card-copy"><strong>Type it out</strong><small>Answer without choices</small></span><span class="mode-card-bottom"><em>20 questions</em><span>Play ↗</span></span></button>
         </div>
-
-        <section class="home-leaders" aria-labelledby="homeLeadersTitle">
-          <div class="home-leaders-heading"><div><span class="section-kicker">FULL DECK · PUBLIC SCORES</span><h2 id="homeLeadersTitle">Top of the board<span class="title-period">.</span></h2></div><button type="button" id="homeLeaderboardLink" class="small-button">View leaderboard ↗</button></div>
-          <div id="homeLeadersList" class="home-leaders-list" aria-live="polite">Loading top scores…</div>
-        </section>
       </section>
 
       <section id="bankView" class="view bank-view" hidden>
@@ -101,12 +102,13 @@
       </section>
 
       <section id="leaderboardView" class="view leaderboard-view" hidden>
-        <div class="page-intro"><div><span class="section-kicker">ALL QUESTIONS</span><h1>Leaderboard<span class="title-period">.</span></h1><p class="leaderboard-intro">All questions mode only. Every hearts setting counts; correct-answer-first practice is unranked.</p></div></div>
+        <div class="page-intro"><div><span class="section-kicker">PUBLIC SCORES</span><h1>Leaderboard<span class="title-period">.</span></h1><p class="leaderboard-intro">Pick a mode, then compare scores. Correct-answer-first practice stays unranked.</p></div></div>
         <div class="leaderboard-panel">
           <div class="leaderboard-controls">
-            <span class="leaderboard-control-title">Full-deck high scores</span>
+            <span id="leaderboardTitle" class="leaderboard-control-title">All questions</span>
             <label class="leaderboard-filter">Show<select id="leaderboardHearts"><option value="all">Everyone</option><option value="unlimited">Unlimited hearts</option><option value="3">3 hearts</option><option value="5">5 hearts</option><option value="1">1 heart</option></select></label>
           </div>
+          <div id="leaderboardModes" class="leaderboard-modes" role="group" aria-label="Leaderboard mode"></div>
           <p id="leaderboardStatus" class="leaderboard-status" role="status">Loading scores…</p>
           <div id="leaderboardGraph" class="leaderboard-graph" aria-label="Top score comparison"></div>
           <ol id="leaderboardList" class="leaderboard-list"></ol>

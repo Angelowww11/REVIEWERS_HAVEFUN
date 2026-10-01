@@ -8,6 +8,7 @@ const modeInfo = {
   matching: { name: 'Match maker', eyebrow: 'TAP TO PAIR', description: 'Pair questions with answers.' },
   typing: { name: 'Type it out', eyebrow: 'NO CHOICES', description: 'Answer from memory.' }
 };
+const rankedModes = ['all', 'shuffle', 'adaptive', 'blitz'];
 const quotes = [
   'One packet at a time', 'Small wins add up', 'Your next answer is a fresh start',
   'The streak starts with one', 'Learn it, link it, beat it', 'Progress looks good on you',
@@ -116,6 +117,7 @@ function renderHome() {
   updateStats();
   const ticker = [...quotes, ...quotes].map(q => `<span><b>✳</b>${escapeHTML(q)}</span>`).join('');
   $('quoteTrack').innerHTML = ticker;
+  renderLeaderboardModeTabs();
   loadHomeLeaderboard();
   const sourceSelect = $('bankSource');
   [...sources].sort((a, b) => { const an = +(a.match(/\d+/)?.[0] || 0), bn = +(b.match(/\d+/)?.[0] || 0); return an - bn; }).forEach(source => { const option = document.createElement('option'); option.value = source; option.textContent = source.replace(/\.html$/i, ''); sourceSelect.append(option); });
@@ -161,7 +163,7 @@ function openSetup(mode) {
 }
 function updateSetupRankNote() {
   const practice = !$('correctFirstToggle').closest('.switch-row').hidden && $('correctFirstToggle').checked;
-  $('setupNote').textContent = practice ? 'Practice only · this run is unranked.' : app.mode === 'all' ? 'All questions runs can enter the public board.' : 'Play All questions to enter the public board.';
+  $('setupNote').textContent = practice ? 'Practice only · this run is unranked.' : rankedModes.includes(app.mode) ? `${modeInfo[app.mode].name} runs can enter the public board.` : 'This mode is for practice; choose a ranked mode to enter the board.';
 }
 function typingPool() { return app.questions.filter(q => q.correctAnswers.length === 1 && q.correctAnswers[0].length <= 52 && !hasImage(q)); }
 function matchingPool() {
@@ -433,37 +435,51 @@ function finishGame() {
   const won = g.completed === g.total && g.hearts > 0;
   const accuracy = g.attempts ? Math.round((g.correct / g.attempts) * 100) : 0;
   const savedName = readJSON('pp_leaderboard_name', readJSON('pp_live_name', ''));
-  const scoreForm = g.mode !== 'all'
-    ? '<p class="rank-note">Only All questions runs appear on the public board.</p>'
+  const scoreForm = !rankedModes.includes(g.mode)
+    ? '<p class="rank-note">This mode is for practice. Try a ranked mode to post a score.</p>'
     : g.firstCorrect
     ? '<p class="rank-note">Practice run · correct answer first is unranked.</p>'
     : g.score <= 0
       ? '<p class="rank-note">Earn points to post a score.</p>'
-      : `<form id="scoreSubmitForm" class="score-submit"><label for="scoreName">Post your All questions score</label><div><input id="scoreName" maxlength="24" minlength="2" value="${escapeHTML(savedName)}" placeholder="Your name" autocomplete="nickname" required><button type="submit" class="button button-primary">Post score ↗</button></div><small>${g.heartLimit === 'unlimited' ? 'Unlimited hearts' : `${g.heartLimit} heart${g.heartLimit === '1' ? '' : 's'}`} · Your name and score will be public.</small></form>`;
+      : `<form id="scoreSubmitForm" class="score-submit"><label for="scoreName">Post your ${escapeHTML(modeInfo[g.mode].name)} score</label><div><input id="scoreName" maxlength="24" minlength="2" value="${escapeHTML(savedName)}" placeholder="Your name" autocomplete="nickname" required><button type="submit" class="button button-primary">Post score ↗</button></div><small>${g.heartLimit === 'unlimited' ? 'Unlimited hearts' : `${g.heartLimit} heart${g.heartLimit === '1' ? '' : 's'}`} · Your name and score will be public.</small></form>`;
   $('resultContent').innerHTML = `<div class="result-card"><div class="result-burst" aria-hidden="true">✳</div><span class="section-kicker">RUN COMPLETE</span><h1>${won ? 'Deck cleared!' : 'Nice run.'}</h1><div class="result-metrics"><div><strong>${formatNumber(g.score)}</strong><span>POINTS</span></div><div><strong>${accuracy}%</strong><span>ACCURACY</span></div><div><strong>${g.bestStreak}</strong><span>BEST STREAK</span></div><div><strong>${elapsedTime(duration)}</strong><span>TIME</span></div></div>${scoreForm}<div class="result-actions"><button type="button" class="button button-primary" data-result="again">Play again ↗</button><button type="button" class="button button-outline" data-result="leaderboard">Leaderboards</button><button type="button" class="button button-outline" data-result="export">Export ghost ↓</button></div>${g.missed.length ? `<details class="review-details"><summary>Review missed questions (${g.missed.length})</summary><div class="review-list">${g.missed.slice(0, 8).map(q => `<div class="review-item"><strong>#${q.id} ${escapeHTML(q.question)}</strong><span>Answer: ${escapeHTML(answerText(q))}</span></div>`).join('')}</div></details>` : ''}</div>`;
   setView('result'); announce(`Run complete. ${g.score} points, ${accuracy} percent accuracy.`);
 }
-let leaderboardRequest = 0;
+let leaderboardRequest = 0, homeLeaderboardRequest = 0, leaderboardMode = 'all', homeLeaderboardMode = 'all';
 function heartsLabel(value) { return value === 'unlimited' ? '∞ hearts' : `${value} heart${String(value) === '1' ? '' : 's'}`; }
+function renderLeaderboardModeTabs() {
+  for (const [container, selected] of [[$('homeLeadersModes'), homeLeaderboardMode], [$('leaderboardModes'), leaderboardMode]]) {
+    container.innerHTML = rankedModes.map(mode => `<button type="button" data-board-mode="${mode}" aria-pressed="${mode === selected}">${escapeHTML(modeInfo[mode].name)}</button>`).join('');
+  }
+  $('homeLeadersModeLabel').textContent = modeInfo[homeLeaderboardMode].name.toUpperCase();
+  $('leaderboardTitle').textContent = `${modeInfo[leaderboardMode].name} high scores`;
+}
 function leaderboardGraph(entries) {
   const leaders = entries.slice(0, 5), max = Math.max(1, ...leaders.map(e => Number(e.score) || 0));
-  $('leaderboardGraph').innerHTML = `<div class="graph-heading"><strong>Top scores</strong><span>Points earned</span></div>${leaders.length ? leaders.map((entry, index) => `<div class="graph-row"><span class="graph-name">${index + 1}. ${escapeHTML(entry.name || 'Player')}</span><span class="graph-track"><i style="width:${Math.max(3, (Number(entry.score) || 0) / max * 100)}%"></i></span><b>${formatNumber(entry.score)}</b></div>`).join('') : '<p class="graph-empty">Finish an All questions run to draw the first bar.</p>'}`;
+  $('leaderboardGraph').innerHTML = `<div class="graph-heading"><strong>Top scores</strong><span>Points earned</span></div>${leaders.length ? leaders.map((entry, index) => `<div class="graph-row"><span class="graph-name">${index + 1}. ${escapeHTML(entry.name || 'Player')}</span><span class="graph-track"><i style="width:${Math.max(3, (Number(entry.score) || 0) / max * 100)}%"></i></span><b>${formatNumber(entry.score)}</b></div>`).join('') : `<p class="graph-empty">Finish a ${escapeHTML(modeInfo[leaderboardMode].name)} run to draw the first bar.</p>`}`;
 }
+function emptyHomeChart(message) { return `<div class="home-chart-empty"><div class="home-chart-ghost" aria-hidden="true"><i></i><i></i><i></i></div><p>${escapeHTML(message)}</p></div>`; }
 async function loadHomeLeaderboard() {
+  const mode = homeLeaderboardMode, request = ++homeLeaderboardRequest;
+  $('homeLeadersList').textContent = 'Loading top scores…';
+  $('homeLeadersChart').innerHTML = '';
   try {
-    const response = await fetch('/api/leaderboard?mode=all&hearts=all', { cache: 'no-store', signal: AbortSignal.timeout(12000) });
+    const response = await fetch(`/api/leaderboard?mode=${encodeURIComponent(mode)}&hearts=all`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
     if (!response.ok) throw new Error('Scores unavailable');
     const data = await response.json(), entries = Array.isArray(data.entries) ? data.entries.slice(0, 3) : [];
-    $('homeLeadersList').innerHTML = entries.length ? entries.map((entry, index) => `<div class="home-leader"><span class="home-rank">${index + 1}</span><strong>${escapeHTML(entry.name || 'Player')}</strong><small>${heartsLabel(entry.hearts)}</small><b>${formatNumber(entry.score)} <em>pts</em></b></div>`).join('') : '<span class="home-leaders-empty">No scores yet. Start an All questions run to claim the first spot.</span>';
-  } catch { $('homeLeadersList').innerHTML = '<span class="home-leaders-empty">Scores are taking a break. You can still play.</span>'; }
+    if (request !== homeLeaderboardRequest) return;
+    $('homeLeadersList').innerHTML = entries.length ? entries.map((entry, index) => `<div class="home-leader"><span class="home-rank">${index + 1}</span><strong>${escapeHTML(entry.name || 'Player')}</strong><small>${heartsLabel(entry.hearts)}</small><b>${formatNumber(entry.score)} <em>pts</em></b></div>`).join('') : `<div class="home-leaders-empty"><strong>First place is open.</strong><span>No ${escapeHTML(modeInfo[mode].name)} score yet.</span><button type="button" data-home-play>Play this mode ↗</button></div>`;
+    const max = Math.max(1, ...entries.map(entry => Number(entry.score) || 0));
+    $('homeLeadersChart').innerHTML = entries.length ? entries.map((entry, index) => `<div class="home-chart-row"><span>${index + 1}</span><i style="width:${Math.max(3, (Number(entry.score) || 0) / max * 100)}%"></i><b>${formatNumber(entry.score)}</b></div>`).join('') : emptyHomeChart('First score starts the race.');
+  } catch { if (request === homeLeaderboardRequest) { $('homeLeadersList').innerHTML = '<div class="home-leaders-empty"><strong>Scores are unavailable.</strong><span>You can still play this mode.</span><button type="button" data-home-play>Play this mode ↗</button></div>'; $('homeLeadersChart').innerHTML = emptyHomeChart('Scores will appear here when connected.'); } }
 }
 async function loadLeaderboard() {
-  const hearts = $('leaderboardHearts').value;
+  const hearts = $('leaderboardHearts').value, mode = leaderboardMode;
   const request = ++leaderboardRequest;
   $('leaderboardStatus').textContent = 'Loading scores…';
   $('leaderboardList').innerHTML = '';
   try {
-    const response = await fetch(`/api/leaderboard?mode=all&hearts=${encodeURIComponent(hearts)}`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
+    const response = await fetch(`/api/leaderboard?mode=${encodeURIComponent(mode)}&hearts=${encodeURIComponent(hearts)}`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Could not load scores.');
     if (request !== leaderboardRequest) return;
@@ -479,7 +495,7 @@ async function loadLeaderboard() {
 }
 async function submitSoloScore() {
   const g = app.game, form = $('scoreSubmitForm');
-  if (!g || !form || g.mode !== 'all' || g.firstCorrect || g.scoreSubmitted || !g.record || g.score <= 0) return;
+  if (!g || !form || !rankedModes.includes(g.mode) || g.firstCorrect || g.scoreSubmitted || !g.record || g.score <= 0) return;
   const name = $('scoreName').value.trim().slice(0, 24);
   if (name.length < 2) { toast('Use a name with at least 2 characters.'); return; }
   const button = form.querySelector('button[type="submit"]'); button.disabled = true;
@@ -528,7 +544,10 @@ function attachEvents() {
   $('setupForm').addEventListener('submit', event => { event.preventDefault(); $('setupDialog').close(); startGame(); });
   $('correctFirstToggle').addEventListener('change', updateSetupRankNote);
   $('leaderboardHearts').addEventListener('change', loadLeaderboard);
-  $('homeLeaderboardLink').addEventListener('click', () => setView('leaderboard'));
+  $('homeLeadersModes').addEventListener('click', event => { const mode = event.target.closest('[data-board-mode]')?.dataset.boardMode; if (!rankedModes.includes(mode)) return; homeLeaderboardMode = mode; renderLeaderboardModeTabs(); loadHomeLeaderboard(); });
+  $('homeLeadersList').addEventListener('click', event => { if (event.target.closest('[data-home-play]')) openSetup(homeLeaderboardMode); });
+  $('leaderboardModes').addEventListener('click', event => { const mode = event.target.closest('[data-board-mode]')?.dataset.boardMode; if (!rankedModes.includes(mode)) return; leaderboardMode = mode; renderLeaderboardModeTabs(); loadLeaderboard(); });
+  $('homeLeaderboardLink').addEventListener('click', () => { leaderboardMode = homeLeaderboardMode; renderLeaderboardModeTabs(); setView('leaderboard'); });
   $('ghostFile').addEventListener('change', async event => {
     const file = event.target.files?.[0]; if (!file) return;
     if (file.size > 1000000) { toast('That ghost file is too large.'); return; }
@@ -567,7 +586,7 @@ function attachEvents() {
   });
   $('gameContent').addEventListener('input', event => { if (event.target.id === 'answerInput') $('answerAction').disabled = !event.target.value.trim(); });
   $('gameContent').addEventListener('keydown', event => { if (event.target.id === 'answerInput' && event.key === 'Enter') { event.preventDefault(); checkAnswer(); } });
-  $('resultContent').addEventListener('click', event => { const action = event.target.closest('[data-result]')?.dataset.result; if (action === 'again') openSetup(app.mode); else if (action === 'leaderboard') { $('leaderboardHearts').value = 'all'; setView('leaderboard'); } else if (action === 'export') exportGhost(); });
+  $('resultContent').addEventListener('click', event => { const action = event.target.closest('[data-result]')?.dataset.result; if (action === 'again') openSetup(app.mode); else if (action === 'leaderboard') { leaderboardMode = rankedModes.includes(app.game?.mode) ? app.game.mode : 'all'; $('leaderboardHearts').value = 'all'; renderLeaderboardModeTabs(); setView('leaderboard'); } else if (action === 'export') exportGhost(); });
   $('resultContent').addEventListener('submit', event => { if (event.target.id === 'scoreSubmitForm') { event.preventDefault(); submitSoloScore(); } });
   document.addEventListener('keydown', event => {
     if (app.view !== 'game' || !app.game || event.target.matches('input, textarea, select') || $('setupDialog').open) return;
@@ -890,5 +909,5 @@ function setupInstall() {
   window.addEventListener('appinstalled', () => { button.hidden = true; deferredInstall = null; toast('Packet Party is installed!'); });
 }
 
-updateSoundButton(); updateStats(); attachEvents(); attachLiveEvents(); setupInstall(); loadQuestions(); liveResume();
+updateSoundButton(); updateStats(); renderLeaderboardModeTabs(); attachEvents(); attachLiveEvents(); setupInstall(); loadQuestions(); liveResume();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});

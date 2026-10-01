@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { isIP } from 'node:net';
 
-const MODES = new Set(['all']);
+const MODES = new Set(['all', 'shuffle', 'adaptive', 'blitz']);
 const HEARTS = new Set(['1', '3', '5', 'unlimited']);
 const SAVE_SCORE = `
 redis.call('ZADD', KEYS[1], tonumber(ARGV[1]), ARGV[2])
@@ -87,7 +87,7 @@ async function listScores(request) {
   const url = new URL(request.url);
   const mode = url.searchParams.get('mode') || 'all';
   const hearts = url.searchParams.get('hearts') || 'all';
-  if (mode !== 'all' || (hearts !== 'all' && !HEARTS.has(hearts))) throw new ApiError(400, 'Choose a valid hearts category.');
+  if (!MODES.has(mode) || (hearts !== 'all' && !HEARTS.has(hearts))) throw new ApiError(400, 'Choose a valid mode and hearts category.');
   const categories = hearts === 'all' ? [...HEARTS] : [hearts];
   const boards = await Promise.all(categories.map(value => redis(['ZREVRANGE', category(mode, value).key, 0, 49])));
   const entries = boards.flatMap((members, boardIndex) => (members || []).flatMap(raw => {

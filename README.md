@@ -6,7 +6,7 @@ A playful, mobile-friendly networking quiz built from eight supplied question po
 
 - Browse all 198 distinct questions and reveal the source-marked answers.
 - Play the complete deck in source order or shuffle every question and its choices.
-- Choose 1, 3, 5, or unlimited hearts. The public leaderboard ranks **All questions** runs, with an optional hearts filter and a top-score graph.
+- Choose 1, 3, 5, or unlimited hearts. Public leaderboards cover **All questions**, **Shuffle run**, **Level up**, and **Boss blitz**, each with a hearts filter and top-score graph. The home page shows a switchable top-three preview.
 - Turn on **Correct answer first** for a single practice run. The switch resets to off for each new run, and those practice scores are never submitted.
 - Try Level up, Boss blitz, Match maker, and Type it out for shorter rounds.
 - Build streaks, protect hearts, unlock one-use power-ups, request offline hints, and wager points before selected hard questions.
@@ -25,6 +25,6 @@ The original saved course pages are not needed to run the site. The site preserv
 
 ## Online setup
 
-The live API is in `api/rooms.mjs` and the score API is in `api/leaderboard.mjs`. In Vercel, connect the free Upstash for Redis integration to the project. The functions read `KV_REST_API_URL` and `KV_REST_API_TOKEN` from server-side environment variables. Never expose the token in browser code. Rooms expire after six hours. The public board shows the top 50 All questions scores across heart settings, with a separate filter for each setting.
+The live API is in `api/rooms.mjs` and the score API is in `api/leaderboard.mjs`. In Vercel, connect the free Upstash for Redis integration to the project. The functions read `KV_REST_API_URL` and `KV_REST_API_TOKEN` from server-side environment variables. Never expose the token in browser code. Rooms expire after six hours. Each ranked mode shows its top 50 scores across heart settings, with a separate filter for each setting.
 
 Voice chat, shared deck voting, and a model-backed tutor are not included. Hints remain local, and ghost files can be shared without an account.
