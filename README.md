@@ -6,6 +6,7 @@ A playful, mobile-friendly networking quiz built from eight supplied question po
 
 - Browse all 198 distinct questions and reveal the source-marked answers.
 - Play the complete deck in source order or shuffle every question and its choices.
+- Open **Practice path** for the full deck in a fixed question and choice order. It saves your answers and current question on this device, so you can resume later, move backward or forward, skip, or jump straight to any question number. Practice path has no timer or leaderboard score.
 - Choose 1, 3, 5, or unlimited hearts. Public leaderboards cover **All questions**, **Shuffle run**, **Level up**, and **Boss blitz**, each with a hearts filter and top-score graph. The home page shows a switchable top-three preview.
 - Turn on **Correct answer first** for a single practice run. The switch resets to off for each new run, and those practice scores are never submitted.
 - Try Level up, Boss blitz, Match maker, and Type it out for shorter rounds.

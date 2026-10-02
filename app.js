@@ -101,7 +101,7 @@ function updateStats() { $('headerBest').textContent = formatNumber(app.stats.be
 function setView(view) {
   app.view = view;
   document.body.dataset.view = view;
-  for (const id of ['home', 'bank', 'leaderboard', 'game', 'live', 'result']) $(`${id}View`).hidden = id !== view;
+  for (const id of ['home', 'bank', 'leaderboard', 'game', 'practice', 'live', 'result']) $(`${id}View`).hidden = id !== view;
   document.querySelectorAll('.nav-link').forEach(button => { const active = button.dataset.view === view; button.classList.toggle('is-active', active); if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
   if (view === 'bank') renderBank();
   if (view === 'leaderboard') loadLeaderboard();
@@ -115,6 +115,7 @@ function renderHome() {
   $('sourceCount').textContent = formatNumber(sources.size || 8);
   $('bankCountBadge').textContent = `${formatNumber(app.questions.length)} questions`;
   updateStats();
+  renderPracticeCard();
   const ticker = [...quotes, ...quotes].map(q => `<span><b>✳</b>${escapeHTML(q)}</span>`).join('');
   $('quoteTrack').innerHTML = ticker;
   renderLeaderboardModeTabs();
@@ -146,6 +147,72 @@ function renderBank() {
     const options = q.type === 'short_answer_question' ? [] : q.options || [];
     return `<article class="bank-question" data-id="${q.id}"><div class="bank-q-top"><span class="bank-number">#${q.id}</span><span class="chip chip-source">${escapeHTML(sourceName(q))}</span><span class="chip">${escapeHTML(typeName(q))}</span><button type="button" class="star-button ${app.favorites.has(q.id) ? 'is-starred' : ''}" data-bank-action="star" aria-label="${app.favorites.has(q.id) ? 'Remove star from' : 'Star'} question ${q.id}" aria-pressed="${app.favorites.has(q.id)}">★</button></div><div class="bank-prompt">${safeQuestionHTML(q)}</div>${options.length ? `<div class="bank-choices">${options.map((option, index) => `<div class="bank-choice ${revealed && isCorrectOption(q, option) ? 'is-answer' : ''}"><i>${String.fromCharCode(65 + index)}</i><span>${escapeHTML(option)}</span></div>`).join('')}</div>` : ''}<div class="bank-actions"><button type="button" class="bank-reveal" data-bank-action="reveal">${revealed ? 'Hide answer' : 'Reveal answer'}</button>${revealed ? `<span class="bank-answer-note">✓ ${escapeHTML(answerText(q))}</span>` : ''}</div>${revealed ? `<p class="bank-explanation">${escapeHTML(explanationText(q))}</p>` : ''}</article>`;
   }).join('') : `<div class="bank-empty"><strong>No questions found</strong>Try a different search or filter.</div>`;
+}
+
+const practice = { index: 0, entries: {}, selected: new Set() };
+function restorePractice() {
+  const saved = readJSON('pp_practice_v1', null);
+  if (!saved || saved.version !== 1 || saved.count !== app.questions.length) return;
+  practice.index = Number.isInteger(saved.index) ? Math.max(0, Math.min(app.questions.length - 1, saved.index)) : 0;
+  if (!saved.entries || typeof saved.entries !== 'object') return;
+  const allowed = new Set(['correct', 'wrong', 'skipped', 'revealed']);
+  for (const q of app.questions) {
+    const entry = saved.entries[q.id];
+    if (!entry || !allowed.has(entry.status)) continue;
+    const response = Array.isArray(entry.response) ? entry.response.filter(item => typeof item === 'string').slice(0, 8) : typeof entry.response === 'string' ? entry.response.slice(0, 200) : '';
+    practice.entries[q.id] = { status: entry.status, response };
+  }
+}
+function savePractice() { writeJSON('pp_practice_v1', { version: 1, count: app.questions.length, index: practice.index, entries: practice.entries }); }
+function renderPracticeCard() {
+  const label = $('practiceCardProgress');
+  if (label) label.textContent = practice.index || Object.keys(practice.entries).length ? `Continue at #${practice.index + 1}` : 'Start at #1';
+}
+function openPractice() {
+  if (!app.questions.length) { toast('The question deck is still loading.'); return; }
+  setView('practice'); renderPractice();
+  announce(`Practice path. Question ${practice.index + 1} of ${app.questions.length}.`);
+}
+function practiceGoTo(index) {
+  if (!Number.isInteger(index) || index < 0 || index >= app.questions.length) { toast(`Choose a number from 1 to ${app.questions.length}.`); return; }
+  practice.index = index; practice.selected = new Set(); savePractice(); renderPractice(); renderPracticeCard();
+  scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  announce(`Question ${index + 1} of ${app.questions.length}.`);
+}
+function practiceRecord(q) { return practice.entries[q.id]; }
+function practiceAnswered(record) { return record?.status === 'correct' || record?.status === 'wrong' || record?.status === 'revealed'; }
+function renderPractice() {
+  const q = app.questions[practice.index]; if (!q) return;
+  const record = practiceRecord(q), answered = practiceAnswered(record);
+  const typed = q.type === 'short_answer_question' || !q.options.length;
+  const multi = !typed && q.correctAnswers.length > 1;
+  const response = Array.isArray(record?.response) ? record.response : record?.response ? [record.response] : [];
+  let answers;
+  if (typed) answers = `<label class="sr-only" for="practiceAnswerInput">Type your answer</label><input id="practiceAnswerInput" class="answer-input" type="text" autocomplete="off" spellcheck="false" placeholder="Type your answer…" value="${escapeHTML(record?.response || '')}" ${answered ? 'disabled' : ''}><p class="input-helper">${q.type === 'short_answer_question' ? 'Follow the format in the question.' : 'Capitalization is ignored.'}</p>`;
+  else answers = `<div class="game-choices" role="group" aria-label="Answer choices in their original order">${q.options.map((option, index) => { const picked = response.some(item => normalize(item) === normalize(option)); const correct = isCorrectOption(q, option); const cls = answered ? correct ? 'is-correct' : picked ? 'is-wrong' : '' : practice.selected.has(index) ? 'is-selected' : ''; return `<button type="button" class="choice-button ${cls}" data-practice-choice="${index}" aria-pressed="${picked || practice.selected.has(index)}" ${answered ? 'disabled' : ''}><span class="choice-key">${String.fromCharCode(65 + index)}</span><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>`;
+  const feedback = answered ? `<div class="feedback ${record.status === 'correct' ? 'is-correct' : 'is-wrong'}" role="status"><strong>${record.status === 'correct' ? 'You got it!' : record.status === 'revealed' ? 'Answer revealed' : 'Good one to review.'}</strong>${record.status === 'wrong' && response.length ? `<span class="practice-your-answer">Your answer: ${escapeHTML(response.join(' · '))}</span>` : ''}<span class="answer-line">Correct answer: ${escapeHTML(answerText(q))}</span><span class="feedback-explanation">${escapeHTML(explanationText(q))}</span></div>` : record?.status === 'skipped' ? '<p class="practice-skipped-note">You skipped this one. Try it whenever you’re ready.</p>' : '';
+  const action = answered ? '<button type="button" class="practice-retry" data-practice-action="retry">Try this question again</button>' : `<div class="practice-answer-actions">${typed || multi ? `<button type="button" class="question-submit" data-practice-action="check" ${typed || !practice.selected.size ? 'disabled' : ''}>Check answer</button>` : ''}<button type="button" class="practice-reveal" data-practice-action="reveal">Show answer</button></div>`;
+  $('practiceContent').innerHTML = `<article class="question-card practice-question-card"><div class="question-card-head"><span class="question-tag">QUESTION ${practice.index + 1} · ${escapeHTML(sourceName(q).toUpperCase())}</span><span class="practice-type-tag">${escapeHTML(typeName(q))}</span></div><div class="question-prompt">${safeQuestionHTML(q)}</div>${answers}${feedback}${action}</article>`;
+  const answeredCount = Object.values(practice.entries).filter(entry => entry.status === 'correct' || entry.status === 'wrong').length;
+  const correctCount = Object.values(practice.entries).filter(entry => entry.status === 'correct').length;
+  $('practiceProgressText').textContent = `${answeredCount} answered · ${correctCount} right`;
+  $('practicePositionText').textContent = `Question ${practice.index + 1} of ${app.questions.length}`;
+  $('practiceProgressFill').style.width = `${answeredCount / app.questions.length * 100}%`;
+  $('practiceJumpInput').max = String(app.questions.length);
+  $('practicePrevious').disabled = practice.index === 0;
+  $('practiceNext').disabled = practice.index === app.questions.length - 1;
+  $('practiceSkip').disabled = practice.index === app.questions.length - 1;
+  $('practiceNumberGrid').innerHTML = app.questions.map((item, index) => { const status = practice.entries[item.id]?.status || ''; return `<button type="button" data-practice-number="${index + 1}" class="${status ? `is-${status}` : ''} ${index === practice.index ? 'is-current' : ''}" aria-label="Question ${index + 1}${status ? `, ${status}` : ''}" ${index === practice.index ? 'aria-current="step"' : ''}>${index + 1}</button>`; }).join('');
+}
+function practiceSubmit(response) {
+  const q = app.questions[practice.index]; if (!q || practiceAnswered(practiceRecord(q))) return;
+  const picks = Array.isArray(response) ? response : String(response || '').trim();
+  if (!Array.isArray(picks) && !picks) return;
+  const correct = Array.isArray(picks) ? (() => { const expected = new Set(q.correctAnswers.map(normalize)); return picks.length === expected.size && picks.every(option => expected.has(normalize(option))); })() : checkTypedAnswer(q, picks);
+  practice.entries[q.id] = { status: correct ? 'correct' : 'wrong', response: picks };
+  practice.selected = new Set(); savePractice(); renderPractice(); renderPracticeCard();
+  playTone(correct ? 'good' : 'bad'); if (correct) burst();
+  announce(correct ? 'Correct answer.' : `Try again later. Correct answer: ${answerText(q)}.`);
 }
 
 function openSetup(mode) {
@@ -528,7 +595,7 @@ async function loadQuestions() {
     const data = await response.json(); if (!Array.isArray(data.questions)) throw new Error('Missing questions');
     try { const notesResponse = await fetch('./explanations.json', { cache: 'no-cache' }); if (notesResponse.ok) app.explanations = await notesResponse.json(); } catch { /* Quiz still works if the notes are unavailable. */ }
     app.questions = data.questions.filter(q => q && q.question && Array.isArray(q.correctAnswers) && q.correctAnswers.length && Array.isArray(q.options)).map((q, index) => ({ ...q, id: Number(q.id) || index + 1 }));
-    prepareDifficulty(); renderHome(); renderBank();
+    restorePractice(); prepareDifficulty(); renderHome(); renderBank();
   } catch (error) {
     $('questionCount').textContent = '0'; $('bankList').innerHTML = `<div class="bank-empty"><strong>The deck could not load</strong>Open this site through a web server or refresh the page. (${escapeHTML(error.message)})</div>`;
     toast('The question deck could not load.');
@@ -538,7 +605,37 @@ function attachEvents() {
   $('brandButton').addEventListener('click', () => setView('home'));
   document.querySelectorAll('.nav-link').forEach(button => button.addEventListener('click', () => { if (app.game && app.view === 'game') clearInterval(app.timer); setView(button.dataset.view); }));
   $('heroStart').addEventListener('click', () => openSetup('shuffle'));
-  document.querySelectorAll('.mode-card').forEach(button => button.addEventListener('click', () => openSetup(button.dataset.mode)));
+  document.querySelectorAll('.mode-card').forEach(button => button.addEventListener('click', () => button.dataset.mode === 'practice' ? openPractice() : openSetup(button.dataset.mode)));
+  $('leavePractice').addEventListener('click', () => setView('home'));
+  $('practicePrevious').addEventListener('click', () => practiceGoTo(practice.index - 1));
+  $('practiceNext').addEventListener('click', () => practiceGoTo(practice.index + 1));
+  $('practiceSkip').addEventListener('click', () => { const q = app.questions[practice.index]; if (!practiceAnswered(practiceRecord(q))) practice.entries[q.id] = { status: 'skipped', response: '' }; practiceGoTo(practice.index + 1); });
+  $('practiceStartOver').addEventListener('click', () => practiceGoTo(0));
+  $('practiceJumpForm').addEventListener('submit', event => { event.preventDefault(); const number = Number($('practiceJumpInput').value); practiceGoTo(number - 1); $('practiceJumpInput').value = ''; });
+  $('practiceNumberGrid').addEventListener('click', event => { const number = Number(event.target.closest('[data-practice-number]')?.dataset.practiceNumber); if (number) practiceGoTo(number - 1); });
+  $('practiceContent').addEventListener('click', event => {
+    const q = app.questions[practice.index], record = practiceRecord(q);
+    const choice = event.target.closest('[data-practice-choice]');
+    if (choice && !practiceAnswered(record)) {
+      const index = Number(choice.dataset.practiceChoice);
+      if (q.correctAnswers.length > 1) {
+        if (practice.selected.has(index)) practice.selected.delete(index); else practice.selected.add(index);
+        choice.classList.toggle('is-selected', practice.selected.has(index));
+        choice.setAttribute('aria-pressed', String(practice.selected.has(index)));
+        const check = $('practiceContent').querySelector('[data-practice-action="check"]'); if (check) check.disabled = !practice.selected.size;
+      } else practiceSubmit([q.options[index]]);
+      return;
+    }
+    const action = event.target.closest('[data-practice-action]')?.dataset.practiceAction;
+    if (action === 'retry') { delete practice.entries[q.id]; practice.selected = new Set(); savePractice(); renderPractice(); }
+    else if (action === 'reveal') { practice.entries[q.id] = { status: 'revealed', response: '' }; practice.selected = new Set(); savePractice(); renderPractice(); }
+    else if (action === 'check') {
+      if (q.type === 'short_answer_question' || !q.options.length) practiceSubmit($('practiceAnswerInput')?.value || '');
+      else if (practice.selected.size) practiceSubmit([...practice.selected].map(index => q.options[index]));
+    }
+  });
+  $('practiceContent').addEventListener('input', event => { if (event.target.id === 'practiceAnswerInput') { const check = $('practiceContent').querySelector('[data-practice-action="check"]'); if (check) check.disabled = !event.target.value.trim(); } });
+  $('practiceContent').addEventListener('keydown', event => { if (event.target.id === 'practiceAnswerInput' && event.key === 'Enter') { event.preventDefault(); practiceSubmit(event.target.value); } });
   $('soundButton').addEventListener('click', () => { app.soundOn = !app.soundOn; writeJSON('pp_sound', app.soundOn); updateSoundButton(); if (app.soundOn) playTone('click'); });
   $('closeSetup').addEventListener('click', () => $('setupDialog').close());
   $('setupForm').addEventListener('submit', event => { event.preventDefault(); $('setupDialog').close(); startGame(); });
