@@ -7,12 +7,13 @@ A playful, mobile-friendly networking quiz built from eight supplied question po
 - Browse all 198 distinct questions and reveal the source-marked answers.
 - Play the complete deck in source order or shuffle every question and its choices.
 - Open **Practice path** for the full deck in a fixed question order. You can keep the original choice order or turn on **Shuffle answer choices**; each question keeps its shuffled choice positions when you revisit it. It saves your answers and current question on this device, so you can resume later, move backward or forward, skip, or jump straight to any question number. Practice path has no timer or leaderboard score.
+- On a keyboard, press **1–4** to choose a displayed answer in solo, Practice path, and live matches. In Match maker, press 1–4 for a question, then 1–4 for its answer. Number keys still type normally in answer fields and chat.
 - Choose 1, 3, 5, or unlimited hearts. Public leaderboards cover **All questions**, **Shuffle run**, **Level up**, and **Boss blitz**, each with a hearts filter and top-score graph. The home page shows a switchable top-three preview.
 - Turn on **Correct answer first** for a single practice run. The switch resets to off for each new run, and those practice scores are never submitted.
 - Try Level up, Boss blitz, Match maker, and Type it out for shorter rounds.
 - Build streaks, protect hearts, unlock one-use power-ups, request offline hints, and wager points before selected hard questions.
 - Export a completed run as a ghost file and share it with a friend to race their progress offline.
-- Host a live room for up to eight players. Friends join by code, answer the same timed questions, and see a shared leaderboard, chat, and reactions. A question reveals as soon as everyone answers, or after 25 seconds.
+- Host a live room for up to eight players. Friends join by code, answer the same timed questions, and see a shared leaderboard, chat, and reactions. A question reveals as soon as everyone answers, or after 25 seconds. Scores and streaks update on the reveal, so locking in early does not give away the result.
 - Read a short explanation after every answer in solo and live play, or when revealing an answer in the question bank.
 - Install the app on mobile through its browser's install or Add to Home Screen action. The solo deck is available offline after the first visit; public scores and live rooms need a connection.
 

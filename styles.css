@@ -256,6 +256,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .practice-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(270px,.65fr);align-items:start;gap:18px}
 .practice-main{min-width:0}.practice-question-card{box-shadow:0 8px 0 rgba(11,13,64,.18)}
 .practice-shuffle-row{margin:0 0 16px;padding:12px 17px;border:1px solid rgba(167,242,237,.27);border-radius:15px;background:rgba(255,255,255,.08);color:#f5f6ff}.practice-shuffle-row small{color:#cbd1ed}.practice-shuffle-row input:checked+i{background:#72d6cc}
+.match-number{display:inline-grid;place-items:center;min-width:23px;height:23px;margin-right:8px;border-radius:7px;background:#ededfb;color:#555aa0;font-size:11px;font-weight:1000}
 .practice-type-tag{border-radius:100px;padding:6px 10px;background:#e6f7f4;color:#387573;font-size:10px;font-weight:900;white-space:nowrap}
 .practice-answer-actions{display:flex;align-items:center;gap:9px;margin-top:18px}
 .practice-reveal,.practice-retry{min-height:42px;border:1px solid #d8daec;border-radius:11px;padding:9px 14px;background:#fff;color:#52589b;font-size:12px;font-weight:900}

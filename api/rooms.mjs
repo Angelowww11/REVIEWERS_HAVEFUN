@@ -106,7 +106,6 @@ function createPlayer(name, now) {
     id: randomUUID(),
     name,
     tokenHash: tokenHash(token),
-    score: 0,
     streak: 0,
     ready: false,
     joinedAt: now,
@@ -192,21 +191,41 @@ function revealResult(state, index) {
   };
 }
 
+function completedRoundIndex(state, time) {
+  if (time.phase === 'lobby') return -1;
+  if (time.phase === 'question') return time.index - 1;
+  if (time.phase === 'reveal') return time.index;
+  return state.sequence.length - 1;
+}
+
+function visibleTotals(player, lastCompleted) {
+  let score = 0;
+  let streak = 0;
+  for (let index = 0; index <= lastCompleted; index++) {
+    const answer = player.answers[index];
+    score += answer?.points || 0;
+    streak = answer?.correct ? streak + 1 : 0;
+  }
+  return { score, streak };
+}
+
 function publicRoom(state, viewer, now) {
   const time = phaseAt(state, now);
   const shownIndex = time.phase === 'finished' ? Math.max(0, state.sequence.length - 1) : time.index;
   const answer = viewer.answers[shownIndex];
+  const lastCompleted = completedRoundIndex(state, time);
   return {
     code: state.code,
     status: time.status,
     phase: time.phase,
-    players: [...state.players]
-      .sort((a, b) => b.score - a.score || a.joinedAt - b.joinedAt)
-      .map(player => ({
+    players: state.players
+      .map(player => ({ player, ...visibleTotals(player, lastCompleted) }))
+      .sort((a, b) => b.score - a.score || a.player.joinedAt - b.player.joinedAt)
+      .map(({ player, score, streak }) => ({
         id: player.id,
         name: player.name,
-        score: player.score,
-        streak: player.streak,
+        score,
+        streak,
         ready: player.ready,
         answered: Boolean(player.answers[shownIndex])
       })),
@@ -388,7 +407,6 @@ function handleAnswer(room, player, now, body) {
   player.streak = correct ? player.streak + 1 : 0;
   const secondsLeft = Math.max(0, time.endsAt - now);
   const points = correct ? 100 + Math.round((secondsLeft / QUESTION_MS) * 50) + Math.min(player.streak, 5) * 10 : 0;
-  player.score += points;
   player.answers[time.index] = { answer, correct, points, at: now };
   revealIfEveryoneAnswered(room, now);
 }
