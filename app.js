@@ -725,7 +725,7 @@ const live = {
   code: null, token: null, playerId: null, room: null, name: '', serverOffset: 0,
   pollTimer: null, clockTimer: null, fetching: false, lastPollAt: 0, pendingActions: new Set(),
   requestSeq: 0, appliedSeq: 0, stageSignature: '', playersSignature: '', messagesSignature: '',
-  roundKey: '', submitted: false, selected: new Set(), seenReactions: new Set(),
+  roundKey: '', submitted: false, pendingAnswer: null, selected: new Set(), seenReactions: new Set(),
   sawReactions: false, revealKey: '', lastQuestion: null
 };
 
@@ -773,7 +773,7 @@ function liveClearSession() {
   live.lastPollAt = 0;
   live.pendingActions = new Set();
   live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
-  live.roundKey = ''; live.submitted = false; live.selected.clear();
+  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear();
   live.seenReactions.clear(); live.sawReactions = false; live.revealKey = ''; live.lastQuestion = null;
   try { localStorage.removeItem('pp_live_session'); } catch { /* Storage is optional. */ }
   const url = new URL(location.href);
@@ -794,7 +794,7 @@ function liveEnter(data, name) {
   live.pendingActions = new Set();
   live.appliedSeq = 0; live.requestSeq = 0; live.room = null;
   live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
-  live.roundKey = ''; live.submitted = false; live.selected.clear();
+  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear();
   live.seenReactions.clear(); live.sawReactions = false; live.revealKey = ''; live.lastQuestion = null;
   if (Number.isFinite(data.serverTime)) live.serverOffset = data.serverTime - Date.now();
   liveSaveSession();
@@ -872,11 +872,14 @@ function liveRender() {
   if (room.currentQuestion) live.lastQuestion = room.currentQuestion;
   const roundKey = liveRoundKey(room);
   if (room.phase === 'question' && roundKey !== live.roundKey) {
-    live.roundKey = roundKey; live.selected.clear(); live.submitted = false;
+    live.roundKey = roundKey; live.selected.clear(); live.submitted = false; live.pendingAnswer = null;
+    if (room.currentQuestion?.multiple && room.myAnswer != null) {
+      const saved = Array.isArray(room.myAnswer) ? room.myAnswer : [room.myAnswer];
+      room.currentQuestion.options.forEach((option, index) => { if (saved.some(item => normalize(item) === normalize(option))) live.selected.add(index); });
+    }
   }
-  if (room.phase === 'question') live.submitted = !!(liveCurrentPlayer()?.answered || room.myAnswer != null || live.submitted);
   const phaseKey = room.phase === 'lobby' ? `${room.phase}:${room.players?.map(p => `${p.id}:${p.ready}`).join(',')}`
-    : `${room.phase}:${roundKey}:${live.submitted}:${JSON.stringify(room.myAnswer)}:${JSON.stringify(room.result?.players || [])}`;
+    : `${room.phase}:${roundKey}:${live.submitted}:${JSON.stringify(live.pendingAnswer)}:${JSON.stringify(room.myAnswer)}:${JSON.stringify(room.result?.players || [])}`;
   if (phaseKey !== live.stageSignature) { live.stageSignature = phaseKey; liveRenderStage(); }
   const playersKey = JSON.stringify((room.players || []).map(p => [p.id, p.name, p.score, p.streak, p.ready, p.answered]));
   if (playersKey !== live.playersSignature) { live.playersSignature = playersKey; liveRenderPlayers(); }
@@ -896,7 +899,7 @@ function liveRenderStage() {
   const stage = $('liveStage');
   if (room.phase === 'lobby') {
     const me = liveCurrentPlayer(); const host = room.hostId === live.playerId; const count = room.players?.length || 0;
-    stage.innerHTML = `<span class="live-stage-kicker">WAITING ROOM · ${room.total || 10} QUESTIONS</span><h2>${host ? 'Share this code.' : 'You joined!'}</h2><div class="live-code-display" aria-label="Room code ${escapeHTML(room.code)}">${escapeHTML(room.code)}</div><div class="live-wait-message">${count < 2 ? 'Waiting for a friend…' : `${count} players ready to race.`}</div><div class="live-lobby-bottom"><button type="button" class="button ${me?.ready ? 'button-outline' : 'button-live'}" data-live-action="ready">${me?.ready ? '✓ Ready' : 'Mark me ready'}</button>${host ? `<button type="button" class="button button-primary" data-live-action="start" ${count < 2 ? 'disabled' : ''}>Start battle ↗</button>` : ''}<span class="live-lobby-note">Answers reveal when everyone locks in · 25s max</span></div>`;
+    stage.innerHTML = `<span class="live-stage-kicker">WAITING ROOM · ${room.total || 10} QUESTIONS</span><h2>${host ? 'Share this code.' : 'You joined!'}</h2><div class="live-code-display" aria-label="Room code ${escapeHTML(room.code)}">${escapeHTML(room.code)}</div><div class="live-wait-message">${count < 2 ? 'Waiting for a friend…' : `${count} players ready to race.`}</div><div class="live-lobby-bottom"><button type="button" class="button ${me?.ready ? 'button-outline' : 'button-live'}" data-live-action="ready">${me?.ready ? '✓ Ready' : 'Mark me ready'}</button>${host ? `<button type="button" class="button button-primary" data-live-action="start" ${count < 2 ? 'disabled' : ''}>Start battle ↗</button>` : ''}<span class="live-lobby-note">Answers reveal when everyone answers · 25s max</span></div>`;
     return;
   }
   if (room.phase === 'finished') {
@@ -910,17 +913,27 @@ function liveRenderStage() {
   const isReveal = room.phase === 'reveal';
   const answers = room.result?.correctAnswers || [];
   const mine = room.result?.players?.find(p => p.id === live.playerId);
-  const answered = live.submitted || room.myAnswer != null || !!liveCurrentPlayer()?.answered;
   const options = Array.isArray(q.options) ? q.options : [];
   const typed = q.type === 'short_answer_question' || !options.length;
-  stage.innerHTML = `<div class="live-quiz-meta"><span class="live-stage-kicker">${isReveal ? 'ANSWER REVEAL' : 'LIVE ROUND'} · QUESTION ${(room.questionIndex ?? 0) + 1} / ${room.total || 10}</span><span id="liveTimer" class="live-timer">◷ <span>—</span></span></div><div class="live-clock-track" aria-hidden="true"><div id="liveClockFill" class="live-clock-fill"></div></div><div class="live-question-text">${safeQuestionHTML(q)}</div>${typed ? (isReveal ? '' : `<form id="liveAnswerForm" class="live-answer-form"><label class="sr-only" for="liveAnswerInput">Your answer</label><input id="liveAnswerInput" class="live-input" maxlength="200" placeholder="Type your answer…" ${answered ? 'disabled' : ''} required><button type="submit" class="button button-primary" ${answered ? 'disabled' : ''}>Send ↗</button></form>`) : `<div class="live-answer-grid">${options.map((option, index) => { const correct = answers.some(a => normalize(a) === normalize(option)); const chosen = (Array.isArray(room.myAnswer) ? room.myAnswer : [room.myAnswer]).some(a => a != null && normalize(a) === normalize(option)) || live.selected.has(index); const cls = isReveal ? correct ? 'is-correct' : chosen ? 'is-wrong' : '' : chosen ? 'is-selected' : ''; return `<button type="button" class="live-answer-option ${cls}" data-live-choice="${index}" ${isReveal || answered ? 'disabled' : ''} aria-pressed="${chosen}"><i>${index + 1}</i><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>${q.multiple && !isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-multi" ${answered || !live.selected.size ? 'disabled' : ''}>Lock in ${live.selected.size || ''} answer${live.selected.size === 1 ? '' : 's'} ↗</button></div>` : ''}`}${!isReveal && answered ? '<div class="live-answer-note">✓ Answer locked in. Scores update when the question closes.</div>' : ''}${isReveal ? `<div class="live-reveal ${mine?.correct ? '' : 'is-wrong'}"><strong>${mine?.correct ? `Nice hit! +${formatNumber(mine.points || 0)} points` : 'Round complete'}</strong><span>Correct answer${answers.length > 1 ? 's' : ''}: ${escapeHTML(answers.join(' · '))}</span><span class="feedback-explanation">${escapeHTML(explanationText(q))}</span></div><p class="live-lobby-note">Next question starts automatically.</p>` : ''}`;
+  const savedAnswer = room.myAnswer;
+  const hasSavedAnswer = savedAnswer != null;
+  const displayedAnswer = live.pendingAnswer ?? savedAnswer;
+  const displayedValues = Array.isArray(displayedAnswer) ? displayedAnswer : [displayedAnswer];
+  const savedValues = Array.isArray(savedAnswer) ? savedAnswer : [savedAnswer];
+  const savedIndexes = options.map((option, index) => savedValues.some(value => value != null && normalize(value) === normalize(option)) ? index : -1).filter(index => index >= 0);
+  const draftChanged = q.multiple && (live.selected.size !== savedIndexes.length || [...live.selected].some(index => !savedIndexes.includes(index)));
+  const answerMarkup = typed
+    ? isReveal ? '' : `<form id="liveAnswerForm" class="live-answer-form"><label class="sr-only" for="liveAnswerInput">Your answer</label><input id="liveAnswerInput" class="live-input" maxlength="200" placeholder="Type your answer…" value="${escapeHTML(typeof displayedAnswer === 'string' ? displayedAnswer : '')}" ${live.submitted ? 'disabled' : ''} required><button type="submit" class="button button-primary" ${live.submitted ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Send'} ↗</button></form>`
+    : `<div class="live-answer-grid">${options.map((option, index) => { const correct = answers.some(a => normalize(a) === normalize(option)); const chosen = isReveal || !q.multiple ? displayedValues.some(value => value != null && normalize(value) === normalize(option)) : live.selected.has(index); const cls = isReveal ? correct ? 'is-correct' : chosen ? 'is-wrong' : '' : chosen ? 'is-selected' : ''; return `<button type="button" class="live-answer-option ${cls}" data-live-choice="${index}" ${isReveal || live.submitted ? 'disabled' : ''} aria-pressed="${chosen}"><i>${index + 1}</i><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>${q.multiple && !isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-multi" ${live.submitted || !live.selected.size || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Lock in answers'} ↗</button></div>` : ''}`;
+  const answerNote = isReveal ? '' : live.submitted ? 'Saving your answer…' : hasSavedAnswer && draftChanged ? 'Your changes are not saved yet. Press Update answer.' : hasSavedAnswer ? '✓ Answer saved. You can change it until the question closes.' : q.multiple && live.selected.size ? 'Press Lock in answers to save your selection.' : '';
+  stage.innerHTML = `<div class="live-quiz-meta"><span class="live-stage-kicker">${isReveal ? 'ANSWER REVEAL' : 'LIVE ROUND'} · QUESTION ${(room.questionIndex ?? 0) + 1} / ${room.total || 10}</span><span id="liveTimer" class="live-timer">◷ <span>—</span></span></div><div class="live-clock-track" aria-hidden="true"><div id="liveClockFill" class="live-clock-fill"></div></div><div class="live-question-text">${safeQuestionHTML(q)}</div>${answerMarkup}${answerNote ? `<div class="live-answer-note">${answerNote}</div>` : ''}${isReveal ? `<div class="live-reveal ${mine?.correct ? '' : 'is-wrong'}"><strong>${mine?.correct ? `Nice hit! +${formatNumber(mine.points || 0)} points` : 'Round complete'}</strong><span>Correct answer${answers.length > 1 ? 's' : ''}: ${escapeHTML(answers.join(' · '))}</span><span class="feedback-explanation">${escapeHTML(explanationText(q))}</span></div><p class="live-lobby-note">Next question starts automatically.</p>` : ''}`;
   liveUpdateClock();
 }
 function liveRenderPlayers() {
   const room = live.room; if (!room) return;
   const players = [...(room.players || [])].sort((a, b) => (room.phase === 'lobby' ? 0 : b.score - a.score) || a.name.localeCompare(b.name));
   $('livePlayerCount').textContent = `${players.length} player${players.length === 1 ? '' : 's'}`;
-  $('livePlayers').innerHTML = players.map((p, index) => `<div class="live-player ${p.id === live.playerId ? 'is-you' : ''}"><span class="live-player-rank">${room.phase === 'lobby' ? '◈' : index + 1}</span><span class="live-player-name">${escapeHTML(p.name)}${p.id === live.playerId ? ' · you' : ''}${p.id === room.hostId ? ' 👑' : ''}<small>${room.phase === 'lobby' ? p.ready ? '✓ ready' : 'waiting' : room.phase === 'question' ? p.answered ? '✓ locked in' : 'thinking…' : `${p.streak || 0} streak`}</small></span><span class="live-player-score">${formatNumber(p.score || 0)}<small>PTS</small></span></div>`).join('');
+  $('livePlayers').innerHTML = players.map((p, index) => `<div class="live-player ${p.id === live.playerId ? 'is-you' : ''}"><span class="live-player-rank">${room.phase === 'lobby' ? '◈' : index + 1}</span><span class="live-player-name">${escapeHTML(p.name)}${p.id === live.playerId ? ' · you' : ''}${p.id === room.hostId ? ' 👑' : ''}<small>${room.phase === 'lobby' ? p.ready ? '✓ ready' : 'waiting' : room.phase === 'question' ? p.answered ? '✓ answered' : 'thinking…' : `${p.streak || 0} streak`}</small></span><span class="live-player-score">${formatNumber(p.score || 0)}<small>PTS</small></span></div>`).join('');
 }
 function liveRenderMessages() {
   const feed = $('liveMessages'); const nearBottom = feed.scrollTop + feed.clientHeight >= feed.scrollHeight - 25;
@@ -953,9 +966,12 @@ function liveUpdateClock() {
 }
 async function liveSubmitAnswer(answer) {
   if (!live.room || live.room.phase !== 'question' || live.submitted) return;
-  live.submitted = true; liveRenderStage();
+  live.submitted = true; live.pendingAnswer = answer; liveRenderStage();
   const result = await liveAction('answer', { answer });
-  if (!result) { live.submitted = false; liveRenderStage(); }
+  live.submitted = false; live.pendingAnswer = null;
+  live.stageSignature = '';
+  liveRender();
+  if (!result) { live.lastPollAt = 0; livePoll(); }
 }
 async function liveResume() {
   const inviteCode = new URL(location.href).searchParams.get('room')?.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) || '';
@@ -1003,6 +1019,13 @@ function attachLiveEvents() {
   $('liveStage').addEventListener('submit', event => {
     if (event.target.id !== 'liveAnswerForm') return;
     event.preventDefault(); const answer = $('liveAnswerInput')?.value.trim(); if (answer) liveSubmitAnswer(answer);
+  });
+  $('liveStage').addEventListener('input', event => {
+    if (event.target.id !== 'liveAnswerInput' || live.room?.myAnswer == null) return;
+    const note = $('liveStage').querySelector('.live-answer-note');
+    if (note) note.textContent = event.target.value.trim() === String(live.room.myAnswer).trim()
+      ? '✓ Answer saved. You can change it until the question closes.'
+      : 'Your changes are not saved yet. Press Update answer.';
   });
   $('liveChatForm').addEventListener('submit', async event => {
     event.preventDefault(); const input = $('liveChatInput'); const text = input.value.trim();

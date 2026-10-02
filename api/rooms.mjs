@@ -106,7 +106,6 @@ function createPlayer(name, now) {
     id: randomUUID(),
     name,
     tokenHash: tokenHash(token),
-    streak: 0,
     ready: false,
     joinedAt: now,
     lastChatAt: 0,
@@ -391,7 +390,6 @@ function revealIfEveryoneAnswered(room, now) {
 function handleAnswer(room, player, now, body) {
   const time = phaseAt(room, now);
   if (time.phase !== 'question') throw new ApiError(409, 'This question is closed.');
-  if (player.answers[time.index]) throw new ApiError(409, 'You already answered this question.');
   const question = roundQuestion(room, time.index);
   if (!question) throw new ApiError(503, 'Question unavailable.');
   const answer = normalizeSubmittedAnswer(body.answer);
@@ -399,14 +397,14 @@ function handleAnswer(room, player, now, body) {
   if (question.type !== 'short_answer_question' && selected.some(item => !question.options.some(option => normalizeAnswer(option) === normalizeAnswer(item)))) {
     throw new ApiError(400, 'Choose one of the displayed answers.');
   }
+  const previous = player.answers[time.index];
+  if (previous && JSON.stringify(previous.answer) === JSON.stringify(answer)) return;
   const right = question.correctAnswers.map(normalizeAnswer).sort();
   const given = selected.map(normalizeAnswer).sort();
   const correct = right.length === given.length && right.every((value, index) => value === given[index]);
-  const priorIndex = Math.max(-1, ...Object.keys(player.answers).map(Number));
-  if (priorIndex < time.index - 1) player.streak = 0;
-  player.streak = correct ? player.streak + 1 : 0;
+  const streak = correct ? visibleTotals(player, time.index - 1).streak + 1 : 0;
   const secondsLeft = Math.max(0, time.endsAt - now);
-  const points = correct ? 100 + Math.round((secondsLeft / QUESTION_MS) * 50) + Math.min(player.streak, 5) * 10 : 0;
+  const points = correct ? 100 + Math.round((secondsLeft / QUESTION_MS) * 50) + Math.min(streak, 5) * 10 : 0;
   player.answers[time.index] = { answer, correct, points, at: now };
   revealIfEveryoneAnswered(room, now);
 }

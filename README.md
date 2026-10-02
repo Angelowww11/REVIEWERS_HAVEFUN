@@ -13,7 +13,7 @@ A playful, mobile-friendly networking quiz built from eight supplied question po
 - Try Level up, Boss blitz, Match maker, and Type it out for shorter rounds.
 - Build streaks, protect hearts, unlock one-use power-ups, request offline hints, and wager points before selected hard questions.
 - Export a completed run as a ghost file and share it with a friend to race their progress offline.
-- Host a live room for up to eight players. Friends join by code, answer the same timed questions, and see a shared leaderboard, chat, and reactions. A question reveals as soon as everyone answers, or after 25 seconds. Scores and streaks update on the reveal, so locking in early does not give away the result.
+- Host a live room for up to eight players. Friends join by code, answer the same timed questions, and see a shared leaderboard, chat, and reactions. Players can change their saved answer while the question is open; the final saved answer counts. A question reveals as soon as everyone answers, or after 25 seconds. Scores and streaks update on the reveal, so answering early does not give away the result.
 - Read a short explanation after every answer in solo and live play, or when revealing an answer in the question bank.
 - Install the app on mobile through its browser's install or Add to Home Screen action. The solo deck is available offline after the first visit; public scores and live rooms need a connection.
 
