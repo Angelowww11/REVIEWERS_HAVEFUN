@@ -1,4 +1,4 @@
-const CACHE_NAME = 'packet-party-v7';
+const CACHE_NAME = 'packet-party-v8';
 const CORE_FILES = ['./', './index.html', './styles.css', './app.js', './ambient.js', './questions.json', './explanations.json', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'];
 
 self.addEventListener('install', event => {

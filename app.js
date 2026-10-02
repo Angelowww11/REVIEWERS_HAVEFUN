@@ -149,11 +149,18 @@ function renderBank() {
   }).join('') : `<div class="bank-empty"><strong>No questions found</strong>Try a different search or filter.</div>`;
 }
 
-const practice = { index: 0, entries: {}, selected: new Set() };
+const practice = { index: 0, entries: {}, selected: new Set(), shuffleChoices: false, choiceOrder: {} };
 function restorePractice() {
   const saved = readJSON('pp_practice_v1', null);
   if (!saved || saved.version !== 1 || saved.count !== app.questions.length) return;
   practice.index = Number.isInteger(saved.index) ? Math.max(0, Math.min(app.questions.length - 1, saved.index)) : 0;
+  practice.shuffleChoices = saved.shuffleChoices === true;
+  if (saved.choiceOrder && typeof saved.choiceOrder === 'object') {
+    for (const q of app.questions) {
+      const order = saved.choiceOrder[q.id];
+      if (Array.isArray(order) && order.length === q.options.length && new Set(order).size === order.length && order.every(index => Number.isInteger(index) && index >= 0 && index < q.options.length)) practice.choiceOrder[q.id] = order;
+    }
+  }
   if (!saved.entries || typeof saved.entries !== 'object') return;
   const allowed = new Set(['correct', 'wrong', 'skipped', 'revealed']);
   for (const q of app.questions) {
@@ -163,7 +170,7 @@ function restorePractice() {
     practice.entries[q.id] = { status: entry.status, response };
   }
 }
-function savePractice() { writeJSON('pp_practice_v1', { version: 1, count: app.questions.length, index: practice.index, entries: practice.entries }); }
+function savePractice() { writeJSON('pp_practice_v1', { version: 1, count: app.questions.length, index: practice.index, entries: practice.entries, shuffleChoices: practice.shuffleChoices, choiceOrder: practice.choiceOrder }); }
 function renderPracticeCard() {
   const label = $('practiceCardProgress');
   if (label) label.textContent = practice.index || Object.keys(practice.entries).length ? `Continue at #${practice.index + 1}` : 'Start at #1';
@@ -181,6 +188,17 @@ function practiceGoTo(index) {
 }
 function practiceRecord(q) { return practice.entries[q.id]; }
 function practiceAnswered(record) { return record?.status === 'correct' || record?.status === 'wrong' || record?.status === 'revealed'; }
+function practiceOptionsOrder(q) {
+  const original = q.options.map((_, index) => index);
+  if (!practice.shuffleChoices || original.length < 2) return original;
+  if (!practice.choiceOrder[q.id]) {
+    const order = shuffle(original);
+    if (order.every((index, position) => index === position)) [order[0], order[1]] = [order[1], order[0]];
+    practice.choiceOrder[q.id] = order;
+    savePractice();
+  }
+  return practice.choiceOrder[q.id];
+}
 function renderPractice() {
   const q = app.questions[practice.index]; if (!q) return;
   const record = practiceRecord(q), answered = practiceAnswered(record);
@@ -189,7 +207,7 @@ function renderPractice() {
   const response = Array.isArray(record?.response) ? record.response : record?.response ? [record.response] : [];
   let answers;
   if (typed) answers = `<label class="sr-only" for="practiceAnswerInput">Type your answer</label><input id="practiceAnswerInput" class="answer-input" type="text" autocomplete="off" spellcheck="false" placeholder="Type your answer…" value="${escapeHTML(record?.response || '')}" ${answered ? 'disabled' : ''}><p class="input-helper">${q.type === 'short_answer_question' ? 'Follow the format in the question.' : 'Capitalization is ignored.'}</p>`;
-  else answers = `<div class="game-choices" role="group" aria-label="Answer choices in their original order">${q.options.map((option, index) => { const picked = response.some(item => normalize(item) === normalize(option)); const correct = isCorrectOption(q, option); const cls = answered ? correct ? 'is-correct' : picked ? 'is-wrong' : '' : practice.selected.has(index) ? 'is-selected' : ''; return `<button type="button" class="choice-button ${cls}" data-practice-choice="${index}" aria-pressed="${picked || practice.selected.has(index)}" ${answered ? 'disabled' : ''}><span class="choice-key">${String.fromCharCode(65 + index)}</span><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>`;
+  else answers = `<div class="game-choices" role="group" aria-label="Answer choices${practice.shuffleChoices ? ' in shuffled order' : ' in original order'}">${practiceOptionsOrder(q).map((originalIndex, displayIndex) => { const option = q.options[originalIndex]; const picked = response.some(item => normalize(item) === normalize(option)); const correct = isCorrectOption(q, option); const cls = answered ? correct ? 'is-correct' : picked ? 'is-wrong' : '' : practice.selected.has(originalIndex) ? 'is-selected' : ''; return `<button type="button" class="choice-button ${cls}" data-practice-choice="${originalIndex}" aria-pressed="${picked || practice.selected.has(originalIndex)}" ${answered ? 'disabled' : ''}><span class="choice-key">${String.fromCharCode(65 + displayIndex)}</span><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>`;
   const feedback = answered ? `<div class="feedback ${record.status === 'correct' ? 'is-correct' : 'is-wrong'}" role="status"><strong>${record.status === 'correct' ? 'You got it!' : record.status === 'revealed' ? 'Answer revealed' : 'Good one to review.'}</strong>${record.status === 'wrong' && response.length ? `<span class="practice-your-answer">Your answer: ${escapeHTML(response.join(' · '))}</span>` : ''}<span class="answer-line">Correct answer: ${escapeHTML(answerText(q))}</span><span class="feedback-explanation">${escapeHTML(explanationText(q))}</span></div>` : record?.status === 'skipped' ? '<p class="practice-skipped-note">You skipped this one. Try it whenever you’re ready.</p>' : '';
   const action = answered ? '<button type="button" class="practice-retry" data-practice-action="retry">Try this question again</button>' : `<div class="practice-answer-actions">${typed || multi ? `<button type="button" class="question-submit" data-practice-action="check" ${typed || !practice.selected.size ? 'disabled' : ''}>Check answer</button>` : ''}<button type="button" class="practice-reveal" data-practice-action="reveal">Show answer</button></div>`;
   $('practiceContent').innerHTML = `<article class="question-card practice-question-card"><div class="question-card-head"><span class="question-tag">QUESTION ${practice.index + 1} · ${escapeHTML(sourceName(q).toUpperCase())}</span><span class="practice-type-tag">${escapeHTML(typeName(q))}</span></div><div class="question-prompt">${safeQuestionHTML(q)}</div>${answers}${feedback}${action}</article>`;
@@ -198,6 +216,7 @@ function renderPractice() {
   $('practiceProgressText').textContent = `${answeredCount} answered · ${correctCount} right`;
   $('practicePositionText').textContent = `Question ${practice.index + 1} of ${app.questions.length}`;
   $('practiceProgressFill').style.width = `${answeredCount / app.questions.length * 100}%`;
+  $('practiceShuffleChoices').checked = practice.shuffleChoices;
   $('practiceJumpInput').max = String(app.questions.length);
   $('practicePrevious').disabled = practice.index === 0;
   $('practiceNext').disabled = practice.index === app.questions.length - 1;
@@ -607,6 +626,7 @@ function attachEvents() {
   $('heroStart').addEventListener('click', () => openSetup('shuffle'));
   document.querySelectorAll('.mode-card').forEach(button => button.addEventListener('click', () => button.dataset.mode === 'practice' ? openPractice() : openSetup(button.dataset.mode)));
   $('leavePractice').addEventListener('click', () => setView('home'));
+  $('practiceShuffleChoices').addEventListener('change', event => { practice.shuffleChoices = event.target.checked; savePractice(); renderPractice(); });
   $('practicePrevious').addEventListener('click', () => practiceGoTo(practice.index - 1));
   $('practiceNext').addEventListener('click', () => practiceGoTo(practice.index + 1));
   $('practiceSkip').addEventListener('click', () => { const q = app.questions[practice.index]; if (!practiceAnswered(practiceRecord(q))) practice.entries[q.id] = { status: 'skipped', response: '' }; practiceGoTo(practice.index + 1); });
