@@ -308,7 +308,7 @@ async function createRoom(request) {
   const body = await bodyOf(request);
   const name = cleanName(body.name);
   const questionCount = Number(body.questionCount || 10);
-  if (![10, 20].includes(questionCount)) throw new ApiError(400, 'Choose a 10 or 20 question match.');
+  if (![10, 20, 30, 50].includes(questionCount)) throw new ApiError(400, 'Choose a 10, 20, 30, or 50 question match.');
   await limitAnonymous(request, 'create', 8);
   const now = Date.now();
   const { player, token } = createPlayer(name, now);
