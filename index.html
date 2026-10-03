@@ -71,6 +71,7 @@
           </div>
         </div>
 
+        <section id="savedRuns" class="saved-runs" aria-label="Continue saved ranked runs" hidden></section>
         <section class="home-leaders" aria-labelledby="homeLeadersTitle">
           <div class="home-leaders-heading"><div><span class="section-kicker">THE SCOREBOARD</span><h2 id="homeLeadersTitle">Who’s leading<span class="title-period">?</span></h2></div><button type="button" id="homeLeaderboardLink" class="small-button">Full leaderboard ↗</button></div>
           <div id="homeLeadersModes" class="home-leaders-modes" role="group" aria-label="Preview leaderboard mode"></div>
@@ -157,12 +158,13 @@
       <div class="dialog-head"><span class="section-kicker">SOLO SETUP</span><button type="button" id="closeSetup" class="icon-button close-button" aria-label="Close">×</button></div>
       <h2 id="setupTitle">Shuffle run</h2><p id="setupDescription">Every question in a new order.</p>
       <div class="setup-statline"><span id="setupQuestionCount">— questions</span></div>
+      <div id="setupResume" class="setup-resume" hidden><div><strong id="setupResumeTitle">Saved run</strong><small id="setupResumeProgress">Your progress is saved on this device.</small></div><button type="button" id="setupResumeButton" class="button button-outline">Continue ↗</button></div>
       <label class="setup-field" id="trainingLengthField" for="trainingLengthSelect" hidden>Training set<select id="trainingLengthSelect"><option value="20">20 questions · quick session</option><option value="30">30 questions · deeper session</option></select></label>
       <label class="setup-field" for="heartLimitSelect">Hearts<select id="heartLimitSelect"><option value="3">♥ ♥ ♥ · Classic</option><option value="1">♥ · Challenge</option><option value="5">♥ ♥ ♥ ♥ ♥ · Relaxed</option><option value="unlimited">∞ · Unlimited</option></select></label>
       <label class="switch-row"><span><strong>Correct answer first</strong><small>Practice only · unranked</small></span><input type="checkbox" id="correctFirstToggle" role="switch"><i aria-hidden="true"></i></label>
       <details class="setup-more"><summary>Ghost racer</summary><label class="switch-row"><span><strong>Race a ghost</strong><small>Your last run or a friend's file</small></span><input type="checkbox" id="ghostToggle" role="switch"><i aria-hidden="true"></i></label><div class="ghost-upload"><label for="ghostFile" class="small-button">Import run</label><input id="ghostFile" type="file" accept="application/json,.json"><span id="ghostFileName">No file chosen</span></div></details>
       <p class="setup-note" id="setupNote">Complete all questions to join the public board.</p>
-      <button type="submit" class="button button-primary setup-start">Start playing <span aria-hidden="true">↗</span></button>
+      <button type="submit" id="setupStartButton" class="button button-primary setup-start">Start playing <span aria-hidden="true">↗</span></button>
     </form>
   </dialog>
 

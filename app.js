@@ -10,6 +10,7 @@ const modeInfo = {
   training: { name: 'Training loop', eyebrow: 'MASTER EVERY QUESTION', description: 'Choose 20 or 30. Review misses, then retry them until every answer is right.' }
 };
 const rankedModes = ['all', 'shuffle', 'adaptive', 'blitz'];
+const savedRunVersion = 1;
 const powerCosts = { fifty: 70, shield: 45, freeze: 60 };
 const quotes = [
   'One packet at a time', 'Small wins add up', 'Your next answer is a fresh start',
@@ -26,6 +27,55 @@ const app = {
 
 function readJSON(key, fallback) { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; } }
 function writeJSON(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* Private browsing can disable storage. */ } }
+function savedRunKey(mode) { return `pp_ranked_run_${mode}`; }
+function readSavedRun(mode) {
+  if (!rankedModes.includes(mode)) return null;
+  const saved = readJSON(savedRunKey(mode), null);
+  return saved?.version === savedRunVersion && saved.mode === mode && Array.isArray(saved.order) && Number.isInteger(saved.total) && saved.total > 0 && Number.isInteger(saved.completed) && saved.completed >= 0 && saved.completed <= saved.total ? saved : null;
+}
+function clearSavedRun(mode) {
+  try { localStorage.removeItem(savedRunKey(mode)); } catch { /* Storage can be unavailable. */ }
+  renderSavedRuns();
+}
+function saveRankedRun() {
+  const g = app.game; if (!g || !rankedModes.includes(g.mode) || !g.current || app.view === 'result') return;
+  const now = g.pausedAt || performance.now();
+  writeJSON(savedRunKey(g.mode), {
+    version: savedRunVersion, mode: g.mode, order: g.order.map(q => q.id), remaining: g.remaining.map(q => q.id), total: g.total,
+    completed: g.completed, currentId: g.current.id, score: g.score, streak: g.streak, bestStreak: g.bestStreak,
+    correct: g.correct, attempts: g.attempts, hearts: g.heartLimit === 'unlimited' ? 'unlimited' : g.hearts, heartLimit: g.heartLimit,
+    missed: g.missed.map(q => q.id), selected: [...g.selected], answered: g.answered, wager: g.wager,
+    hiddenChoices: [...g.hiddenChoices], displayOptions: g.displayOptions, hintStep: g.hintStep, coachOpen: g.coachOpen,
+    used: g.used, activeShield: g.activeShield, elapsedMs: Math.max(0, now - g.startedAt),
+    questionElapsedMs: Math.max(0, now - g.questionAt), remainingTime: g.remainingTime,
+    freezeRemainingMs: Math.max(0, g.freezeUntil - now), events: g.events, ghost: g.ghost,
+    firstCorrect: g.firstCorrect, lastResult: g.lastResult || null,
+    draftAnswer: $('answerInput')?.value || '', stage: $('gameContent')?.querySelector('.wager-card') ? 'wager' : 'question'
+  });
+}
+function pauseRankedRun() {
+  const g = app.game; if (!g || !rankedModes.includes(g.mode) || app.view !== 'game') return;
+  g.pausedAt ||= performance.now();
+  clearInterval(app.timer); app.timer = null;
+  saveRankedRun();
+}
+function unpauseRankedRun() {
+  const g = app.game; if (!g || !rankedModes.includes(g.mode) || app.view !== 'game' || document.hidden) return;
+  if (g.pausedAt) {
+    const pausedFor = performance.now() - g.pausedAt;
+    g.startedAt += pausedFor; g.questionAt += pausedFor; g.freezeUntil += pausedFor;
+    g.pausedAt = null;
+  }
+  g.timerLast = performance.now();
+  if (!app.timer) app.timer = setInterval(tick, 100);
+  updateHUD();
+}
+function renderSavedRuns() {
+  const panel = $('savedRuns'); if (!panel) return;
+  const runs = rankedModes.map(mode => readSavedRun(mode)).filter(Boolean);
+  panel.hidden = !runs.length;
+  panel.innerHTML = runs.length ? `<div class="saved-runs-heading"><span class="section-kicker">PICK UP WHERE YOU LEFT OFF</span><strong>Continue a run</strong></div><div class="saved-runs-list">${runs.map(run => `<button type="button" class="saved-run-button" data-resume-mode="${run.mode}"><span><b>${escapeHTML(modeInfo[run.mode].name)}</b><small>Question ${Math.min(run.completed + (run.answered ? 0 : 1), run.total)} of ${run.total} · ${formatNumber(run.score)} pts</small></span><em>Continue ↗</em></button>`).join('')}</div>` : '';
+}
 function escapeHTML(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
 function normalize(value) { return String(value ?? '').trim().toLocaleLowerCase().replace(/[“”‘’]/g, '').replace(/[^\p{L}\p{N}.:/+-]+/gu, ' ').replace(/\s+/g, ' ').trim(); }
 function shuffle(items) { const result = [...items]; for (let i = result.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [result[i], result[j]] = [result[j], result[i]]; } return result; }
@@ -113,13 +163,14 @@ function burst() {
 function updateSoundButton() { const button = $('soundButton'); button.setAttribute('aria-pressed', String(app.soundOn)); button.setAttribute('aria-label', `Turn sound ${app.soundOn ? 'off' : 'on'}`); button.title = `Sound ${app.soundOn ? 'on' : 'off'}`; }
 function updateStats() { $('headerBest').textContent = formatNumber(app.stats.bestStreak); $('runsCount').textContent = formatNumber(app.stats.runs); }
 function setView(view) {
+  if (app.view === 'game' && view !== 'game' && view !== 'result') pauseRankedRun();
   app.view = view;
   document.body.dataset.view = view;
   for (const id of ['home', 'bank', 'leaderboard', 'game', 'practice', 'live', 'result']) $(`${id}View`).hidden = id !== view;
   document.querySelectorAll('.nav-link').forEach(button => { const active = button.dataset.view === view; button.classList.toggle('is-active', active); if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
   if (view === 'bank') renderBank();
   if (view === 'leaderboard') loadLeaderboard();
-  if (view === 'home') loadHomeLeaderboard();
+  if (view === 'home') { renderSavedRuns(); loadHomeLeaderboard(); }
   scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
 }
 
@@ -130,6 +181,7 @@ function renderHome() {
   $('bankCountBadge').textContent = `${formatNumber(app.questions.length)} questions`;
   updateStats();
   renderPracticeCard();
+  renderSavedRuns();
   const ticker = [...quotes, ...quotes].map(q => `<span><b>✳</b>${escapeHTML(q)}</span>`).join('');
   $('quoteTrack').innerHTML = ticker;
   renderLeaderboardModeTabs();
@@ -269,6 +321,13 @@ function openSetup(mode) {
   if (!['1', '3', '5', 'unlimited'].includes($('heartLimitSelect').value)) $('heartLimitSelect').value = '3';
   $('correctFirstToggle').checked = false;
   $('correctFirstToggle').closest('.switch-row').hidden = mode === 'typing' || mode === 'matching' || mode === 'training';
+  const saved = readSavedRun(mode);
+  $('setupResume').hidden = !saved;
+  if (saved) {
+    $('setupResumeTitle').textContent = `${info.name} is in progress`;
+    $('setupResumeProgress').textContent = `Question ${Math.min(saved.completed + (saved.answered ? 0 : 1), saved.total)} of ${saved.total} · ${formatNumber(saved.score)} points. Starting new replaces this save.`;
+  }
+  $('setupStartButton').innerHTML = saved ? 'Start a new run <span aria-hidden="true">↗</span>' : 'Start playing <span aria-hidden="true">↗</span>';
   updateSetupRankNote();
   $('setupDialog').showModal();
 }
@@ -295,6 +354,7 @@ function startGame() {
   let order = mode === 'all' ? [...questions] : mode === 'shuffle' ? shuffle(questions) : mode === 'typing' ? shuffle(typingPool()).slice(0, 20) : mode === 'matching' ? matchingPool().slice(0, 12) : mode === 'blitz' ? shuffle(questions).slice(0, 15) : mode === 'training' ? shuffle(questions).slice(0, Number($('trainingLengthSelect').value) === 30 ? 30 : 20) : [];
   if (mode === 'matching' && order.length < 4) { toast('Not enough matching pairs in this deck.'); return; }
   if (mode === 'typing' && !order.length) { toast('No short answers are available.'); return; }
+  if (rankedModes.includes(mode)) clearSavedRun(mode);
   const total = mode === 'adaptive' ? Math.min(20, questions.length) : order.length;
   let ghost = null;
   if (mode !== 'training' && $('ghostToggle').checked) {
@@ -308,14 +368,65 @@ function startGame() {
     answered: false, wager: 0, hiddenChoices: new Set(), hintStep: 0, coachOpen: false,
     used: { fifty: false, shield: false, freeze: false }, activeShield: false,
     startedAt: performance.now(), questionAt: performance.now(), timerLast: performance.now(), remainingTime: 0, freezeUntil: 0,
-    events: [], ghost, firstCorrect: !['typing', 'matching', 'training'].includes(mode) && $('correctFirstToggle').checked, matchPairs: [], matchChoice: { left: null, right: null },
+    events: [], ghost, firstCorrect: !['typing', 'matching', 'training'].includes(mode) && $('correctFirstToggle').checked, matchPairs: [], matchChoice: { left: null, right: null }, lastResult: null, pausedAt: null,
     training: mode === 'training' ? { originalTotal: order.length, pass: 1, misses: [] } : null
   };
   $('gameModeEyebrow').textContent = modeInfo[mode].eyebrow; $('gameModeName').textContent = modeInfo[mode].name;
   $('ghostBadge').hidden = !ghost;
+  $('leaveGame').textContent = rankedModes.includes(mode) ? '← Save & leave' : '← Leave run';
   setView('game'); updateHUD();
   clearInterval(app.timer); app.timer = setInterval(tick, 100);
   if (mode === 'matching') renderMatchBoard(); else nextQuestion();
+}
+function resumeRankedRun(mode) {
+  const saved = readSavedRun(mode); if (!saved || !app.questions.length) { toast('No saved run is available.'); return; }
+  const byId = new Map(app.questions.map(q => [q.id, q]));
+  const current = byId.get(saved.currentId);
+  const valid = current && Array.isArray(saved.remaining) && Array.isArray(saved.missed) && Array.isArray(saved.selected) && Array.isArray(saved.hiddenChoices) &&
+    saved.order.every(id => byId.has(id)) && saved.remaining.every(id => byId.has(id)) &&
+    (mode === 'adaptive' || saved.order.length === saved.total) && Number.isFinite(saved.score) && saved.score >= 0 &&
+    (saved.displayOptions == null || Array.isArray(saved.displayOptions) && saved.displayOptions.every(option => current.options.includes(option))) &&
+    (!saved.answered || saved.lastResult && typeof saved.lastResult.correct === 'boolean');
+  if (!valid) { clearSavedRun(mode); toast('This saved run no longer matches the question deck.'); return; }
+  const now = performance.now();
+  const heartLimit = ['1', '3', '5', 'unlimited'].includes(saved.heartLimit) ? saved.heartLimit : '3';
+  const g = {
+    mode, order: saved.order.map(id => byId.get(id)), remaining: (saved.remaining || []).map(id => byId.get(id)),
+    total: saved.total, completed: saved.completed, current, score: saved.score,
+    streak: Number(saved.streak) || 0, bestStreak: Number(saved.bestStreak) || 0,
+    correct: Number(saved.correct) || 0, attempts: Number(saved.attempts) || 0,
+    hearts: heartLimit === 'unlimited' ? Infinity : Math.max(0, Math.min(Number(heartLimit), Number(saved.hearts) || 0)), heartLimit,
+    missed: (saved.missed || []).map(id => byId.get(id)).filter(Boolean), selected: new Set(saved.selected || []),
+    answered: Boolean(saved.answered), wager: Number(saved.wager) || 0,
+    hiddenChoices: new Set(saved.hiddenChoices || []), displayOptions: saved.displayOptions || null,
+    hintStep: Math.max(0, Math.min(2, Number(saved.hintStep) || 0)), coachOpen: Boolean(saved.coachOpen),
+    used: { fifty: Boolean(saved.used?.fifty), shield: Boolean(saved.used?.shield), freeze: Boolean(saved.used?.freeze) },
+    activeShield: Boolean(saved.activeShield), startedAt: now - Math.max(0, Number(saved.elapsedMs) || 0),
+    questionAt: now - Math.max(0, Number(saved.questionElapsedMs) || 0), timerLast: now,
+    remainingTime: Math.max(0, Number(saved.remainingTime) || 0), freezeUntil: now + Math.max(0, Number(saved.freezeRemainingMs) || 0),
+    events: Array.isArray(saved.events) ? saved.events : [], ghost: validGhost(saved.ghost) ? saved.ghost : null,
+    firstCorrect: Boolean(saved.firstCorrect), matchPairs: [], matchChoice: { left: null, right: null },
+    lastResult: saved.lastResult || null, pausedAt: null, training: null
+  };
+  clearInterval(app.timer); app.timer = null; app.mode = mode; app.game = g;
+  $('gameModeEyebrow').textContent = modeInfo[mode].eyebrow; $('gameModeName').textContent = modeInfo[mode].name;
+  $('ghostBadge').hidden = !g.ghost; $('leaveGame').textContent = '← Save & leave';
+  setView('game');
+  if (saved.stage === 'wager' && !g.answered) renderWager();
+  else {
+    renderQuestion();
+    const input = $('answerInput'); if (input) { input.value = saved.draftAnswer || ''; $('answerAction').disabled = !input.value.trim(); }
+    document.querySelectorAll('.choice-button').forEach(button => {
+      const selected = g.selected.has(Number(button.dataset.choiceIndex));
+      button.classList.toggle('is-selected', selected); button.setAttribute('aria-pressed', String(selected));
+    });
+    if (!input && g.current.correctAnswers.length > 1) $('answerAction').disabled = !g.selected.size;
+    if (g.coachOpen) { const wasAnswered = g.answered; g.answered = false; showCoach(); g.answered = wasAnswered; }
+    if (g.answered) renderAnswerFeedback(g);
+  }
+  g.questionAt = now - Math.max(0, Number(saved.questionElapsedMs) || 0);
+  updateHUD(); unpauseRankedRun();
+  announce(`Resumed ${modeInfo[mode].name}, question ${Math.min(g.completed + (g.answered ? 0 : 1), g.total)} of ${g.total}.`);
 }
 function selectAdaptiveQuestion(g, preferHard) {
   const speed = g.events.slice(-4).map(e => e.responseMs).filter(Number.isFinite);
@@ -334,12 +445,13 @@ function nextQuestion() {
   const preferHard = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100;
   g.current = g.mode === 'adaptive' ? selectAdaptiveQuestion(g, preferHard) : g.order[g.completed];
   if (!g.current) { if (g.training) finishTrainingPass(); else finishGame(); return; }
-  g.selected = new Set(); g.answered = false; g.wager = 0; g.hiddenChoices = new Set(); g.displayOptions = null; g.hintStep = 0; g.coachOpen = false; g.used = { fifty: false, shield: false, freeze: false }; g.activeShield = false;
+  g.selected = new Set(); g.answered = false; g.wager = 0; g.hiddenChoices = new Set(); g.displayOptions = null; g.hintStep = 0; g.coachOpen = false; g.used = { fifty: false, shield: false, freeze: false }; g.activeShield = false; g.lastResult = null;
   g.questionAt = performance.now();
   if (g.mode === 'blitz') { g.remainingTime = Math.max(5, 15 - Math.floor(g.completed * .7)); g.timerLast = performance.now(); }
   const wagerRound = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100 && difficulty(g.current) >= .55 && !['typing', 'training'].includes(g.mode);
   if (wagerRound) renderWager(); else renderQuestion();
   updateHUD();
+  saveRankedRun();
 }
 function renderWager() {
   const g = app.game;
@@ -398,6 +510,7 @@ function usePower(name) {
   g.score -= powerCosts[name]; g.used[name] = true; updateHUD(); playTone('click'); toast(name === 'fifty' ? 'Two wrong choices crossed out.' : name === 'shield' ? 'Shield ready for one missed answer.' : 'Clock frozen for 4 seconds.');
   document.querySelectorAll(`[data-power="${name}"]`).forEach(button => { button.disabled = true; button.classList.add('is-active'); });
   document.querySelectorAll('[data-power]').forEach(button => { if (!g.used[button.dataset.power] && g.score < powerCosts[button.dataset.power]) { button.disabled = true; button.classList.add('is-locked'); } });
+  saveRankedRun();
 }
 function checkTypedAnswer(q, typed) {
   const exactCase = /lowercase only/i.test(q.question);
@@ -436,8 +549,16 @@ function resolveAnswer(correct, response = '') {
   g.completed++;
   g.events.push({ t: Math.round(performance.now() - g.startedAt), score: g.score, completed: g.completed, correct, responseMs });
   updateHUD();
-  const slot = $('feedbackSlot');
   const resultWord = correct ? ['Nice link!', 'You got it!', 'Great call!', 'That is the one!'][Math.floor(Math.random() * 4)] : 'Keep going — you are learning.';
+  g.lastResult = { correct, response, points, resultWord };
+  renderAnswerFeedback(g);
+  saveRankedRun();
+  announce(`${correct ? 'Correct' : 'Incorrect'}. ${correct ? points + ' points earned.' : 'Correct answer: ' + answerText(q)} ${heartsRemaining(g)} remain.`);
+  if (g.mode === 'blitz' && correct) setTimeout(() => { if (app.game === g && g.answered && app.view === 'game' && !document.hidden && !g.pausedAt) nextQuestion(); }, 1000);
+}
+function renderAnswerFeedback(g) {
+  const q = g.current, { correct, response, points, resultWord } = g.lastResult;
+  const slot = $('feedbackSlot');
   slot.innerHTML = `<div class="feedback ${correct ? 'is-correct' : 'is-wrong'}"><strong>${resultWord}</strong>${correct ? `+${formatNumber(points)} points${g.wager ? ` · ${formatNumber(g.wager)} wager won` : ''}` : `${response ? 'Your answer: ' + escapeHTML(response) + '. ' : ''}${g.wager ? `${formatNumber(g.wager)} points lost. ` : ''}<span class="answer-line">Correct answer: ${escapeHTML(answerText(q))}</span>`}<span class="feedback-explanation">${escapeHTML(explanationText(q))}</span></div>`;
   document.querySelectorAll('.choice-button').forEach(button => {
     const index = +button.dataset.choiceIndex, option = g.displayOptions[index];
@@ -448,16 +569,16 @@ function resolveAnswer(correct, response = '') {
   const input = $('answerInput'); if (input) { input.disabled = true; input.classList.add(correct ? 'is-correct' : 'is-wrong'); }
   document.querySelectorAll('.power-button,.hint-button').forEach(button => { button.disabled = true; });
   $('answerAction').disabled = false; $('answerAction').dataset.action = 'next'; $('answerAction').textContent = g.hearts <= 0 || g.completed >= g.total ? 'See results ↗' : 'Next question ↗';
-  announce(`${correct ? 'Correct' : 'Incorrect'}. ${correct ? points + ' points earned.' : 'Correct answer: ' + answerText(q)} ${heartsRemaining(g)} remain.`);
-  if (g.mode === 'blitz' && correct) setTimeout(() => { if (app.game === g && g.answered && app.view === 'game') nextQuestion(); }, 1000);
 }
 function tick() {
-  const g = app.game; if (!g || app.view !== 'game') return;
+  const g = app.game; if (!g || app.view !== 'game' || g.pausedAt) return;
   const now = performance.now();
   if (g.mode === 'blitz' && !g.answered && g.current && !$('gameContent').querySelector('.wager-card')) {
     const delta = now - g.timerLast; if (now >= g.freezeUntil) g.remainingTime = Math.max(0, g.remainingTime - delta / 1000);
     g.timerLast = now;
     if (g.remainingTime <= 0) { resolveAnswer(false); toast('Time is up!'); }
+    const savedSecond = Math.ceil(g.remainingTime);
+    if (savedSecond !== g.lastAutosaveSecond) { g.lastAutosaveSecond = savedSecond; saveRankedRun(); }
   } else g.timerLast = now;
   updateHUD();
 }
@@ -552,6 +673,7 @@ function retryTraining() {
 function finishGame() {
   const g = app.game; if (!g || app.view === 'result') return;
   clearInterval(app.timer); app.timer = null;
+  if (rankedModes.includes(g.mode)) clearSavedRun(g.mode);
   const duration = Math.max(1, Math.round(performance.now() - g.startedAt));
   const record = { version: 1, mode: g.mode, total: g.total, completed: g.completed, score: g.score, duration, events: g.events };
   writeJSON(`pp_ghost_${g.mode}`, record);
@@ -663,6 +785,7 @@ function attachEvents() {
   $('brandButton').addEventListener('click', () => setView('home'));
   document.querySelectorAll('.nav-link').forEach(button => button.addEventListener('click', () => { if (app.game && app.view === 'game') clearInterval(app.timer); setView(button.dataset.view); }));
   $('heroStart').addEventListener('click', () => openSetup('shuffle'));
+  $('savedRuns').addEventListener('click', event => { const mode = event.target.closest('[data-resume-mode]')?.dataset.resumeMode; if (mode) resumeRankedRun(mode); });
   document.querySelectorAll('.mode-card').forEach(button => button.addEventListener('click', () => button.dataset.mode === 'practice' ? openPractice() : openSetup(button.dataset.mode)));
   $('leavePractice').addEventListener('click', () => setView('home'));
   $('practiceShuffleChoices').addEventListener('change', event => { practice.shuffleChoices = event.target.checked; savePractice(); renderPractice(); });
@@ -699,6 +822,7 @@ function attachEvents() {
   $('soundButton').addEventListener('click', () => { app.soundOn = !app.soundOn; writeJSON('pp_sound', app.soundOn); updateSoundButton(); if (app.soundOn) playTone('click'); });
   $('closeSetup').addEventListener('click', () => $('setupDialog').close());
   $('setupForm').addEventListener('submit', event => { event.preventDefault(); $('setupDialog').close(); startGame(); });
+  $('setupResumeButton').addEventListener('click', () => { const mode = app.mode; $('setupDialog').close(); resumeRankedRun(mode); });
   $('trainingLengthSelect').addEventListener('change', () => { if (app.mode === 'training') $('setupQuestionCount').textContent = `${Math.min(Number($('trainingLengthSelect').value), app.questions.length)} questions`; });
   $('correctFirstToggle').addEventListener('change', updateSetupRankNote);
   $('leaderboardHearts').addEventListener('change', loadLeaderboard);
@@ -723,26 +847,26 @@ function attachEvents() {
     else { if (app.bankRevealed.has(id)) app.bankRevealed.delete(id); else app.bankRevealed.add(id); }
     renderBank();
   });
-  $('leaveGame').addEventListener('click', () => { clearInterval(app.timer); app.timer = null; app.game = null; setView('home'); });
+  $('leaveGame').addEventListener('click', () => { clearInterval(app.timer); app.timer = null; setView('home'); app.game = null; });
   $('gameContent').addEventListener('click', event => {
-    const wager = event.target.closest('[data-wager]'); if (wager) { const g = app.game; g.wager = Math.floor(g.score * (+wager.dataset.wager / 100)); playTone('click'); renderQuestion(); return; }
+    const wager = event.target.closest('[data-wager]'); if (wager) { const g = app.game; g.wager = Math.floor(g.score * (+wager.dataset.wager / 100)); playTone('click'); renderQuestion(); saveRankedRun(); return; }
     const match = event.target.closest('[data-match-side]'); if (match) { handleMatchClick(match); return; }
     const power = event.target.closest('[data-power]'); if (power) { usePower(power.dataset.power); return; }
     const choice = event.target.closest('[data-choice-index]');
     if (choice && app.game && !app.game.answered) {
       const index = +choice.dataset.choiceIndex, g = app.game, multi = g.current.correctAnswers.length > 1;
-      if (multi) { if (g.selected.has(index)) g.selected.delete(index); else g.selected.add(index); choice.classList.toggle('is-selected', g.selected.has(index)); choice.setAttribute('aria-pressed', String(g.selected.has(index))); $('answerAction').disabled = !g.selected.size; }
+      if (multi) { if (g.selected.has(index)) g.selected.delete(index); else g.selected.add(index); choice.classList.toggle('is-selected', g.selected.has(index)); choice.setAttribute('aria-pressed', String(g.selected.has(index))); $('answerAction').disabled = !g.selected.size; saveRankedRun(); }
       else { g.selected = new Set([index]); checkAnswer(); }
       return;
     }
     const action = event.target.closest('[data-action]'); if (!action) return;
-    if (action.dataset.action === 'hint') showCoach();
-    else if (action.dataset.action === 'more-hint') { app.game.hintStep++; showCoach(); }
+    if (action.dataset.action === 'hint') { showCoach(); saveRankedRun(); }
+    else if (action.dataset.action === 'more-hint') { app.game.hintStep++; showCoach(); saveRankedRun(); }
     else if (action.dataset.action === 'submit') checkAnswer();
     else if (action.dataset.action === 'skip') resolveAnswer(false);
     else if (action.dataset.action === 'next') nextQuestion();
   });
-  $('gameContent').addEventListener('input', event => { if (event.target.id === 'answerInput') $('answerAction').disabled = !event.target.value.trim(); });
+  $('gameContent').addEventListener('input', event => { if (event.target.id === 'answerInput') { $('answerAction').disabled = !event.target.value.trim(); saveRankedRun(); } });
   $('gameContent').addEventListener('keydown', event => { if (event.target.id === 'answerInput' && event.key === 'Enter') { event.preventDefault(); checkAnswer(); } });
   $('resultContent').addEventListener('click', event => { const action = event.target.closest('[data-result]')?.dataset.result; if (action === 'again') openSetup(app.mode); else if (action === 'retry-training') retryTraining(); else if (action === 'home') setView('home'); else if (action === 'leaderboard') { leaderboardMode = rankedModes.includes(app.game?.mode) ? app.game.mode : 'all'; $('leaderboardHearts').value = 'all'; renderLeaderboardModeTabs(); setView('leaderboard'); } else if (action === 'export') exportGhost(); });
   $('resultContent').addEventListener('submit', event => { if (event.target.id === 'scoreSubmitForm') { event.preventDefault(); submitSoloScore(); } });
@@ -761,6 +885,8 @@ function attachEvents() {
     else if (app.view === 'live' && live.room?.phase === 'question' && !live.submitted) choice = $('liveStage').querySelector(`[data-live-choice="${index}"]`);
     if (choice && !choice.disabled) { event.preventDefault(); choice.click(); }
   });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pauseRankedRun(); else unpauseRankedRun(); });
+  window.addEventListener('pagehide', pauseRankedRun);
 }
 const live = {
   code: null, token: null, playerId: null, room: null, name: '', serverOffset: 0,
