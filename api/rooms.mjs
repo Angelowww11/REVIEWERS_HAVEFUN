@@ -11,6 +11,7 @@ const MAX_PLAYERS = 8;
 const QUESTION_MS = 25_000;
 const REVEAL_MS = 5_000;
 const FREEZE_MS = 4_000;
+const POWER_COSTS = { fifty: 70, shield: 45, freeze: 60 };
 const ROUND_MS = QUESTION_MS + REVEAL_MS;
 const ROOM_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const ALLOWED_REACTIONS = new Set(['🎉', '🔥', '⚡', '💀', '😂', '😎', '👏', '😱', '🫡', '❤️']);
@@ -205,7 +206,7 @@ function visibleTotals(player, lastCompleted) {
   let streak = 0;
   for (let index = 0; index <= lastCompleted; index++) {
     const answer = player.answers[index];
-    score += answer?.points || 0;
+    score += (answer?.points || 0) - (player.powers?.[index]?.spent || 0);
     streak = answer?.correct ? streak + 1 : answer?.shielded ? streak : 0;
   }
   return { score, streak };
@@ -241,6 +242,7 @@ function publicRoom(state, viewer, now) {
       ? revealResult(state, shownIndex) : null,
     myAnswer: answer?.answer ?? null,
     myPowers: viewer.powers?.[shownIndex] || {},
+    mySpendablePoints: time.phase === 'question' ? Math.max(0, visibleTotals(viewer, time.index - 1).score - (viewer.powers?.[shownIndex]?.spent || 0)) : visibleTotals(viewer, lastCompleted).score,
     freezeUsed: Boolean(state.sequence[shownIndex]?.freezeUsed),
     messages: state.messages,
     reactions: state.reactions.filter(reaction => now - reaction.at < 7000)
@@ -422,6 +424,8 @@ function handlePower(room, player, now, body) {
   player.powers ||= {};
   const used = player.powers[time.index] ||= {};
   if (used[name]) throw new ApiError(409, 'This power-up was already used on this question.');
+  const available = visibleTotals(player, time.index - 1).score - (used.spent || 0);
+  if (available < POWER_COSTS[name]) throw new ApiError(409, `Earn ${POWER_COSTS[name]} points to use this power-up.`);
   if (name === 'fifty') {
     const question = roundQuestion(room, time.index);
     const options = currentQuestion(room, time.index)?.options || [];
@@ -445,6 +449,7 @@ function handlePower(room, player, now, body) {
     }
     used.freeze = true;
   }
+  used.spent = (used.spent || 0) + POWER_COSTS[name];
 }
 
 function handleChat(room, player, now, body) {

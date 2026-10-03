@@ -6,9 +6,11 @@ const modeInfo = {
   adaptive: { name: 'Level up', eyebrow: '20 QUESTION SPRINT', description: '20 questions that respond to your pace.' },
   blitz: { name: 'Boss blitz', eyebrow: 'BEAT THE CLOCK', description: '15 questions against the clock.' },
   matching: { name: 'Match maker', eyebrow: 'TAP TO PAIR', description: 'Pair questions with answers.' },
-  typing: { name: 'Type it out', eyebrow: 'NO CHOICES', description: 'Answer from memory.' }
+  typing: { name: 'Type it out', eyebrow: 'NO CHOICES', description: 'Answer from memory.' },
+  training: { name: 'Training loop', eyebrow: 'MASTER EVERY QUESTION', description: 'Choose 20 or 30. Review misses, then retry them until every answer is right.' }
 };
 const rankedModes = ['all', 'shuffle', 'adaptive', 'blitz'];
+const powerCosts = { fifty: 70, shield: 45, freeze: 60 };
 const quotes = [
   'One packet at a time', 'Small wins add up', 'Your next answer is a fresh start',
   'The streak starts with one', 'Learn it, link it, beat it', 'Progress looks good on you',
@@ -258,18 +260,21 @@ function openSetup(mode) {
   if (!app.questions.length) { toast('The question deck is still loading.'); return; }
   app.mode = mode; const info = modeInfo[mode];
   $('setupTitle').textContent = info.name; $('setupDescription').textContent = info.description;
-  const count = mode === 'typing' ? Math.min(20, typingPool().length) : mode === 'matching' ? Math.min(12, matchingPool().length) : mode === 'adaptive' ? Math.min(20, app.questions.length) : mode === 'blitz' ? Math.min(15, app.questions.length) : app.questions.length;
+  const count = mode === 'typing' ? Math.min(20, typingPool().length) : mode === 'matching' ? Math.min(12, matchingPool().length) : mode === 'adaptive' ? Math.min(20, app.questions.length) : mode === 'blitz' ? Math.min(15, app.questions.length) : mode === 'training' ? Math.min(Number($('trainingLengthSelect').value), app.questions.length) : app.questions.length;
   $('setupQuestionCount').textContent = `${count} questions`;
+  $('trainingLengthField').hidden = mode !== 'training';
+  $('heartLimitSelect').closest('.setup-field').hidden = mode === 'training';
+  $('setupDialog').querySelector('.setup-more').hidden = mode === 'training';
   $('heartLimitSelect').value = String(readJSON('pp_heart_limit', '3'));
   if (!['1', '3', '5', 'unlimited'].includes($('heartLimitSelect').value)) $('heartLimitSelect').value = '3';
   $('correctFirstToggle').checked = false;
-  $('correctFirstToggle').closest('.switch-row').hidden = mode === 'typing' || mode === 'matching';
+  $('correctFirstToggle').closest('.switch-row').hidden = mode === 'typing' || mode === 'matching' || mode === 'training';
   updateSetupRankNote();
   $('setupDialog').showModal();
 }
 function updateSetupRankNote() {
   const practice = !$('correctFirstToggle').closest('.switch-row').hidden && $('correctFirstToggle').checked;
-  $('setupNote').textContent = practice ? 'Practice only · this run is unranked.' : rankedModes.includes(app.mode) ? `${modeInfo[app.mode].name} runs can enter the public board.` : 'This mode is for practice; choose a ranked mode to enter the board.';
+  $('setupNote').textContent = app.mode === 'training' ? 'Unlimited hearts · every miss returns in the next pass.' : practice ? 'Practice only · this run is unranked.' : rankedModes.includes(app.mode) ? `${modeInfo[app.mode].name} runs can enter the public board.` : 'This mode is for practice; choose a ranked mode to enter the board.';
 }
 function typingPool() { return app.questions.filter(q => q.correctAnswers.length === 1 && q.correctAnswers[0].length <= 52 && !hasImage(q)); }
 function matchingPool() {
@@ -284,15 +289,15 @@ function prepareDifficulty() {
 function complexity(q) { return String(q.question || '').length + (q.options || []).reduce((sum, option) => sum + String(option).length * .2, 0) + (hasImage(q) ? 55 : 0); }
 function startGame() {
   const mode = app.mode;
-  const heartLimit = ['1', '3', '5', 'unlimited'].includes($('heartLimitSelect').value) ? $('heartLimitSelect').value : '3';
-  writeJSON('pp_heart_limit', heartLimit);
+  const heartLimit = mode === 'training' ? 'unlimited' : ['1', '3', '5', 'unlimited'].includes($('heartLimitSelect').value) ? $('heartLimitSelect').value : '3';
+  if (mode !== 'training') writeJSON('pp_heart_limit', heartLimit);
   const questions = app.questions;
-  let order = mode === 'all' ? [...questions] : mode === 'shuffle' ? shuffle(questions) : mode === 'typing' ? shuffle(typingPool()).slice(0, 20) : mode === 'matching' ? matchingPool().slice(0, 12) : mode === 'blitz' ? shuffle(questions).slice(0, 15) : [];
+  let order = mode === 'all' ? [...questions] : mode === 'shuffle' ? shuffle(questions) : mode === 'typing' ? shuffle(typingPool()).slice(0, 20) : mode === 'matching' ? matchingPool().slice(0, 12) : mode === 'blitz' ? shuffle(questions).slice(0, 15) : mode === 'training' ? shuffle(questions).slice(0, Number($('trainingLengthSelect').value) === 30 ? 30 : 20) : [];
   if (mode === 'matching' && order.length < 4) { toast('Not enough matching pairs in this deck.'); return; }
   if (mode === 'typing' && !order.length) { toast('No short answers are available.'); return; }
   const total = mode === 'adaptive' ? Math.min(20, questions.length) : order.length;
   let ghost = null;
-  if ($('ghostToggle').checked) {
+  if (mode !== 'training' && $('ghostToggle').checked) {
     const candidate = app.importedGhost || readJSON(`pp_ghost_${mode}`, null);
     if (validGhost(candidate) && candidate.mode === mode) ghost = candidate;
     else toast('No ghost for this mode yet. Finish a run or import one.');
@@ -303,7 +308,8 @@ function startGame() {
     answered: false, wager: 0, hiddenChoices: new Set(), hintStep: 0, coachOpen: false,
     used: { fifty: false, shield: false, freeze: false }, activeShield: false,
     startedAt: performance.now(), questionAt: performance.now(), timerLast: performance.now(), remainingTime: 0, freezeUntil: 0,
-    events: [], ghost, firstCorrect: !['typing', 'matching'].includes(mode) && $('correctFirstToggle').checked, matchPairs: [], matchChoice: { left: null, right: null }
+    events: [], ghost, firstCorrect: !['typing', 'matching', 'training'].includes(mode) && $('correctFirstToggle').checked, matchPairs: [], matchChoice: { left: null, right: null },
+    training: mode === 'training' ? { originalTotal: order.length, pass: 1, misses: [] } : null
   };
   $('gameModeEyebrow').textContent = modeInfo[mode].eyebrow; $('gameModeName').textContent = modeInfo[mode].name;
   $('ghostBadge').hidden = !ghost;
@@ -324,14 +330,14 @@ function selectAdaptiveQuestion(g, preferHard) {
 }
 function nextQuestion() {
   const g = app.game; if (!g) return;
-  if (g.completed >= g.total || g.hearts <= 0) { finishGame(); return; }
+  if (g.completed >= g.total || g.hearts <= 0) { if (g.training) finishTrainingPass(); else finishGame(); return; }
   const preferHard = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100;
   g.current = g.mode === 'adaptive' ? selectAdaptiveQuestion(g, preferHard) : g.order[g.completed];
-  if (!g.current) { finishGame(); return; }
+  if (!g.current) { if (g.training) finishTrainingPass(); else finishGame(); return; }
   g.selected = new Set(); g.answered = false; g.wager = 0; g.hiddenChoices = new Set(); g.displayOptions = null; g.hintStep = 0; g.coachOpen = false; g.used = { fifty: false, shield: false, freeze: false }; g.activeShield = false;
   g.questionAt = performance.now();
   if (g.mode === 'blitz') { g.remainingTime = Math.max(5, 15 - Math.floor(g.completed * .7)); g.timerLast = performance.now(); }
-  const wagerRound = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100 && difficulty(g.current) >= .55 && g.mode !== 'typing';
+  const wagerRound = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100 && difficulty(g.current) >= .55 && !['typing', 'training'].includes(g.mode);
   if (wagerRound) renderWager(); else renderQuestion();
   updateHUD();
 }
@@ -353,8 +359,9 @@ function powerMarkup(g, q) {
     ['freeze', '❄ Freeze', g.mode === 'blitz']
   ];
   return powers.map(([id, label, usable]) => {
-    const title = !usable ? (id === 'freeze' ? 'Available in Boss blitz' : 'Available for four-choice questions') : g.used[id] ? 'Available again next question' : id === 'shield' ? 'Protect your streak from a wrong answer' : id === 'freeze' ? 'Pause the clock for four seconds' : 'Cross out two wrong choices';
-    return `<button type="button" class="power-button ${!usable ? 'is-locked' : ''} ${g.used[id] ? 'is-active' : ''}" data-power="${id}" title="${title}" ${!usable || g.used[id] ? 'disabled' : ''}>${label}</button>`;
+    const affordable = g.score >= powerCosts[id];
+    const title = !usable ? (id === 'freeze' ? 'Available in Boss blitz' : 'Available for four-choice questions') : g.used[id] ? 'Available again next question' : !affordable ? `Earn ${powerCosts[id]} points to use this` : id === 'shield' ? 'Protect your streak from a wrong answer' : id === 'freeze' ? 'Pause the clock for four seconds' : 'Cross out two wrong choices';
+    return `<button type="button" class="power-button ${!usable || !affordable ? 'is-locked' : ''} ${g.used[id] ? 'is-active' : ''}" data-power="${id}" title="${title}" ${!usable || !affordable || g.used[id] ? 'disabled' : ''}>${label} · ${powerCosts[id]}</button>`;
   }).join('');
 }
 function renderQuestion() {
@@ -378,15 +385,19 @@ function showCoach() {
 }
 function usePower(name) {
   const g = app.game, q = g?.current;
-  if (!g || !q || g.answered || !['fifty', 'shield', 'freeze'].includes(name) || g.used[name]) return;
+  if (!g || !q || g.answered || !['fifty', 'shield', 'freeze'].includes(name) || g.used[name] || g.score < powerCosts[name]) return;
+  if (name === 'freeze' && g.mode !== 'blitz') return;
+  if (name === 'fifty' && (q.correctAnswers.length !== 1 || (q.options || []).length < 4 || !g.displayOptions?.length)) return;
   if (name === 'fifty') {
     const wrong = g.displayOptions.map((option, index) => ({ option, index })).filter(item => !isCorrectOption(q, item.option));
     if (wrong.length < 2) return;
-    shuffle(wrong).slice(0, 2).forEach(item => { g.hiddenChoices.add(item.index); const button = $('gameContent').querySelector(`[data-choice-index="${item.index}"]`); if (button) { button.disabled = true; button.classList.add('is-eliminated'); button.setAttribute('aria-label', `Choice ${item.index + 1} eliminated`); } });
+    shuffle(wrong).slice(0, 2).forEach(item => { g.hiddenChoices.add(item.index); g.selected.delete(item.index); const button = $('gameContent').querySelector(`[data-choice-index="${item.index}"]`); if (button) { button.disabled = true; button.classList.remove('is-selected'); button.classList.add('is-eliminated'); button.setAttribute('aria-pressed', 'false'); button.setAttribute('aria-label', `Choice ${item.index + 1} eliminated`); } });
+    if (q.correctAnswers.length > 1) $('answerAction').disabled = !g.selected.size;
   } else if (name === 'shield') g.activeShield = true;
   else if (name === 'freeze') g.freezeUntil = performance.now() + 4000;
-  g.used[name] = true; playTone('click'); toast(name === 'fifty' ? 'Two wrong choices crossed out.' : name === 'shield' ? 'Shield ready for one missed answer.' : 'Clock frozen for 4 seconds.');
+  g.score -= powerCosts[name]; g.used[name] = true; updateHUD(); playTone('click'); toast(name === 'fifty' ? 'Two wrong choices crossed out.' : name === 'shield' ? 'Shield ready for one missed answer.' : 'Clock frozen for 4 seconds.');
   document.querySelectorAll(`[data-power="${name}"]`).forEach(button => { button.disabled = true; button.classList.add('is-active'); });
+  document.querySelectorAll('[data-power]').forEach(button => { if (!g.used[button.dataset.power] && g.score < powerCosts[button.dataset.power]) { button.disabled = true; button.classList.add('is-locked'); } });
 }
 function checkTypedAnswer(q, typed) {
   const exactCase = /lowercase only/i.test(q.question);
@@ -419,6 +430,7 @@ function resolveAnswer(correct, response = '') {
     else g.streak = 0;
     g.score = Math.max(0, g.score - g.wager);
     g.missed.push(q);
+    if (g.training) g.training.misses.push({ question: q, response: response || 'Skipped' });
     playTone('bad'); if (navigator.vibrate) navigator.vibrate([25, 35, 25]);
   }
   g.completed++;
@@ -462,7 +474,7 @@ function updateHUD() {
   $('progressFill').style.width = `${percent}%`;
   document.querySelector('.progress-track').setAttribute('aria-valuenow', String(percent));
   const shown = g.mode === 'matching' ? g.completed + 1 : g.answered ? g.completed : g.completed + 1;
-  $('questionPosition').textContent = `${g.mode === 'matching' ? 'Pair' : 'Question'} ${Math.min(shown, g.total)} of ${g.total}`;
+  $('questionPosition').textContent = `${g.training ? `Pass ${g.training.pass} · ` : ''}${g.mode === 'matching' ? 'Pair' : 'Question'} ${Math.min(shown, g.total)} of ${g.total}`;
   if (g.ghost) {
     const elapsed = performance.now() - g.startedAt;
     const past = g.ghost.events.filter(e => e.t <= elapsed); const ghostEvent = past[past.length - 1];
@@ -513,6 +525,29 @@ function handleMatchClick(button) {
 }
 function validGhost(record) {
   return record && record.version === 1 && modeInfo[record.mode] && Number.isFinite(record.total) && record.total > 0 && Array.isArray(record.events) && record.events.length <= 1000 && record.events.every(e => Number.isFinite(e.t) && e.t >= 0 && Number.isFinite(e.score) && Number.isFinite(e.completed));
+}
+function finishTrainingPass() {
+  const g = app.game; if (!g?.training) return;
+  clearInterval(app.timer); app.timer = null;
+  const { originalTotal, pass, misses } = g.training;
+  if (!misses.length) {
+    app.stats.runs++; app.stats.correct += g.correct; app.stats.bestStreak = Math.max(app.stats.bestStreak, g.bestStreak); app.stats.bestScore = Math.max(app.stats.bestScore, g.score); writeJSON('pp_stats', app.stats); updateStats();
+    const duration = Math.max(1, Math.round(performance.now() - g.startedAt));
+    $('resultContent').innerHTML = `<div class="result-card"><div class="result-burst" aria-hidden="true">✳</div><span class="section-kicker">TRAINING COMPLETE</span><h1>Every question mastered!</h1><p>You mastered all ${originalTotal} questions, including every retry.</p><div class="result-metrics"><div><strong>${originalTotal}</strong><span>MASTERED</span></div><div><strong>${pass}</strong><span>PASSES</span></div><div><strong>${g.attempts}</strong><span>ANSWERS</span></div><div><strong>${elapsedTime(duration)}</strong><span>TIME</span></div></div><div class="result-actions"><button type="button" class="button button-primary" data-result="again">Train another set ↗</button><button type="button" class="button button-outline" data-result="home">Back to modes</button></div></div>`;
+    setView('result'); announce(`Training complete. All ${originalTotal} questions mastered in ${pass} passes.`);
+    return;
+  }
+  const mastered = originalTotal - misses.length;
+  $('resultContent').innerHTML = `<div class="result-card training-result"><div class="result-burst" aria-hidden="true">↻</div><span class="section-kicker">PASS ${pass} COMPLETE</span><h1>${misses.length} to practice again</h1><p>${mastered} of ${originalTotal} mastered. Review your answers, then retry only the ones you missed.</p><div class="training-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${originalTotal}" aria-valuenow="${mastered}"><i style="width:${Math.round(mastered / originalTotal * 100)}%"></i></div><div class="result-actions"><button type="button" class="button button-primary" data-result="retry-training">Retry ${misses.length} missed ↗</button><button type="button" class="button button-outline" data-result="home">Back to modes</button></div><div class="review-list"><h2>Review before the next pass</h2>${misses.map(({ question, response }) => `<div class="review-item"><strong>#${question.id}</strong><div class="training-review-prompt">${safeQuestionHTML(question)}</div><span class="training-your-answer">You answered: ${escapeHTML(response)}</span><span>Correct: ${escapeHTML(answerText(question))}</span><p>${escapeHTML(explanationText(question))}</p></div>`).join('')}</div></div>`;
+  setView('result'); announce(`Pass ${pass} complete. ${misses.length} questions to retry.`);
+}
+function retryTraining() {
+  const g = app.game; if (!g?.training?.misses?.length) return;
+  g.order = shuffle(g.training.misses.map(item => item.question));
+  g.total = g.order.length; g.completed = 0; g.current = null; g.missed = [];
+  g.training.misses = []; g.training.pass++;
+  $('gameModeEyebrow').textContent = `MASTER EVERY QUESTION · PASS ${g.training.pass}`;
+  setView('game'); app.timer = setInterval(tick, 100); nextQuestion();
 }
 function finishGame() {
   const g = app.game; if (!g || app.view === 'result') return;
@@ -664,6 +699,7 @@ function attachEvents() {
   $('soundButton').addEventListener('click', () => { app.soundOn = !app.soundOn; writeJSON('pp_sound', app.soundOn); updateSoundButton(); if (app.soundOn) playTone('click'); });
   $('closeSetup').addEventListener('click', () => $('setupDialog').close());
   $('setupForm').addEventListener('submit', event => { event.preventDefault(); $('setupDialog').close(); startGame(); });
+  $('trainingLengthSelect').addEventListener('change', () => { if (app.mode === 'training') $('setupQuestionCount').textContent = `${Math.min(Number($('trainingLengthSelect').value), app.questions.length)} questions`; });
   $('correctFirstToggle').addEventListener('change', updateSetupRankNote);
   $('leaderboardHearts').addEventListener('change', loadLeaderboard);
   $('homeLeadersModes').addEventListener('click', event => { const mode = event.target.closest('[data-board-mode]')?.dataset.boardMode; if (!rankedModes.includes(mode)) return; homeLeaderboardMode = mode; renderLeaderboardModeTabs(); loadHomeLeaderboard(); });
@@ -708,7 +744,7 @@ function attachEvents() {
   });
   $('gameContent').addEventListener('input', event => { if (event.target.id === 'answerInput') $('answerAction').disabled = !event.target.value.trim(); });
   $('gameContent').addEventListener('keydown', event => { if (event.target.id === 'answerInput' && event.key === 'Enter') { event.preventDefault(); checkAnswer(); } });
-  $('resultContent').addEventListener('click', event => { const action = event.target.closest('[data-result]')?.dataset.result; if (action === 'again') openSetup(app.mode); else if (action === 'leaderboard') { leaderboardMode = rankedModes.includes(app.game?.mode) ? app.game.mode : 'all'; $('leaderboardHearts').value = 'all'; renderLeaderboardModeTabs(); setView('leaderboard'); } else if (action === 'export') exportGhost(); });
+  $('resultContent').addEventListener('click', event => { const action = event.target.closest('[data-result]')?.dataset.result; if (action === 'again') openSetup(app.mode); else if (action === 'retry-training') retryTraining(); else if (action === 'home') setView('home'); else if (action === 'leaderboard') { leaderboardMode = rankedModes.includes(app.game?.mode) ? app.game.mode : 'all'; $('leaderboardHearts').value = 'all'; renderLeaderboardModeTabs(); setView('leaderboard'); } else if (action === 'export') exportGhost(); });
   $('resultContent').addEventListener('submit', event => { if (event.target.id === 'scoreSubmitForm') { event.preventDefault(); submitSoloScore(); } });
   document.addEventListener('keydown', event => {
     if (event.altKey || event.ctrlKey || event.metaKey || event.repeat || event.target.closest('input, textarea, select, [contenteditable="true"]') || $('setupDialog').open) return;
@@ -887,7 +923,7 @@ function liveRender() {
     }
   }
   const phaseKey = room.phase === 'lobby' ? `${room.phase}:${room.players?.map(p => `${p.id}:${p.ready}`).join(',')}`
-    : `${room.phase}:${roundKey}:${live.submitted}:${live.hintStep}:${room.freezeUsed}:${JSON.stringify(room.myPowers)}:${JSON.stringify(live.pendingAnswer)}:${JSON.stringify(room.myAnswer)}:${JSON.stringify(room.result?.players || [])}`;
+    : `${room.phase}:${roundKey}:${live.submitted}:${live.hintStep}:${room.freezeUsed}:${room.mySpendablePoints}:${JSON.stringify(room.myPowers)}:${JSON.stringify(live.pendingAnswer)}:${JSON.stringify(room.myAnswer)}:${JSON.stringify(room.result?.players || [])}`;
   if (phaseKey !== live.stageSignature) { live.stageSignature = phaseKey; liveRenderStage(); }
   const playersKey = JSON.stringify((room.players || []).map(p => [p.id, p.name, p.score, p.streak, p.ready, p.answered]));
   if (playersKey !== live.playersSignature) { live.playersSignature = playersKey; liveRenderPlayers(); }
@@ -908,9 +944,9 @@ function livePowerMarkup(room, q, options) {
   const powers = [
     ['fifty', used.fifty ? '½ Used' : '½ 50/50', !fiftyAvailable || Boolean(used.fifty)],
     ['shield', used.shield ? '◇ Shield ready' : '◇ Shield', Boolean(used.shield)],
-    ['freeze', room.freezeUsed ? '❄ Time added' : '❄ +4 seconds', Boolean(room.freezeUsed)]
+    ['freeze', room.freezeUsed ? '❄ Time added' : '❄ +4s for all', Boolean(room.freezeUsed)]
   ];
-  return `<div class="live-power-row">${powers.map(([name, label, disabled]) => `<button type="button" class="power-button ${used[name] ? 'is-active' : ''}" data-live-power="${name}" ${disabled || live.submitted ? 'disabled' : ''}>${label}</button>`).join('')}<button type="button" class="hint-button" data-live-hint ${live.hintStep >= 3 ? 'disabled' : ''}>💡 ${live.hintStep ? 'Another hint' : 'Hint'}${live.hintStep ? ` ${live.hintStep}/3` : ''}</button></div>`;
+  return `<div class="live-power-balance">Spendable: ${formatNumber(room.mySpendablePoints || 0)} pts · Score updates at reveal</div><div class="live-power-row">${powers.map(([name, label, disabled]) => `<button type="button" class="power-button ${used[name] ? 'is-active' : ''} ${(room.mySpendablePoints || 0) < powerCosts[name] ? 'is-locked' : ''}" data-live-power="${name}" title="Costs ${powerCosts[name]} points" ${disabled || live.submitted || (room.mySpendablePoints || 0) < powerCosts[name] ? 'disabled' : ''}>${label} · ${powerCosts[name]}</button>`).join('')}<button type="button" class="hint-button" data-live-hint ${live.hintStep >= 3 ? 'disabled' : ''}>💡 ${live.hintStep ? 'Another hint' : 'Hint'}${live.hintStep ? ` ${live.hintStep}/3` : ''}</button></div>`;
 }
 function liveRenderStage() {
   const room = live.room; if (!room) return;
