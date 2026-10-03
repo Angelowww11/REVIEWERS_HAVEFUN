@@ -34,6 +34,18 @@ function hasImage(q) { return /<img\b/i.test(q.questionHtml || ''); }
 function isCorrectOption(q, option) { return (q.correctAnswers || []).some(a => normalize(a) === normalize(option)); }
 function answerText(q) { return (q.correctAnswers || []).join(' · '); }
 function explanationText(q) { return app.explanations[q.id] || 'Compare the key term in the question with the correct answer, then try this card again later.'; }
+function hintMessages(q) {
+  const prompt = String(q.question || '').toLocaleLowerCase();
+  return [
+    'First identify what the question asks for: a command, a role, a cause, or a result. Then read every condition before choosing.',
+    /\b(not|except|least|incorrect)\b/.test(prompt)
+      ? 'This asks for an exception. Check which option fails the stated condition rather than picking a familiar true statement.'
+      : 'Compare each choice with the exact condition in the question. A related fact is not enough unless it fits this scenario.',
+    hasImage(q)
+      ? 'Trace one device, port, or packet at a time through the exhibit. Check where the state or path changes.'
+      : 'Predict the behavior in your own words before looking at the choices again, then test the remaining options against it.'
+  ];
+}
 function announce(message) { $('announcer').textContent = ''; setTimeout(() => { $('announcer').textContent = message; }, 10); }
 function toast(message) { const el = $('toast'); el.textContent = message; el.classList.add('is-visible'); clearTimeout(app.toastTimer); app.toastTimer = setTimeout(() => el.classList.remove('is-visible'), 2800); }
 
@@ -289,7 +301,7 @@ function startGame() {
     mode, order, remaining: mode === 'adaptive' ? shuffle(questions) : [], total, completed: 0, current: null,
     score: 0, streak: 0, bestStreak: 0, correct: 0, attempts: 0, hearts: heartLimit === 'unlimited' ? Infinity : Number(heartLimit), heartLimit, missed: [], selected: new Set(),
     answered: false, wager: 0, hiddenChoices: new Set(), hintStep: 0, coachOpen: false,
-    unlocked: { fifty: false, shield: false, freeze: false }, used: { fifty: false, shield: false, freeze: false }, activeShield: false,
+    used: { fifty: false, shield: false, freeze: false }, activeShield: false,
     startedAt: performance.now(), questionAt: performance.now(), timerLast: performance.now(), remainingTime: 0, freezeUntil: 0,
     events: [], ghost, firstCorrect: !['typing', 'matching'].includes(mode) && $('correctFirstToggle').checked, matchPairs: [], matchChoice: { left: null, right: null }
   };
@@ -316,7 +328,7 @@ function nextQuestion() {
   const preferHard = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100;
   g.current = g.mode === 'adaptive' ? selectAdaptiveQuestion(g, preferHard) : g.order[g.completed];
   if (!g.current) { finishGame(); return; }
-  g.selected = new Set(); g.answered = false; g.wager = 0; g.hiddenChoices = new Set(); g.displayOptions = null; g.hintStep = 0; g.coachOpen = false;
+  g.selected = new Set(); g.answered = false; g.wager = 0; g.hiddenChoices = new Set(); g.displayOptions = null; g.hintStep = 0; g.coachOpen = false; g.used = { fifty: false, shield: false, freeze: false }; g.activeShield = false;
   g.questionAt = performance.now();
   if (g.mode === 'blitz') { g.remainingTime = Math.max(5, 15 - Math.floor(g.completed * .7)); g.timerLast = performance.now(); }
   const wagerRound = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100 && difficulty(g.current) >= .55 && g.mode !== 'typing';
@@ -336,14 +348,13 @@ function optionOrder(q, firstCorrect) {
 function powerMarkup(g, q) {
   const fiftyUsable = g.mode !== 'typing' && q.type !== 'short_answer_question' && q.correctAnswers.length === 1 && (q.options || []).length >= 4;
   const powers = [
-    ['fifty', '½ 50/50', 'streak 2', fiftyUsable],
-    ['shield', '◇ Shield', 'streak 3', true],
-    ['freeze', '❄ Freeze', 'streak 4', g.mode === 'blitz']
+    ['fifty', '½ 50/50', fiftyUsable],
+    ['shield', '◇ Shield', true],
+    ['freeze', '❄ Freeze', g.mode === 'blitz']
   ];
-  return powers.map(([id, label, unlock, usable]) => {
-    const locked = !g.unlocked[id] || !usable;
-    const title = !usable ? (id === 'freeze' ? 'Available in Boss blitz' : 'Available for four-choice questions') : locked ? `Unlock at ${unlock}` : g.used[id] ? 'Already used this run' : id === 'shield' ? 'Protect your streak from one wrong answer' : id === 'freeze' ? 'Pause the clock for eight seconds' : 'Remove two wrong choices';
-    return `<button type="button" class="power-button ${locked ? 'is-locked' : ''} ${id === 'shield' && g.activeShield ? 'is-active' : ''}" data-power="${id}" title="${title}" ${locked || g.used[id] ? 'disabled' : ''}>${label}${locked ? ' 🔒' : ''}</button>`;
+  return powers.map(([id, label, usable]) => {
+    const title = !usable ? (id === 'freeze' ? 'Available in Boss blitz' : 'Available for four-choice questions') : g.used[id] ? 'Available again next question' : id === 'shield' ? 'Protect your streak from a wrong answer' : id === 'freeze' ? 'Pause the clock for four seconds' : 'Cross out two wrong choices';
+    return `<button type="button" class="power-button ${!usable ? 'is-locked' : ''} ${g.used[id] ? 'is-active' : ''}" data-power="${id}" title="${title}" ${!usable || g.used[id] ? 'disabled' : ''}>${label}</button>`;
   }).join('');
 }
 function renderQuestion() {
@@ -362,30 +373,19 @@ function renderQuestion() {
 function showCoach() {
   const g = app.game; if (!g || g.answered) return;
   g.coachOpen = true;
-  const q = g.current; const stem = q.question.toLocaleLowerCase();
-  const topic = stem.includes('etherchannel') ? 'EtherChannel negotiation and settings' : stem.includes('stp') || stem.includes('spanning') ? 'spanning tree roles and states' : stem.includes('dhcp') ? 'DHCP configuration and addressing' : stem.includes('vlan') ? 'VLAN behavior' : stem.includes('ipv6') ? 'IPv6 addressing' : 'the exact term used in the question';
-  let message = `Start with ${topic}. Read the last sentence first, then look for the choice that answers it directly.`;
-  if (g.hintStep >= 1) {
-    const words = answerText(q).split(/\s+/).filter(Boolean);
-    message = `The answer has ${words.length} word${words.length === 1 ? '' : 's'} and begins with “${(words[0] || '?')[0]}”. Compare the choices carefully.`;
-  }
-  if (g.hintStep >= 2) {
-    const words = answerText(q).replace(/[^\p{L}\p{N}\s]/gu, '').split(/\s+/).filter(w => w.length >= 4);
-    const cue = words[Math.floor(words.length / 2)] || answerText(q).slice(0, 4);
-    message = `Final clue: look for the word “${cue}” in the answer. You can still solve this yourself.`;
-  }
-  $('coachSlot').innerHTML = `<div class="coach-panel"><div class="coach-title">💡 HINT BOT · OFFLINE COACH</div><p class="coach-chat">${escapeHTML(message)}</p><button type="button" data-action="more-hint" ${g.hintStep >= 2 ? 'disabled' : ''}>${g.hintStep >= 2 ? 'All hints shown' : 'One more hint'}</button></div>`;
+  const hints = hintMessages(g.current);
+  $('coachSlot').innerHTML = `<div class="coach-panel"><div class="coach-title">💡 STUDY HINT ${g.hintStep + 1} / ${hints.length}</div><p class="coach-chat">${escapeHTML(hints[g.hintStep])}</p><button type="button" data-action="more-hint" ${g.hintStep >= hints.length - 1 ? 'disabled' : ''}>${g.hintStep >= hints.length - 1 ? 'All hints shown' : 'Another hint'}</button></div>`;
 }
 function usePower(name) {
   const g = app.game, q = g?.current;
-  if (!g || !q || g.answered || !g.unlocked[name] || g.used[name]) return;
+  if (!g || !q || g.answered || !['fifty', 'shield', 'freeze'].includes(name) || g.used[name]) return;
   if (name === 'fifty') {
     const wrong = g.displayOptions.map((option, index) => ({ option, index })).filter(item => !isCorrectOption(q, item.option));
     if (wrong.length < 2) return;
     shuffle(wrong).slice(0, 2).forEach(item => { g.hiddenChoices.add(item.index); const button = $('gameContent').querySelector(`[data-choice-index="${item.index}"]`); if (button) { button.disabled = true; button.classList.add('is-eliminated'); button.setAttribute('aria-label', `Choice ${item.index + 1} eliminated`); } });
   } else if (name === 'shield') g.activeShield = true;
-  else if (name === 'freeze') g.freezeUntil = performance.now() + 8000;
-  g.used[name] = true; playTone('click'); toast(name === 'fifty' ? 'Two wrong choices crossed out.' : name === 'shield' ? 'Shield ready for one missed answer.' : 'Clock frozen for 8 seconds.');
+  else if (name === 'freeze') g.freezeUntil = performance.now() + 4000;
+  g.used[name] = true; playTone('click'); toast(name === 'fifty' ? 'Two wrong choices crossed out.' : name === 'shield' ? 'Shield ready for one missed answer.' : 'Clock frozen for 4 seconds.');
   document.querySelectorAll(`[data-power="${name}"]`).forEach(button => { button.disabled = true; button.classList.add('is-active'); });
 }
 function checkTypedAnswer(q, typed) {
@@ -412,9 +412,6 @@ function resolveAnswer(correct, response = '') {
     points = Math.round(base * (1 + Math.min(g.streak - 1, 9) * .12)) + g.wager;
     if (g.mode === 'blitz') points += Math.round(Math.max(0, g.remainingTime) * 3);
     g.score += points;
-    if (g.streak >= 2) g.unlocked.fifty = true;
-    if (g.streak >= 3) g.unlocked.shield = true;
-    if (g.streak >= 4) g.unlocked.freeze = true;
     playTone('good'); burst(); if (navigator.vibrate) navigator.vibrate(18);
   } else {
     g.hearts = Math.max(0, g.hearts - 1);
@@ -500,7 +497,6 @@ function handleMatchClick(button) {
     left.classList.remove('is-selected'); right.classList.remove('is-selected');
     left.classList.add('is-matched'); right.classList.add('is-matched'); left.disabled = true; right.disabled = true;
     g.attempts++; g.streak++; g.bestStreak = Math.max(g.bestStreak, g.streak); g.correct++; g.score += 70 + Math.min(90, g.streak * 10); g.completed++;
-    if (g.streak >= 2) g.unlocked.fifty = true; if (g.streak >= 3) g.unlocked.shield = true;
     g.events.push({ t: Math.round(performance.now() - g.startedAt), score: g.score, completed: g.completed, correct: true, responseMs: 0 });
     playTone('good'); burst(); announce(`Matched. ${g.streak} streak.`);
     if (selectedQuestion) $('matchFeedback').innerHTML = `<strong>Nice match!</strong><span>${escapeHTML(explanationText(selectedQuestion))}</span>`;
@@ -734,7 +730,7 @@ const live = {
   code: null, token: null, playerId: null, room: null, name: '', serverOffset: 0,
   pollTimer: null, clockTimer: null, fetching: false, lastPollAt: 0, pendingActions: new Set(),
   requestSeq: 0, appliedSeq: 0, stageSignature: '', playersSignature: '', messagesSignature: '',
-  roundKey: '', submitted: false, pendingAnswer: null, selected: new Set(), seenReactions: new Set(),
+  roundKey: '', submitted: false, pendingAnswer: null, selected: new Set(), hintStep: 0, seenReactions: new Set(),
   sawReactions: false, revealKey: '', lastQuestion: null
 };
 
@@ -782,7 +778,7 @@ function liveClearSession() {
   live.lastPollAt = 0;
   live.pendingActions = new Set();
   live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
-  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear();
+  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear(); live.hintStep = 0;
   live.seenReactions.clear(); live.sawReactions = false; live.revealKey = ''; live.lastQuestion = null;
   try { localStorage.removeItem('pp_live_session'); } catch { /* Storage is optional. */ }
   const url = new URL(location.href);
@@ -791,10 +787,13 @@ function liveClearSession() {
 }
 function liveApplyResponse(data, seq) {
   if (seq < live.appliedSeq || !live.code || !data.room) return;
+  const previousRound = live.room && liveRoundKey(live.room);
+  const typedDraft = !live.submitted && live.room?.phase === 'question' ? $('liveAnswerInput')?.value : null;
   live.appliedSeq = seq;
   live.room = data.room;
   liveShowConnection('connected');
   liveRender();
+  if (typedDraft != null && data.room.phase === 'question' && previousRound === liveRoundKey(data.room) && $('liveAnswerInput')) $('liveAnswerInput').value = typedDraft;
 }
 function liveEnter(data, name) {
   if (!data?.token || !data?.room?.code || !data.playerId) throw new Error('The room did not return a player session.');
@@ -803,7 +802,7 @@ function liveEnter(data, name) {
   live.pendingActions = new Set();
   live.appliedSeq = 0; live.requestSeq = 0; live.room = null;
   live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
-  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear();
+  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear(); live.hintStep = 0;
   live.seenReactions.clear(); live.sawReactions = false; live.revealKey = ''; live.lastQuestion = null;
   if (Number.isFinite(data.serverTime)) live.serverOffset = data.serverTime - Date.now();
   liveSaveSession();
@@ -881,14 +880,14 @@ function liveRender() {
   if (room.currentQuestion) live.lastQuestion = room.currentQuestion;
   const roundKey = liveRoundKey(room);
   if (room.phase === 'question' && roundKey !== live.roundKey) {
-    live.roundKey = roundKey; live.selected.clear(); live.submitted = false; live.pendingAnswer = null;
+    live.roundKey = roundKey; live.selected.clear(); live.submitted = false; live.pendingAnswer = null; live.hintStep = 0;
     if (room.currentQuestion?.multiple && room.myAnswer != null) {
       const saved = Array.isArray(room.myAnswer) ? room.myAnswer : [room.myAnswer];
       room.currentQuestion.options.forEach((option, index) => { if (saved.some(item => normalize(item) === normalize(option))) live.selected.add(index); });
     }
   }
   const phaseKey = room.phase === 'lobby' ? `${room.phase}:${room.players?.map(p => `${p.id}:${p.ready}`).join(',')}`
-    : `${room.phase}:${roundKey}:${live.submitted}:${JSON.stringify(live.pendingAnswer)}:${JSON.stringify(room.myAnswer)}:${JSON.stringify(room.result?.players || [])}`;
+    : `${room.phase}:${roundKey}:${live.submitted}:${live.hintStep}:${room.freezeUsed}:${JSON.stringify(room.myPowers)}:${JSON.stringify(live.pendingAnswer)}:${JSON.stringify(room.myAnswer)}:${JSON.stringify(room.result?.players || [])}`;
   if (phaseKey !== live.stageSignature) { live.stageSignature = phaseKey; liveRenderStage(); }
   const playersKey = JSON.stringify((room.players || []).map(p => [p.id, p.name, p.score, p.streak, p.ready, p.answered]));
   if (playersKey !== live.playersSignature) { live.playersSignature = playersKey; liveRenderPlayers(); }
@@ -902,6 +901,16 @@ function liveRender() {
     else { playTone('bad'); announce(`Round complete. ${room.result?.correctAnswers?.join(', ') || 'Answer revealed.'}`); }
   }
   if (room.phase === 'finished' && live.revealKey !== 'finished') { live.revealKey = 'finished'; playTone('good'); burst(); }
+}
+function livePowerMarkup(room, q, options) {
+  const used = room.myPowers || {};
+  const fiftyAvailable = q.type !== 'short_answer_question' && !q.multiple && options.length >= 4;
+  const powers = [
+    ['fifty', used.fifty ? '½ Used' : '½ 50/50', !fiftyAvailable || Boolean(used.fifty)],
+    ['shield', used.shield ? '◇ Shield ready' : '◇ Shield', Boolean(used.shield)],
+    ['freeze', room.freezeUsed ? '❄ Time added' : '❄ +4 seconds', Boolean(room.freezeUsed)]
+  ];
+  return `<div class="live-power-row">${powers.map(([name, label, disabled]) => `<button type="button" class="power-button ${used[name] ? 'is-active' : ''}" data-live-power="${name}" ${disabled || live.submitted ? 'disabled' : ''}>${label}</button>`).join('')}<button type="button" class="hint-button" data-live-hint ${live.hintStep >= 3 ? 'disabled' : ''}>💡 ${live.hintStep ? 'Another hint' : 'Hint'}${live.hintStep ? ` ${live.hintStep}/3` : ''}</button></div>`;
 }
 function liveRenderStage() {
   const room = live.room; if (!room) return;
@@ -930,12 +939,14 @@ function liveRenderStage() {
   const displayedValues = Array.isArray(displayedAnswer) ? displayedAnswer : [displayedAnswer];
   const savedValues = Array.isArray(savedAnswer) ? savedAnswer : [savedAnswer];
   const savedIndexes = options.map((option, index) => savedValues.some(value => value != null && normalize(value) === normalize(option)) ? index : -1).filter(index => index >= 0);
+  const savedEliminated = savedIndexes.some(index => (room.myPowers?.fifty || []).includes(index));
   const draftChanged = q.multiple && (live.selected.size !== savedIndexes.length || [...live.selected].some(index => !savedIndexes.includes(index)));
   const answerMarkup = typed
     ? isReveal ? '' : `<form id="liveAnswerForm" class="live-answer-form"><label class="sr-only" for="liveAnswerInput">Your answer</label><input id="liveAnswerInput" class="live-input" maxlength="200" placeholder="Type your answer…" value="${escapeHTML(typeof displayedAnswer === 'string' ? displayedAnswer : '')}" ${live.submitted ? 'disabled' : ''} required><button type="submit" class="button button-primary" ${live.submitted ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Send'} ↗</button></form>`
-    : `<div class="live-answer-grid">${options.map((option, index) => { const correct = answers.some(a => normalize(a) === normalize(option)); const chosen = isReveal || !q.multiple ? displayedValues.some(value => value != null && normalize(value) === normalize(option)) : live.selected.has(index); const cls = isReveal ? correct ? 'is-correct' : chosen ? 'is-wrong' : '' : chosen ? 'is-selected' : ''; return `<button type="button" class="live-answer-option ${cls}" data-live-choice="${index}" ${isReveal || live.submitted ? 'disabled' : ''} aria-pressed="${chosen}"><i>${index + 1}</i><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>${q.multiple && !isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-multi" ${live.submitted || !live.selected.size || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Lock in answers'} ↗</button></div>` : ''}`;
-  const answerNote = isReveal ? '' : live.submitted ? 'Saving your answer…' : hasSavedAnswer && draftChanged ? 'Your changes are not saved yet. Press Update answer.' : hasSavedAnswer ? '✓ Answer saved. You can change it until the question closes.' : q.multiple && live.selected.size ? 'Press Lock in answers to save your selection.' : '';
-  stage.innerHTML = `<div class="live-quiz-meta"><span class="live-stage-kicker">${isReveal ? 'ANSWER REVEAL' : 'LIVE ROUND'} · QUESTION ${(room.questionIndex ?? 0) + 1} / ${room.total || 10}</span><span id="liveTimer" class="live-timer">◷ <span>—</span></span></div><div class="live-clock-track" aria-hidden="true"><div id="liveClockFill" class="live-clock-fill"></div></div><div class="live-question-text">${safeQuestionHTML(q)}</div>${answerMarkup}${answerNote ? `<div class="live-answer-note">${answerNote}</div>` : ''}${isReveal ? `<div class="live-reveal ${mine?.correct ? '' : 'is-wrong'}"><strong>${mine?.correct ? `Nice hit! +${formatNumber(mine.points || 0)} points` : 'Round complete'}</strong><span>Correct answer${answers.length > 1 ? 's' : ''}: ${escapeHTML(answers.join(' · '))}</span><span class="feedback-explanation">${escapeHTML(explanationText(q))}</span></div><p class="live-lobby-note">Next question starts automatically.</p>` : ''}`;
+    : `<div class="live-answer-grid">${options.map((option, index) => { const correct = answers.some(a => normalize(a) === normalize(option)); const chosen = isReveal || !q.multiple ? displayedValues.some(value => value != null && normalize(value) === normalize(option)) : live.selected.has(index); const eliminated = !isReveal && (room.myPowers?.fifty || []).includes(index); const cls = isReveal ? correct ? 'is-correct' : chosen ? 'is-wrong' : '' : eliminated ? 'is-eliminated' : chosen ? 'is-selected' : ''; return `<button type="button" class="live-answer-option ${cls}" data-live-choice="${index}" ${isReveal || live.submitted || eliminated ? 'disabled' : ''} aria-pressed="${chosen}"><i>${index + 1}</i><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>${q.multiple && !isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-multi" ${live.submitted || !live.selected.size || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Lock in answers'} ↗</button></div>` : ''}`;
+  const answerNote = isReveal ? '' : live.submitted ? 'Saving your answer…' : hasSavedAnswer && draftChanged ? 'Your changes are not saved yet. Press Update answer.' : savedEliminated ? 'Your saved choice was eliminated. Pick another before the question closes.' : hasSavedAnswer ? '✓ Answer saved. You can change it until the question closes.' : q.multiple && live.selected.size ? 'Press Lock in answers to save your selection.' : '';
+  const hint = !isReveal && live.hintStep ? `<div class="coach-panel live-hint-panel"><div class="coach-title">💡 STUDY HINT ${live.hintStep}/3</div><p class="coach-chat">${escapeHTML(hintMessages(q)[live.hintStep - 1])}</p></div>` : '';
+  stage.innerHTML = `<div class="live-quiz-meta"><span class="live-stage-kicker">${isReveal ? 'ANSWER REVEAL' : 'LIVE ROUND'} · QUESTION ${(room.questionIndex ?? 0) + 1} / ${room.total || 10}</span><span id="liveTimer" class="live-timer">◷ <span>—</span></span></div><div class="live-clock-track" aria-hidden="true"><div id="liveClockFill" class="live-clock-fill"></div></div><div class="live-question-text">${safeQuestionHTML(q)}</div>${answerMarkup}${answerNote ? `<div class="live-answer-note">${answerNote}</div>` : ''}${!isReveal ? livePowerMarkup(room, q, options) : ''}${hint}${isReveal ? `<div class="live-reveal ${mine?.correct ? '' : 'is-wrong'}"><strong>${mine?.correct ? `Nice hit! +${formatNumber(mine.points || 0)} points` : mine?.shielded ? 'Shield saved your streak' : 'Round complete'}</strong><span>Correct answer${answers.length > 1 ? 's' : ''}: ${escapeHTML(answers.join(' · '))}</span><span class="feedback-explanation">${escapeHTML(explanationText(q))}</span></div><p class="live-lobby-note">Next question starts automatically.</p>` : ''}`;
   liveUpdateClock();
 }
 function liveRenderPlayers() {
@@ -968,7 +979,7 @@ function liveUpdateClock() {
   const timer = $('liveTimer'); const fill = $('liveClockFill');
   if (!timer || !fill) return;
   timer.querySelector('span').textContent = `${(remaining / 1000).toFixed(1)}s`;
-  const duration = room.phase === 'question' ? 25000 : 5000;
+  const duration = room.phase === 'question' ? room.freezeUsed ? 29000 : 25000 : 5000;
   fill.style.width = `${Math.min(100, remaining / duration * 100)}%`;
   const urgent = room.phase === 'question' && remaining <= 6000;
   timer.classList.toggle('is-urgent', urgent); fill.classList.toggle('is-urgent', urgent);
@@ -1007,6 +1018,14 @@ function attachLiveEvents() {
   $('liveLeave').addEventListener('click', liveLeaveRoom);
   $('liveCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(liveInviteURL()); toast('Invite link copied. Send it to a friend!'); } catch { toast(`Share this room code: ${live.code}`); } });
   $('liveStage').addEventListener('click', event => {
+    const power = event.target.closest('[data-live-power]');
+    if (power && live.room?.phase === 'question' && !power.disabled) { liveAction('power', { name: power.dataset.livePower }); return; }
+    if (event.target.closest('[data-live-hint]') && live.room?.phase === 'question' && live.hintStep < 3) {
+      const draft = $('liveAnswerInput')?.value;
+      live.hintStep++; live.stageSignature = ''; liveRender();
+      if (draft != null && $('liveAnswerInput')) $('liveAnswerInput').value = draft;
+      return;
+    }
     const choice = event.target.closest('[data-live-choice]');
     if (choice && live.room?.phase === 'question' && !live.submitted) {
       const index = +choice.dataset.liveChoice, q = live.room.currentQuestion;

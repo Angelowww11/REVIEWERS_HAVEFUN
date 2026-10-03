@@ -10,6 +10,7 @@ const ROOM_TTL_SECONDS = 6 * 60 * 60;
 const MAX_PLAYERS = 8;
 const QUESTION_MS = 25_000;
 const REVEAL_MS = 5_000;
+const FREEZE_MS = 4_000;
 const ROUND_MS = QUESTION_MS + REVEAL_MS;
 const ROOM_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const ALLOWED_REACTIONS = new Set(['🎉', '🔥', '⚡', '💀', '😂', '😎', '👏', '😱', '🫡', '❤️']);
@@ -110,7 +111,8 @@ function createPlayer(name, now) {
     joinedAt: now,
     lastChatAt: 0,
     lastReactAt: 0,
-    answers: {}
+    answers: {},
+    powers: {}
   };
   return { player, token };
 }
@@ -184,7 +186,8 @@ function revealResult(state, index) {
         id: player.id,
         correct: Boolean(answer?.correct),
         answer: answer?.answer ?? null,
-        points: answer?.points ?? 0
+        points: answer?.points ?? 0,
+        shielded: Boolean(answer?.shielded)
       };
     })
   };
@@ -203,7 +206,7 @@ function visibleTotals(player, lastCompleted) {
   for (let index = 0; index <= lastCompleted; index++) {
     const answer = player.answers[index];
     score += answer?.points || 0;
-    streak = answer?.correct ? streak + 1 : 0;
+    streak = answer?.correct ? streak + 1 : answer?.shielded ? streak : 0;
   }
   return { score, streak };
 }
@@ -237,6 +240,8 @@ function publicRoom(state, viewer, now) {
     result: time.phase === 'reveal' || time.phase === 'finished'
       ? revealResult(state, shownIndex) : null,
     myAnswer: answer?.answer ?? null,
+    myPowers: viewer.powers?.[shownIndex] || {},
+    freezeUsed: Boolean(state.sequence[shownIndex]?.freezeUsed),
     messages: state.messages,
     reactions: state.reactions.filter(reaction => now - reaction.at < 7000)
   };
@@ -404,9 +409,42 @@ function handleAnswer(room, player, now, body) {
   const correct = right.length === given.length && right.every((value, index) => value === given[index]);
   const streak = correct ? visibleTotals(player, time.index - 1).streak + 1 : 0;
   const secondsLeft = Math.max(0, time.endsAt - now);
-  const points = correct ? 100 + Math.round((secondsLeft / QUESTION_MS) * 50) + Math.min(streak, 5) * 10 : 0;
-  player.answers[time.index] = { answer, correct, points, at: now };
+  const points = correct ? 100 + Math.round(Math.min(1, secondsLeft / QUESTION_MS) * 50) + Math.min(streak, 5) * 10 : 0;
+  player.answers[time.index] = { answer, correct, points, at: now, shielded: !correct && Boolean(player.powers?.[time.index]?.shield) };
   revealIfEveryoneAnswered(room, now);
+}
+
+function handlePower(room, player, now, body) {
+  const time = phaseAt(room, now);
+  if (time.phase !== 'question') throw new ApiError(409, 'This question is closed.');
+  const name = body.name;
+  if (!['fifty', 'shield', 'freeze'].includes(name)) throw new ApiError(400, 'Choose an available power-up.');
+  player.powers ||= {};
+  const used = player.powers[time.index] ||= {};
+  if (used[name]) throw new ApiError(409, 'This power-up was already used on this question.');
+  if (name === 'fifty') {
+    const question = roundQuestion(room, time.index);
+    const options = currentQuestion(room, time.index)?.options || [];
+    if (!question || question.correctAnswers.length !== 1 || options.length < 4) throw new ApiError(409, '50/50 is for four-choice questions.');
+    const wrong = options.map((option, index) => question.correctAnswers.some(answer => normalizeAnswer(answer) === normalizeAnswer(option)) ? -1 : index).filter(index => index >= 0);
+    if (wrong.length < 2) throw new ApiError(409, '50/50 is unavailable for this question.');
+    used.fifty = shuffled(wrong).slice(0, 2);
+  } else if (name === 'shield') {
+    used.shield = true;
+    const answer = player.answers[time.index];
+    if (answer && !answer.correct) answer.shielded = true;
+  } else {
+    const round = room.sequence[time.index];
+    if (round.freezeUsed) throw new ApiError(409, 'Freeze was already used this round.');
+    round.freezeUsed = true;
+    round.revealAt += FREEZE_MS;
+    round.endsAt += FREEZE_MS;
+    for (let index = time.index + 1; index < room.sequence.length; index++) {
+      room.sequence[index].revealAt += FREEZE_MS;
+      room.sequence[index].endsAt += FREEZE_MS;
+    }
+    used.freeze = true;
+  }
 }
 
 function handleChat(room, player, now, body) {
@@ -440,6 +478,7 @@ async function roomAction(code, action, request) {
     ready: handleReady,
     start: handleStart,
     answer: handleAnswer,
+    power: handlePower,
     chat: handleChat,
     react: handleReact,
     leave: handleLeave
