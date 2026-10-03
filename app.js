@@ -10,6 +10,14 @@ const modeInfo = {
   training: { name: 'Training loop', eyebrow: 'MASTER EVERY QUESTION', description: 'Choose 20 or 30. Review misses, then retry them until every answer is right.' }
 };
 const rankedModes = ['all', 'shuffle', 'adaptive', 'blitz'];
+const badgeTiers = [
+  { name: 'Noob', points: 0, icon: '○' },
+  { name: 'Beginner', points: 1000, icon: '✦' },
+  { name: 'Intermediate', points: 5000, icon: '◆' },
+  { name: 'Pro', points: 15000, icon: '★' },
+  { name: 'Packet Hacker', points: 40000, icon: '⚡' },
+  { name: 'Packet Gods', points: 100000, icon: '♛' }
+];
 const savedRunVersion = 1;
 const powerCosts = { fifty: 70, shield: 45, freeze: 60 };
 const quotes = [
@@ -48,7 +56,7 @@ function saveRankedRun() {
     hiddenChoices: [...g.hiddenChoices], displayOptions: g.displayOptions, hintStep: g.hintStep, coachOpen: g.coachOpen,
     used: g.used, activeShield: g.activeShield, elapsedMs: Math.max(0, now - g.startedAt),
     questionElapsedMs: Math.max(0, now - g.questionAt), remainingTime: g.remainingTime,
-    freezeRemainingMs: Math.max(0, g.freezeUntil - now), events: g.events, ghost: g.ghost,
+    freezeRemainingMs: Math.max(0, g.freezeUntil - now), events: g.events, history: g.history, ghost: g.ghost,
     firstCorrect: g.firstCorrect, lastResult: g.lastResult || null,
     draftAnswer: $('answerInput')?.value || '', stage: $('gameContent')?.querySelector('.wager-card') ? 'wager' : 'question'
   });
@@ -80,6 +88,9 @@ function escapeHTML(value) { return String(value ?? '').replace(/[&<>"']/g, c =>
 function normalize(value) { return String(value ?? '').trim().toLocaleLowerCase().replace(/[“”‘’]/g, '').replace(/[^\p{L}\p{N}.:/+-]+/gu, ' ').replace(/\s+/g, ' ').trim(); }
 function shuffle(items) { const result = [...items]; for (let i = result.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [result[i], result[j]] = [result[j], result[i]]; } return result; }
 function formatNumber(n) { return Number(n || 0).toLocaleString(); }
+function lifetimeRankedPoints() { return Math.max(0, Number(app.stats.rankedPoints) || 0); }
+function badgeForPoints(points) { return [...badgeTiers].reverse().find(tier => points >= tier.points) || badgeTiers[0]; }
+function leaderboardBadge(entry) { return badgeForPoints(Number(entry.lifetimePoints ?? entry.score) || 0); }
 function sourceName(q) { const match = String(q.sourceFile || '').match(/pool\s+(\w+)/i); return match ? `Pool ${match[1].replace(/^./, c => c.toUpperCase())}` : 'Question pool'; }
 function typeName(q) { return q.type === 'true_false_question' ? 'True / false' : q.type === 'short_answer_question' ? 'Short answer' : q.correctAnswers.length > 1 ? 'Multiple answers' : 'Multiple choice'; }
 function hasImage(q) { return /<img\b/i.test(q.questionHtml || ''); }
@@ -161,7 +172,13 @@ function burst() {
   }
 }
 function updateSoundButton() { const button = $('soundButton'); button.setAttribute('aria-pressed', String(app.soundOn)); button.setAttribute('aria-label', `Turn sound ${app.soundOn ? 'off' : 'on'}`); button.title = `Sound ${app.soundOn ? 'on' : 'off'}`; }
-function updateStats() { $('headerBest').textContent = formatNumber(app.stats.bestStreak); $('runsCount').textContent = formatNumber(app.stats.runs); }
+function updateStats() {
+  $('headerBest').textContent = formatNumber(app.stats.bestStreak); $('runsCount').textContent = formatNumber(app.stats.runs);
+  const points = lifetimeRankedPoints(), current = badgeForPoints(points), next = badgeTiers[badgeTiers.indexOf(current) + 1];
+  $('careerBadgeTitle').textContent = `${current.icon} ${current.name}`;
+  $('careerBadgeProgress').textContent = next ? `${formatNumber(points)} pts · ${formatNumber(next.points - points)} to ${next.name}` : `${formatNumber(points)} lifetime points · top title`;
+  $('badgeLadder').innerHTML = badgeTiers.map(tier => `<span class="badge-ladder-step ${points >= tier.points ? 'is-earned' : ''}"><b>${tier.icon} ${tier.name}</b><small>${formatNumber(tier.points)} pts</small></span>`).join('');
+}
 function setView(view) {
   if (app.view === 'game' && view !== 'game' && view !== 'result') pauseRankedRun();
   app.view = view;
@@ -368,7 +385,7 @@ function startGame() {
     answered: false, wager: 0, hiddenChoices: new Set(), hintStep: 0, coachOpen: false,
     used: { fifty: false, shield: false, freeze: false }, activeShield: false,
     startedAt: performance.now(), questionAt: performance.now(), timerLast: performance.now(), remainingTime: 0, freezeUntil: 0,
-    events: [], ghost, firstCorrect: !['typing', 'matching', 'training'].includes(mode) && $('correctFirstToggle').checked, matchPairs: [], matchChoice: { left: null, right: null }, lastResult: null, pausedAt: null,
+    events: [], history: [], ghost, firstCorrect: !['typing', 'matching', 'training'].includes(mode) && $('correctFirstToggle').checked, matchPairs: [], matchChoice: { left: null, right: null }, lastResult: null, pausedAt: null,
     training: mode === 'training' ? { originalTotal: order.length, pass: 1, misses: [] } : null
   };
   $('gameModeEyebrow').textContent = modeInfo[mode].eyebrow; $('gameModeName').textContent = modeInfo[mode].name;
@@ -404,7 +421,7 @@ function resumeRankedRun(mode) {
     activeShield: Boolean(saved.activeShield), startedAt: now - Math.max(0, Number(saved.elapsedMs) || 0),
     questionAt: now - Math.max(0, Number(saved.questionElapsedMs) || 0), timerLast: now,
     remainingTime: Math.max(0, Number(saved.remainingTime) || 0), freezeUntil: now + Math.max(0, Number(saved.freezeRemainingMs) || 0),
-    events: Array.isArray(saved.events) ? saved.events : [], ghost: validGhost(saved.ghost) ? saved.ghost : null,
+    events: Array.isArray(saved.events) ? saved.events : [], history: Array.isArray(saved.history) ? saved.history.filter(item => item && byId.has(item.questionId) && Array.isArray(item.options) && Array.isArray(item.selected)) : [], ghost: validGhost(saved.ghost) ? saved.ghost : null,
     firstCorrect: Boolean(saved.firstCorrect), matchPairs: [], matchChoice: { left: null, right: null },
     lastResult: saved.lastResult || null, pausedAt: null, training: null
   };
@@ -547,6 +564,8 @@ function resolveAnswer(correct, response = '') {
     playTone('bad'); if (navigator.vibrate) navigator.vibrate([25, 35, 25]);
   }
   g.completed++;
+  g.history ||= [];
+  g.history.push({ questionId: q.id, options: [...(g.displayOptions || [])], selected: [...g.selected], response, correct, points, pass: g.training?.pass || 1 });
   g.events.push({ t: Math.round(performance.now() - g.startedAt), score: g.score, completed: g.completed, correct, responseMs });
   updateHUD();
   const resultWord = correct ? ['Nice link!', 'You got it!', 'Great call!', 'That is the one!'][Math.floor(Math.random() * 4)] : 'Keep going — you are learning.';
@@ -596,6 +615,7 @@ function updateHUD() {
   document.querySelector('.progress-track').setAttribute('aria-valuenow', String(percent));
   const shown = g.mode === 'matching' ? g.completed + 1 : g.answered ? g.completed : g.completed + 1;
   $('questionPosition').textContent = `${g.training ? `Pass ${g.training.pass} · ` : ''}${g.mode === 'matching' ? 'Pair' : 'Question'} ${Math.min(shown, g.total)} of ${g.total}`;
+  $('reviewPrevious').hidden = !g.history?.length;
   if (g.ghost) {
     const elapsed = performance.now() - g.startedAt;
     const past = g.ghost.events.filter(e => e.t <= elapsed); const ghostEvent = past[past.length - 1];
@@ -604,6 +624,30 @@ function updateHUD() {
     $('playerRaceFill').style.width = `${percent}%`;
     $('ghostRaceFill').style.width = `${Math.min(100, Math.round(((ghostEvent?.completed || 0) / g.ghost.total) * 100))}%`;
   } else { $('ghostProgress').textContent = ''; $('raceTrack').hidden = true; }
+}
+let answerHistoryIndex = -1;
+function renderAnswerHistory() {
+  const g = app.game, item = g?.history?.[answerHistoryIndex]; if (!item) return;
+  const q = app.questions.find(question => question.id === item.questionId); if (!q) return;
+  const choices = (item.options || []).map((option, index) => {
+    const chosen = (item.selected || []).includes(index), correct = isCorrectOption(q, option);
+    return `<div class="history-choice ${correct ? 'is-correct' : chosen ? 'is-wrong' : ''}"><span>${index + 1}</span><b>${escapeHTML(option)}</b>${correct ? '<em>Correct</em>' : chosen ? '<em>Your pick</em>' : ''}</div>`;
+  }).join('');
+  $('answerHistoryContent').innerHTML = `<h2 id="answerHistoryTitle">Question ${answerHistoryIndex + 1} of ${g.history.length}${g.training ? ` · Pass ${item.pass || 1}` : ''}</h2><div class="answer-history-prompt">${safeQuestionHTML(q)}</div>${choices ? `<div class="history-choices">${choices}</div>` : ''}<div class="history-recap ${item.correct ? 'is-correct' : 'is-wrong'}"><strong>${item.correct ? '✓ Correct' : '↻ Worth another look'}</strong><span>Your answer: ${escapeHTML(item.response || 'Skipped')}</span><span>Correct answer: ${escapeHTML(answerText(q))}</span><p>${escapeHTML(explanationText(q))}</p></div><p class="history-readonly">Review only · your score and answers stay the same.</p>`;
+  $('answerHistoryOlder').disabled = answerHistoryIndex <= 0;
+  $('answerHistoryNewer').disabled = answerHistoryIndex >= g.history.length - 1;
+}
+function openAnswerHistory() {
+  if (app.view !== 'game' || !app.game?.history?.length) return;
+  answerHistoryIndex = app.game.history.length - 1;
+  pauseRankedRun();
+  renderAnswerHistory();
+  if (!$('answerHistoryDialog').open) $('answerHistoryDialog').showModal();
+}
+function moveAnswerHistory(delta) {
+  if (!$('answerHistoryDialog').open || !app.game?.history?.length) return;
+  answerHistoryIndex = Math.max(0, Math.min(app.game.history.length - 1, answerHistoryIndex + delta));
+  renderAnswerHistory();
 }
 
 function renderMatchBoard() {
@@ -677,7 +721,9 @@ function finishGame() {
   const duration = Math.max(1, Math.round(performance.now() - g.startedAt));
   const record = { version: 1, mode: g.mode, total: g.total, completed: g.completed, score: g.score, duration, events: g.events };
   writeJSON(`pp_ghost_${g.mode}`, record);
-  app.stats.runs++; app.stats.correct += g.correct; app.stats.bestStreak = Math.max(app.stats.bestStreak, g.bestStreak); app.stats.bestScore = Math.max(app.stats.bestScore, g.score); writeJSON('pp_stats', app.stats); updateStats();
+  app.stats.runs++; app.stats.correct += g.correct; app.stats.bestStreak = Math.max(app.stats.bestStreak, g.bestStreak); app.stats.bestScore = Math.max(app.stats.bestScore, g.score);
+  if (rankedModes.includes(g.mode) && !g.firstCorrect) app.stats.rankedPoints = Math.min(1_000_000_000, lifetimeRankedPoints() + Math.max(0, g.score));
+  writeJSON('pp_stats', app.stats); updateStats();
   g.record = record; g.scoreSubmitted = false;
   const won = g.completed === g.total && g.hearts > 0;
   const accuracy = g.attempts ? Math.round((g.correct / g.attempts) * 100) : 0;
@@ -689,7 +735,8 @@ function finishGame() {
     : g.score <= 0
       ? '<p class="rank-note">Earn points to post a score.</p>'
       : `<form id="scoreSubmitForm" class="score-submit"><label for="scoreName">Post your ${escapeHTML(modeInfo[g.mode].name)} score</label><div><input id="scoreName" maxlength="24" minlength="2" value="${escapeHTML(savedName)}" placeholder="Your name" autocomplete="nickname" required><button type="submit" class="button button-primary">Post score ↗</button></div><small>${g.heartLimit === 'unlimited' ? 'Unlimited hearts' : `${g.heartLimit} heart${g.heartLimit === '1' ? '' : 's'}`} · Your name and score will be public.</small></form>`;
-  $('resultContent').innerHTML = `<div class="result-card"><div class="result-burst" aria-hidden="true">✳</div><span class="section-kicker">RUN COMPLETE</span><h1>${won ? 'Deck cleared!' : 'Nice run.'}</h1><div class="result-metrics"><div><strong>${formatNumber(g.score)}</strong><span>POINTS</span></div><div><strong>${accuracy}%</strong><span>ACCURACY</span></div><div><strong>${g.bestStreak}</strong><span>BEST STREAK</span></div><div><strong>${elapsedTime(duration)}</strong><span>TIME</span></div></div>${scoreForm}<div class="result-actions"><button type="button" class="button button-primary" data-result="again">Play again ↗</button><button type="button" class="button button-outline" data-result="leaderboard">Leaderboards</button><button type="button" class="button button-outline" data-result="export">Export ghost ↓</button></div>${g.missed.length ? `<details class="review-details"><summary>Review missed questions (${g.missed.length})</summary><div class="review-list">${g.missed.slice(0, 8).map(q => `<div class="review-item"><strong>#${q.id} ${escapeHTML(q.question)}</strong><span>Answer: ${escapeHTML(answerText(q))}</span></div>`).join('')}</div></details>` : ''}</div>`;
+  const earnedBadge = rankedModes.includes(g.mode) && !g.firstCorrect ? badgeForPoints(lifetimeRankedPoints()) : null;
+  $('resultContent').innerHTML = `<div class="result-card"><div class="result-burst" aria-hidden="true">✳</div><span class="section-kicker">RUN COMPLETE</span><h1>${won ? 'Deck cleared!' : 'Nice run.'}</h1>${earnedBadge ? `<div class="result-badge">${earnedBadge.icon} ${earnedBadge.name} <small>· ${formatNumber(lifetimeRankedPoints())} lifetime points</small></div>` : ''}<div class="result-metrics"><div><strong>${formatNumber(g.score)}</strong><span>POINTS</span></div><div><strong>${accuracy}%</strong><span>ACCURACY</span></div><div><strong>${g.bestStreak}</strong><span>BEST STREAK</span></div><div><strong>${elapsedTime(duration)}</strong><span>TIME</span></div></div>${scoreForm}<div class="result-actions"><button type="button" class="button button-primary" data-result="again">Play again ↗</button><button type="button" class="button button-outline" data-result="leaderboard">Leaderboards</button><button type="button" class="button button-outline" data-result="export">Export ghost ↓</button></div>${g.missed.length ? `<details class="review-details"><summary>Review missed questions (${g.missed.length})</summary><div class="review-list">${g.missed.slice(0, 8).map(q => `<div class="review-item"><strong>#${q.id} ${escapeHTML(q.question)}</strong><span>Answer: ${escapeHTML(answerText(q))}</span></div>`).join('')}</div></details>` : ''}</div>`;
   setView('result'); announce(`Run complete. ${g.score} points, ${accuracy} percent accuracy.`);
 }
 let leaderboardRequest = 0, homeLeaderboardRequest = 0, leaderboardMode = 'all', homeLeaderboardMode = 'all';
@@ -715,7 +762,7 @@ async function loadHomeLeaderboard() {
     if (!response.ok) throw new Error('Scores unavailable');
     const data = await response.json(), entries = Array.isArray(data.entries) ? data.entries.slice(0, 3) : [];
     if (request !== homeLeaderboardRequest) return;
-    $('homeLeadersList').innerHTML = entries.length ? entries.map((entry, index) => `<div class="home-leader"><span class="home-rank">${index + 1}</span><strong>${escapeHTML(entry.name || 'Player')}</strong><small>${heartsLabel(entry.hearts)}</small><b>${formatNumber(entry.score)} <em>pts</em></b></div>`).join('') + Array.from({ length: 3 - entries.length }, (_, index) => `<div class="home-leader is-open"><span class="home-rank">${entries.length + index + 1}</span><strong>Open spot</strong><small>Your name could go here</small><button type="button" data-home-play>Challenge ↗</button></div>`).join('') : `<div class="home-leaders-empty"><strong>First place is open.</strong><span>No ${escapeHTML(modeInfo[mode].name)} score yet.</span><button type="button" data-home-play>Play this mode ↗</button></div>`;
+    $('homeLeadersList').innerHTML = entries.length ? entries.map((entry, index) => `<div class="home-leader"><span class="home-rank">${index + 1}</span><strong>${escapeHTML(entry.name || 'Player')}</strong><small>${leaderboardBadge(entry).icon} ${leaderboardBadge(entry).name} · ${heartsLabel(entry.hearts)}</small><b>${formatNumber(entry.score)} <em>pts</em></b></div>`).join('') + Array.from({ length: 3 - entries.length }, (_, index) => `<div class="home-leader is-open"><span class="home-rank">${entries.length + index + 1}</span><strong>Open spot</strong><small>Your name could go here</small><button type="button" data-home-play>Challenge ↗</button></div>`).join('') : `<div class="home-leaders-empty"><strong>First place is open.</strong><span>No ${escapeHTML(modeInfo[mode].name)} score yet.</span><button type="button" data-home-play>Play this mode ↗</button></div>`;
     const max = Math.max(1, ...entries.map(entry => Number(entry.score) || 0));
     $('homeLeadersChart').innerHTML = entries.length ? Array.from({ length: 3 }, (_, index) => entries[index] ? `<div class="home-chart-row"><span>${index + 1}</span><i style="width:${Math.max(3, (Number(entries[index].score) || 0) / max * 100)}%"></i><b>${formatNumber(entries[index].score)}</b></div>` : `<div class="home-chart-row is-open"><span>${index + 1}</span><i></i><b>Open</b></div>`).join('') : emptyHomeChart('First score starts the race.');
   } catch { if (request === homeLeaderboardRequest) { $('homeLeadersList').innerHTML = '<div class="home-leaders-empty"><strong>Scores are unavailable.</strong><span>You can still play this mode.</span><button type="button" data-home-play>Play this mode ↗</button></div>'; $('homeLeadersChart').innerHTML = emptyHomeChart('Scores will appear here when connected.'); } }
@@ -733,7 +780,7 @@ async function loadLeaderboard() {
     const entries = Array.isArray(data.entries) ? data.entries : [];
     $('leaderboardStatus').textContent = entries.length ? `${entries.length} ranked run${entries.length === 1 ? '' : 's'}` : 'No scores yet. Be the first!';
     leaderboardGraph(entries);
-    $('leaderboardList').innerHTML = entries.map((entry, index) => `<li class="leaderboard-row"><span class="leaderboard-rank">${index + 1}</span><strong>${escapeHTML(entry.name || 'Player')}</strong><span class="leaderboard-detail">${Number(entry.correct) || 0}/${Number(entry.total) || 0} right · ${heartsLabel(entry.hearts || hearts)} · ${elapsedTime(Number(entry.duration) || 0)}</span><b>${formatNumber(entry.score)}</b></li>`).join('');
+    $('leaderboardList').innerHTML = entries.map((entry, index) => `<li class="leaderboard-row"><span class="leaderboard-rank">${index + 1}</span><span class="leaderboard-player"><strong>${escapeHTML(entry.name || 'Player')}</strong><small class="leaderboard-badge">${leaderboardBadge(entry).icon} ${leaderboardBadge(entry).name}</small></span><span class="leaderboard-detail">${Number(entry.correct) || 0}/${Number(entry.total) || 0} right · ${heartsLabel(entry.hearts || hearts)} · ${elapsedTime(Number(entry.duration) || 0)}</span><b>${formatNumber(entry.score)}</b></li>`).join('');
   } catch (error) {
     if (request !== leaderboardRequest) return;
     $('leaderboardStatus').textContent = error.name === 'TimeoutError' ? 'Scores took too long to load. Try again.' : (error.message || 'Could not load scores.');
@@ -749,7 +796,7 @@ async function submitSoloScore() {
   try {
     const response = await fetch('/api/leaderboard', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ name, mode: g.mode, hearts: g.heartLimit, score: g.score, correct: g.correct, total: g.total, duration: g.record.duration, firstCorrect: false }),
+      body: JSON.stringify({ name, mode: g.mode, hearts: g.heartLimit, score: g.score, lifetimePoints: lifetimeRankedPoints(), correct: g.correct, total: g.total, duration: g.record.duration, firstCorrect: false }),
       signal: AbortSignal.timeout(12000)
     });
     const data = await response.json().catch(() => ({}));
@@ -848,6 +895,12 @@ function attachEvents() {
     renderBank();
   });
   $('leaveGame').addEventListener('click', () => { clearInterval(app.timer); app.timer = null; setView('home'); app.game = null; });
+  $('reviewPrevious').addEventListener('click', openAnswerHistory);
+  $('answerHistoryClose').addEventListener('click', () => $('answerHistoryDialog').close());
+  $('answerHistoryReturn').addEventListener('click', () => $('answerHistoryDialog').close());
+  $('answerHistoryOlder').addEventListener('click', () => moveAnswerHistory(-1));
+  $('answerHistoryNewer').addEventListener('click', () => moveAnswerHistory(1));
+  $('answerHistoryDialog').addEventListener('close', () => { answerHistoryIndex = -1; unpauseRankedRun(); });
   $('gameContent').addEventListener('click', event => {
     const wager = event.target.closest('[data-wager]'); if (wager) { const g = app.game; g.wager = Math.floor(g.score * (+wager.dataset.wager / 100)); playTone('click'); renderQuestion(); saveRankedRun(); return; }
     const match = event.target.closest('[data-match-side]'); if (match) { handleMatchClick(match); return; }
@@ -872,6 +925,8 @@ function attachEvents() {
   $('resultContent').addEventListener('submit', event => { if (event.target.id === 'scoreSubmitForm') { event.preventDefault(); submitSoloScore(); } });
   document.addEventListener('keydown', event => {
     if (event.altKey || event.ctrlKey || event.metaKey || event.repeat || event.target.closest('input, textarea, select, [contenteditable="true"]') || $('setupDialog').open) return;
+    if (event.key === 'Backspace' && app.view === 'game') { event.preventDefault(); if ($('answerHistoryDialog').open) moveAnswerHistory(-1); else openAnswerHistory(); return; }
+    if ($('answerHistoryDialog').open) return;
     if (app.view === 'game' && app.game?.answered && event.key === 'Enter') { $('answerAction')?.click(); return; }
     if (!/^[1-9]$/.test(event.key)) return;
     const index = Number(event.key) - 1;

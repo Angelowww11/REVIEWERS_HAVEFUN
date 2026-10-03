@@ -59,6 +59,7 @@
               <div><strong id="sourceCount">—</strong><span>pools</span></div>
               <div><strong id="runsCount">0</strong><span>runs played</span></div>
             </div>
+            <details class="career-badge"><summary><span class="career-badge-mark" aria-hidden="true">✦</span><span><small>YOUR TITLE</small><strong id="careerBadgeTitle">Noob</strong><em id="careerBadgeProgress">0 lifetime points</em></span><span class="career-badge-more">See badges ↓</span></summary><div id="badgeLadder" class="badge-ladder"></div></details>
           </div>
           <div class="hero-stage" aria-label="Illustration of connected networking cards">
             <div class="stage-glow"></div>
@@ -123,7 +124,7 @@
         <div class="hud"><div class="hud-unit"><span>HEARTS</span><strong id="heartsDisplay" aria-label="3 hearts">♥ ♥ ♥</strong></div><div class="hud-unit"><span>STREAK</span><strong id="streakDisplay">⚡ 0</strong></div><div class="hud-unit"><span>SCORE</span><strong id="scoreDisplay">0</strong></div><div class="hud-unit timer-unit"><span>TIME</span><strong id="timerDisplay">—</strong></div></div>
         <div class="progress-track" role="progressbar" aria-label="Run progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progressFill"></span></div>
         <div id="raceTrack" class="race-track" hidden aria-label="Player and ghost progress"><div class="race-lane"><span>YOU</span><div><i id="playerRaceFill"></i></div></div><div class="race-lane"><span>GHOST</span><div><i id="ghostRaceFill"></i></div></div></div>
-        <div class="game-subline"><span id="questionPosition">Question 1 of 20</span><span id="ghostProgress"></span></div>
+        <div class="game-subline"><span id="questionPosition">Question 1 of 20</span><button type="button" id="reviewPrevious" class="review-previous" hidden>← Previous answer</button><span id="ghostProgress"></span></div>
         <div id="gameContent" class="game-content"></div>
       </section>
 
@@ -167,6 +168,8 @@
       <button type="submit" id="setupStartButton" class="button button-primary setup-start">Start playing <span aria-hidden="true">↗</span></button>
     </form>
   </dialog>
+
+  <dialog id="answerHistoryDialog" class="answer-history-dialog" aria-labelledby="answerHistoryTitle"><div class="answer-history-head"><span class="section-kicker">ANSWER HISTORY</span><button type="button" id="answerHistoryClose" class="icon-button close-button" aria-label="Close answer history">×</button></div><div id="answerHistoryContent"></div><div class="answer-history-actions"><button type="button" id="answerHistoryOlder" class="button button-outline">← Older</button><button type="button" id="answerHistoryNewer" class="button button-outline">Newer →</button><button type="button" id="answerHistoryReturn" class="button button-primary">Back to question ↗</button></div></dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>

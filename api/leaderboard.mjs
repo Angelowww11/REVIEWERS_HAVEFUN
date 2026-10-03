@@ -3,6 +3,11 @@ import { isIP } from 'node:net';
 
 const MODES = new Set(['all', 'shuffle', 'adaptive', 'blitz']);
 const HEARTS = new Set(['1', '3', '5', 'unlimited']);
+const BADGE_TIERS = [
+  ['Noob', 0], ['Beginner', 1000], ['Intermediate', 5000],
+  ['Pro', 15000], ['Packet Hacker', 40000], ['Packet Gods', 100000]
+];
+function badgeForPoints(points) { return [...BADGE_TIERS].reverse().find(([, required]) => points >= required)?.[0] || 'Noob'; }
 const SAVE_SCORE = `
 redis.call('ZADD', KEYS[1], tonumber(ARGV[1]), ARGV[2])
 local count = redis.call('ZCARD', KEYS[1])
@@ -93,7 +98,8 @@ async function listScores(request) {
   const entries = boards.flatMap((members, boardIndex) => (members || []).flatMap(raw => {
     try {
       const entry = JSON.parse(raw);
-      return [{ name: entry.name, score: entry.score, correct: entry.correct, total: entry.total, duration: entry.duration, hearts: entry.hearts || categories[boardIndex], at: entry.at }];
+      const lifetimePoints = Number.isSafeInteger(entry.lifetimePoints) ? entry.lifetimePoints : entry.score;
+      return [{ name: entry.name, score: entry.score, lifetimePoints, title: badgeForPoints(lifetimePoints), correct: entry.correct, total: entry.total, duration: entry.duration, hearts: entry.hearts || categories[boardIndex], at: entry.at }];
     } catch { return []; }
   }));
   entries.sort((a, b) => b.score - a.score || b.correct - a.correct || a.duration - b.duration || a.at - b.at);
@@ -106,11 +112,12 @@ async function submitScore(request) {
   if (body.firstCorrect !== false) throw new ApiError(400, 'First-choice-correct runs are practice only and cannot enter leaderboards.');
   const name = cleanName(body.name);
   const score = integer(body.score, 1, 1_000_000_000, 'score');
+  const lifetimePoints = integer(body.lifetimePoints ?? score, score, 1_000_000_000, 'lifetime points');
   const total = integer(body.total, 1, 200, 'question count');
   const correct = integer(body.correct, 0, total, 'correct count');
   const duration = integer(body.duration, 1, 86_400_000, 'time');
   await limitSubmissions(request);
-  const entry = { id: randomUUID(), name, mode, hearts, score, correct, total, duration, at: Date.now() };
+  const entry = { id: randomUUID(), name, mode, hearts, score, lifetimePoints, title: badgeForPoints(lifetimePoints), correct, total, duration, at: Date.now() };
   await redis(['EVAL', SAVE_SCORE, 1, key, score, JSON.stringify(entry)]);
   return json({ ok: true, mode, hearts }, 201);
 }
