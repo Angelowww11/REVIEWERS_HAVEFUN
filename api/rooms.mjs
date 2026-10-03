@@ -7,7 +7,7 @@ const questionBank = require('../questions.json').questions;
 const questionById = new Map(questionBank.map(question => [question.id, question]));
 
 const ROOM_TTL_SECONDS = 6 * 60 * 60;
-const MAX_PLAYERS = 8;
+const MAX_PLAYERS = 20;
 const QUESTION_MS = 25_000;
 const REVEAL_MS = 5_000;
 const FREEZE_MS = 4_000;
@@ -233,6 +233,7 @@ function publicRoom(state, viewer, now) {
         answered: Boolean(player.answers[shownIndex])
       })),
     hostId: state.hostId,
+    maxPlayers: MAX_PLAYERS,
     questionIndex: time.index,
     total: state.questionCount,
     currentQuestion: time.phase === 'lobby' || time.phase === 'finished'
@@ -334,7 +335,7 @@ async function createRoom(request) {
 async function joinRoom(code, request) {
   const body = await bodyOf(request);
   const name = cleanName(body.name);
-  await limitAnonymous(request, 'join', 30);
+  await limitAnonymous(request, 'join', 60);
   const { player, token } = createPlayer(name, Date.now());
   const { state, now } = await mutateRoom(code, null, (room, _viewer, mutationTime) => {
     if (phaseAt(room, mutationTime).status !== 'lobby') throw new ApiError(409, 'This match has already started.');

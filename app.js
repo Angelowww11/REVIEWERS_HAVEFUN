@@ -1140,7 +1140,7 @@ function liveRenderStage() {
   const stage = $('liveStage');
   if (room.phase === 'lobby') {
     const me = liveCurrentPlayer(); const host = room.hostId === live.playerId; const count = room.players?.length || 0;
-    stage.innerHTML = `<span class="live-stage-kicker">WAITING ROOM · ${room.total || 10} QUESTIONS</span><h2>${host ? 'Share this code.' : 'You joined!'}</h2><div class="live-code-display" aria-label="Room code ${escapeHTML(room.code)}">${escapeHTML(room.code)}</div><div class="live-wait-message">${count < 2 ? 'Waiting for a friend…' : `${count} players ready to race.`}</div><div class="live-lobby-bottom"><button type="button" class="button ${me?.ready ? 'button-outline' : 'button-live'}" data-live-action="ready">${me?.ready ? '✓ Ready' : 'Mark me ready'}</button>${host ? `<button type="button" class="button button-primary" data-live-action="start" ${count < 2 ? 'disabled' : ''}>Start battle ↗</button>` : ''}<span class="live-lobby-note">Answers reveal when everyone answers · 25s max</span></div>`;
+    stage.innerHTML = `<span class="live-stage-kicker">WAITING ROOM · ${room.total || 10} QUESTIONS</span><h2>${host ? 'Share this code.' : 'You joined!'}</h2><div class="live-code-display" aria-label="Room code ${escapeHTML(room.code)}">${escapeHTML(room.code)}</div><div class="live-wait-message">${count} / ${room.maxPlayers || 20} players in room${count < 2 ? ' · Waiting for a friend…' : count >= (room.maxPlayers || 20) ? ' · Room full' : ' · Ready to race'}</div><div class="live-lobby-bottom"><button type="button" class="button ${me?.ready ? 'button-outline' : 'button-live'}" data-live-action="ready">${me?.ready ? '✓ Ready' : 'Mark me ready'}</button>${host ? `<button type="button" class="button button-primary" data-live-action="start" ${count < 2 ? 'disabled' : ''}>Start battle ↗</button>` : ''}<span class="live-lobby-note">Answers reveal when everyone answers · 25s max</span></div>`;
     return;
   }
   if (room.phase === 'finished') {
@@ -1175,7 +1175,7 @@ function liveRenderStage() {
 function liveRenderPlayers() {
   const room = live.room; if (!room) return;
   const players = [...(room.players || [])].sort((a, b) => (room.phase === 'lobby' ? 0 : b.score - a.score) || a.name.localeCompare(b.name));
-  $('livePlayerCount').textContent = `${players.length} player${players.length === 1 ? '' : 's'}`;
+  $('livePlayerCount').textContent = `${players.length} / ${room.maxPlayers || 20} players`;
   $('livePlayers').innerHTML = players.map((p, index) => `<div class="live-player ${p.id === live.playerId ? 'is-you' : ''}"><span class="live-player-rank">${room.phase === 'lobby' ? '◈' : index + 1}</span><span class="live-player-name">${escapeHTML(p.name)}${p.id === live.playerId ? ' · you' : ''}${p.id === room.hostId ? ' 👑' : ''}<small>${room.phase === 'lobby' ? p.ready ? '✓ ready' : 'waiting' : room.phase === 'question' ? p.answered ? '✓ answered' : 'thinking…' : `${p.streak || 0} streak`}</small></span><span class="live-player-score">${formatNumber(p.score || 0)}<small>PTS</small></span></div>`).join('');
 }
 function liveRenderMessages() {
