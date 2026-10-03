@@ -3,8 +3,11 @@ import { createRequire } from 'node:module';
 import { isIP } from 'node:net';
 
 const require = createRequire(import.meta.url);
-const questionBank = require('../questions.json').questions;
-const questionById = new Map(questionBank.map(question => [question.id, question]));
+const questionBanks = {
+  pools: require('../questions.json').questions,
+  ccst: require('../ccst-questions.json').questions
+};
+const questionsByDeck = Object.fromEntries(Object.entries(questionBanks).map(([deck, questions]) => [deck, new Map(questions.map(question => [question.id, question]))]));
 
 const ROOM_TTL_SECONDS = 6 * 60 * 60;
 const MAX_PLAYERS = 20;
@@ -157,7 +160,7 @@ function phaseAt(state, now) {
 function roundQuestion(state, index) {
   const round = state.sequence[index];
   if (!round) return null;
-  return questionById.get(round.id) || null;
+  return questionsByDeck[state.deck || 'pools']?.get(round.id) || null;
 }
 
 function currentQuestion(state, index) {
@@ -219,6 +222,7 @@ function publicRoom(state, viewer, now) {
   const lastCompleted = completedRoundIndex(state, time);
   return {
     code: state.code,
+    deck: state.deck || 'pools',
     status: time.status,
     phase: time.phase,
     players: state.players
@@ -308,8 +312,10 @@ async function mutateRoom(code, token, mutate, authenticated = true) {
 async function createRoom(request) {
   const body = await bodyOf(request);
   const name = cleanName(body.name);
+  const deck = body.deck || 'pools';
+  if (typeof deck !== 'string' || !Object.hasOwn(questionBanks, deck)) throw new ApiError(400, 'Choose a valid study deck.');
   const questionCount = Number(body.questionCount || 10);
-  if (![10, 20, 30, 50].includes(questionCount)) throw new ApiError(400, 'Choose a 10, 20, 30, or 50 question match.');
+  if (![10, 20, 30, 50].includes(questionCount) || questionCount > questionBanks[deck].length) throw new ApiError(400, 'Choose a 10, 20, 30, or 50 question match.');
   await limitAnonymous(request, 'create', 8);
   const now = Date.now();
   const { player, token } = createPlayer(name, now);
@@ -318,6 +324,7 @@ async function createRoom(request) {
     const state = {
       version: 1,
       code,
+      deck,
       hostId: player.id,
       questionCount,
       players: [player],
@@ -338,6 +345,7 @@ async function joinRoom(code, request) {
   await limitAnonymous(request, 'join', 60);
   const { player, token } = createPlayer(name, Date.now());
   const { state, now } = await mutateRoom(code, null, (room, _viewer, mutationTime) => {
+    if (body.deck && body.deck !== (room.deck || 'pools')) throw new ApiError(409, 'This room uses a different study deck. Open its invite link or switch deck.');
     if (phaseAt(room, mutationTime).status !== 'lobby') throw new ApiError(409, 'This match has already started.');
     if (room.players.length >= MAX_PLAYERS) throw new ApiError(409, 'This room is full.');
     if (room.players.some(existing => existing.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
@@ -359,7 +367,7 @@ function handleStart(room, player, now) {
   if (player.id !== room.hostId) throw new ApiError(403, 'Only the host can start the match.');
   if (phaseAt(room, now).status !== 'lobby') throw new ApiError(409, 'The match has already started.');
   if (room.players.length < 2) throw new ApiError(409, 'Invite at least one friend to start.');
-  const selected = shuffled(questionBank).slice(0, room.questionCount);
+  const selected = shuffled(questionBanks[room.deck || 'pools']).slice(0, room.questionCount);
   room.sequence = selected.map((question, index) => ({
     id: question.id,
     optionOrder: shuffled(question.options.map((_, optionIndex) => optionIndex)),

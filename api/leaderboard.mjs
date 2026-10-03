@@ -3,6 +3,7 @@ import { isIP } from 'node:net';
 
 const MODES = new Set(['all', 'shuffle', 'adaptive', 'blitz']);
 const HEARTS = new Set(['1', '3', '5', 'unlimited']);
+const DECKS = new Set(['pools', 'ccst']);
 const BADGE_TIERS = [
   ['Noob', 0], ['Beginner', 1000], ['Intermediate', 5000],
   ['Pro', 15000], ['Packet Hacker', 40000], ['Packet Gods', 100000]
@@ -50,9 +51,10 @@ async function redis(command) {
   return payload.result;
 }
 
-function category(mode, hearts) {
-  if (!MODES.has(mode) || !HEARTS.has(String(hearts))) throw new ApiError(400, 'Choose a valid mode and hearts category.');
-  return { mode, hearts: String(hearts), key: `packet-party:leaderboard:v1:${mode}:${hearts}` };
+function category(deck, mode, hearts) {
+  if (!DECKS.has(deck) || !MODES.has(mode) || !HEARTS.has(String(hearts))) throw new ApiError(400, 'Choose a valid deck, mode, and hearts category.');
+  const key = deck === 'pools' ? `packet-party:leaderboard:v1:${mode}:${hearts}` : `packet-party:leaderboard:v1:${deck}:${mode}:${hearts}`;
+  return { deck, mode, hearts: String(hearts), key };
 }
 
 async function bodyOf(request) {
@@ -92,9 +94,10 @@ async function listScores(request) {
   const url = new URL(request.url);
   const mode = url.searchParams.get('mode') || 'all';
   const hearts = url.searchParams.get('hearts') || 'all';
-  if (!MODES.has(mode) || (hearts !== 'all' && !HEARTS.has(hearts))) throw new ApiError(400, 'Choose a valid mode and hearts category.');
+  const deck = url.searchParams.get('deck') || 'pools';
+  if (!DECKS.has(deck) || !MODES.has(mode) || (hearts !== 'all' && !HEARTS.has(hearts))) throw new ApiError(400, 'Choose a valid deck, mode, and hearts category.');
   const categories = hearts === 'all' ? [...HEARTS] : [hearts];
-  const boards = await Promise.all(categories.map(value => redis(['ZREVRANGE', category(mode, value).key, 0, 49])));
+  const boards = await Promise.all(categories.map(value => redis(['ZREVRANGE', category(deck, mode, value).key, 0, 49])));
   const entries = boards.flatMap((members, boardIndex) => (members || []).flatMap(raw => {
     try {
       const entry = JSON.parse(raw);
@@ -103,12 +106,12 @@ async function listScores(request) {
     } catch { return []; }
   }));
   entries.sort((a, b) => b.score - a.score || b.correct - a.correct || a.duration - b.duration || a.at - b.at);
-  return json({ mode, hearts, entries: entries.slice(0, 50) });
+  return json({ deck, mode, hearts, entries: entries.slice(0, 50) });
 }
 
 async function submitScore(request) {
   const body = await bodyOf(request);
-  const { mode, hearts, key } = category(body.mode, body.hearts);
+  const { deck, mode, hearts, key } = category(body.deck || 'pools', body.mode, body.hearts);
   if (body.firstCorrect !== false) throw new ApiError(400, 'First-choice-correct runs are practice only and cannot enter leaderboards.');
   const name = cleanName(body.name);
   const score = integer(body.score, 1, 1_000_000_000, 'score');
@@ -117,9 +120,9 @@ async function submitScore(request) {
   const correct = integer(body.correct, 0, total, 'correct count');
   const duration = integer(body.duration, 1, 86_400_000, 'time');
   await limitSubmissions(request);
-  const entry = { id: randomUUID(), name, mode, hearts, score, lifetimePoints, title: badgeForPoints(lifetimePoints), correct, total, duration, at: Date.now() };
+  const entry = { id: randomUUID(), name, deck, mode, hearts, score, lifetimePoints, title: badgeForPoints(lifetimePoints), correct, total, duration, at: Date.now() };
   await redis(['EVAL', SAVE_SCORE, 1, key, score, JSON.stringify(entry)]);
-  return json({ ok: true, mode, hearts }, 201);
+  return json({ ok: true, deck, mode, hearts }, 201);
 }
 
 export default {

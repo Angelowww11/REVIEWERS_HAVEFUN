@@ -1,14 +1,16 @@
-const CACHE_NAME = 'packet-party-v18';
-const CORE_FILES = ['./', './index.html', './styles.css', './app.js', './ambient.js', './questions.json', './explanations.json', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'];
+const CACHE_NAME = 'packet-party-v19';
+const CORE_FILES = ['./', './index.html', './styles.css', './app.js', './ambient.js', './questions.json', './explanations.json', './ccst-questions.json', './ccst-explanations.json', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(CORE_FILES);
-    const deck = await (await cache.match('./questions.json')).json();
     const exhibits = new Set();
-    for (const question of deck.questions || []) {
-      for (const match of String(question.questionHtml || '').matchAll(/src=["'](exhibits\/[a-z0-9._-]+\.(?:png|jpe?g|gif|webp|svg))["']/gi)) exhibits.add(`./${match[1]}`);
+    for (const deckPath of ['./questions.json', './ccst-questions.json']) {
+      const deck = await (await cache.match(deckPath)).json();
+      for (const question of deck.questions || []) {
+        for (const match of String(question.questionHtml || '').matchAll(/src=["'](exhibits\/[a-z0-9._-]+\.(?:png|jpe?g|gif|webp|svg))["']/gi)) exhibits.add(`./${match[1]}`);
+      }
     }
     await Promise.allSettled([...exhibits].map(path => cache.add(path)));
     await self.skipWaiting();

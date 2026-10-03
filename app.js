@@ -1,5 +1,7 @@
 /* Solo progress stays in this browser; ranked scores and live rooms use the API. */
 const $ = id => document.getElementById(id);
+const deckId = new URL(location.href).searchParams.get('deck') === 'ccst' ? 'ccst' : 'pools';
+function deckStorageKey(key) { return deckId === 'ccst' ? key.replace(/^pp_/, 'pp_ccst_') : key; }
 const modeInfo = {
   all: { name: 'All questions', eyebrow: 'COMPLETE DECK', description: 'The full deck, in order.' },
   shuffle: { name: 'Shuffle run', eyebrow: 'FRESH EACH TIME', description: 'The full deck, reshuffled.' },
@@ -28,14 +30,14 @@ const quotes = [
 const app = {
   questions: [], explanations: {}, mode: 'shuffle', view: 'home', game: null, bankLimit: 16,
   bankAll: false, bankRevealAll: false, bankRevealed: new Set(), importedGhost: null,
-  favorites: new Set(readJSON('pp_favorites', [])),
-  stats: readJSON('pp_stats', { runs: 0, correct: 0, bestStreak: 0, bestScore: 0 }),
+  favorites: new Set(readJSON(deckStorageKey('pp_favorites'), [])),
+  stats: readJSON(deckStorageKey('pp_stats'), { runs: 0, correct: 0, bestStreak: 0, bestScore: 0 }),
   soundOn: readJSON('pp_sound', false), timer: null, toastTimer: null, audio: null
 };
 
 function readJSON(key, fallback) { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; } }
 function writeJSON(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* Private browsing can disable storage. */ } }
-function savedRunKey(mode) { return `pp_ranked_run_${mode}`; }
+function savedRunKey(mode) { return deckStorageKey(`pp_ranked_run_${mode}`); }
 function readSavedRun(mode) {
   if (!rankedModes.includes(mode)) return null;
   const saved = readJSON(savedRunKey(mode), null);
@@ -91,7 +93,7 @@ function formatNumber(n) { return Number(n || 0).toLocaleString(); }
 function lifetimeRankedPoints() { return Math.max(0, Number(app.stats.rankedPoints) || 0); }
 function badgeForPoints(points) { return [...badgeTiers].reverse().find(tier => points >= tier.points) || badgeTiers[0]; }
 function leaderboardBadge(entry) { return badgeForPoints(Number(entry.lifetimePoints ?? entry.score) || 0); }
-function sourceName(q) { const match = String(q.sourceFile || '').match(/pool\s+(\w+)/i); return match ? `Pool ${match[1].replace(/^./, c => c.toUpperCase())}` : 'Question pool'; }
+function sourceName(q) { if (q.sourcePage) return `Reviewer p. ${q.sourcePage}`; const match = String(q.sourceFile || '').match(/pool\s+(\w+)/i); return match ? `Pool ${match[1].replace(/^./, c => c.toUpperCase())}` : 'Question pool'; }
 function typeName(q) { return q.type === 'true_false_question' ? 'True / false' : q.type === 'short_answer_question' ? 'Short answer' : q.correctAnswers.length > 1 ? 'Multiple answers' : 'Multiple choice'; }
 function hasImage(q) { return /<img\b/i.test(q.questionHtml || ''); }
 function isCorrectOption(q, option) { return (q.correctAnswers || []).some(a => normalize(a) === normalize(option)); }
@@ -131,7 +133,8 @@ function safeQuestionHTML(q) {
       if (!/^exhibits\/[a-z0-9._-]+\.(?:png|jpe?g|gif|webp|svg)$/i.test(src)) return null;
       const img = document.createElement('img');
       img.setAttribute('src', src); img.setAttribute('alt', node.getAttribute('alt') || 'Question exhibit');
-      img.setAttribute('loading', 'lazy'); return img;
+      img.setAttribute('loading', 'lazy'); img.setAttribute('tabindex', '0'); img.setAttribute('role', 'button');
+      img.setAttribute('title', 'Tap to enlarge'); return img;
     }
     const element = document.createElement(node.tagName.toLowerCase());
     for (const child of node.childNodes) { const item = copy(child); if (item) element.append(item); }
@@ -194,7 +197,7 @@ function setView(view) {
 function renderHome() {
   const sources = new Set(app.questions.map(q => q.sourceFile).filter(Boolean));
   $('questionCount').textContent = formatNumber(app.questions.length);
-  $('sourceCount').textContent = formatNumber(sources.size || 8);
+  $('sourceCount').textContent = deckId === 'ccst' ? '1' : formatNumber(sources.size || 8);
   $('bankCountBadge').textContent = `${formatNumber(app.questions.length)} questions`;
   updateStats();
   renderPracticeCard();
@@ -206,6 +209,21 @@ function renderHome() {
   const sourceSelect = $('bankSource');
   [...sources].sort((a, b) => { const an = +(a.match(/\d+/)?.[0] || 0), bn = +(b.match(/\d+/)?.[0] || 0); return an - bn; }).forEach(source => { const option = document.createElement('option'); option.value = source; option.textContent = source.replace(/\.html$/i, ''); sourceSelect.append(option); });
   if (!sources.size) sourceSelect.parentElement.hidden = true;
+}
+
+function renderDeckChrome() {
+  document.body.dataset.deck = deckId;
+  $('poolsDeckLink').setAttribute('aria-current', deckId === 'pools' ? 'page' : 'false');
+  $('ccstDeckLink').setAttribute('aria-current', deckId === 'ccst' ? 'page' : 'false');
+  if (deckId !== 'ccst') return;
+  document.title = 'CCST Midterm Review — Packet Party';
+  $('deckSwitchNote').textContent = 'Midterm certification review';
+  $('heroEyebrowText').textContent = 'CCST MIDTERM CERTIFICATION';
+  $('heroLede').textContent = 'Study the checked CCST reviewer. Play solo or race friends.';
+  $('sourceCountLabel').textContent = 'reviewer';
+  $('bankSource').firstElementChild.textContent = 'All topics';
+  const labels = ['IPv4/6', 'Security', 'Devices', 'Tools'];
+  document.querySelectorAll('.stage-node strong').forEach((node, index) => { node.textContent = labels[index]; });
 }
 
 function filteredBank() {
@@ -235,7 +253,7 @@ function renderBank() {
 
 const practice = { index: 0, entries: {}, selected: new Set(), shuffleChoices: false, choiceOrder: {} };
 function restorePractice() {
-  const saved = readJSON('pp_practice_v1', null);
+  const saved = readJSON(deckStorageKey('pp_practice_v1'), null);
   if (!saved || saved.version !== 1 || saved.count !== app.questions.length) return;
   practice.index = Number.isInteger(saved.index) ? Math.max(0, Math.min(app.questions.length - 1, saved.index)) : 0;
   practice.shuffleChoices = saved.shuffleChoices === true;
@@ -254,7 +272,7 @@ function restorePractice() {
     practice.entries[q.id] = { status: entry.status, response };
   }
 }
-function savePractice() { writeJSON('pp_practice_v1', { version: 1, count: app.questions.length, index: practice.index, entries: practice.entries, shuffleChoices: practice.shuffleChoices, choiceOrder: practice.choiceOrder }); }
+function savePractice() { writeJSON(deckStorageKey('pp_practice_v1'), { version: 1, count: app.questions.length, index: practice.index, entries: practice.entries, shuffleChoices: practice.shuffleChoices, choiceOrder: practice.choiceOrder }); }
 function renderPracticeCard() {
   const label = $('practiceCardProgress');
   if (label) label.textContent = practice.index || Object.keys(practice.entries).length ? `Continue at #${practice.index + 1}` : 'Start at #1';
@@ -335,7 +353,7 @@ function openSetup(mode) {
   $('trainingLengthField').hidden = mode !== 'training';
   $('heartLimitSelect').closest('.setup-field').hidden = mode === 'training';
   $('setupDialog').querySelector('.setup-more').hidden = mode === 'training';
-  $('heartLimitSelect').value = String(readJSON('pp_heart_limit', '3'));
+  $('heartLimitSelect').value = String(readJSON(deckStorageKey('pp_heart_limit'), '3'));
   if (!['1', '3', '5', 'unlimited'].includes($('heartLimitSelect').value)) $('heartLimitSelect').value = '3';
   $('correctFirstToggle').checked = false;
   $('correctFirstToggle').closest('.switch-row').hidden = mode === 'typing' || mode === 'matching' || mode === 'training';
@@ -367,7 +385,7 @@ function complexity(q) { return String(q.question || '').length + (q.options || 
 function startGame() {
   const mode = app.mode;
   const heartLimit = mode === 'training' ? 'unlimited' : ['1', '3', '5', 'unlimited'].includes($('heartLimitSelect').value) ? $('heartLimitSelect').value : '3';
-  if (mode !== 'training') writeJSON('pp_heart_limit', heartLimit);
+  if (mode !== 'training') writeJSON(deckStorageKey('pp_heart_limit'), heartLimit);
   const questions = app.questions;
   let order = mode === 'all' ? [...questions] : mode === 'shuffle' ? shuffle(questions) : mode === 'typing' ? shuffle(typingPool()).slice(0, 20) : mode === 'matching' ? matchingPool().slice(0, 12) : mode === 'blitz' ? shuffle(questions).slice(0, 15) : mode === 'training' ? shuffle(questions).slice(0, Number($('trainingLengthSelect').value) === 30 ? 30 : 20) : [];
   if (mode === 'matching' && order.length < 4) { toast('Not enough matching pairs in this deck.'); return; }
@@ -376,7 +394,7 @@ function startGame() {
   const total = mode === 'adaptive' ? Math.min(20, questions.length) : order.length;
   let ghost = null;
   if (mode !== 'training' && $('ghostToggle').checked) {
-    const candidate = app.importedGhost || readJSON(`pp_ghost_${mode}`, null);
+    const candidate = app.importedGhost || readJSON(deckStorageKey(`pp_ghost_${mode}`), null);
     if (validGhost(candidate) && candidate.mode === mode) ghost = candidate;
     else toast('No ghost for this mode yet. Finish a run or import one.');
   }
@@ -690,14 +708,14 @@ function handleMatchClick(button) {
   g.matchChoice = { left: null, right: null }; updateHUD();
 }
 function validGhost(record) {
-  return record && record.version === 1 && modeInfo[record.mode] && Number.isFinite(record.total) && record.total > 0 && Array.isArray(record.events) && record.events.length <= 1000 && record.events.every(e => Number.isFinite(e.t) && e.t >= 0 && Number.isFinite(e.score) && Number.isFinite(e.completed));
+  return record && record.version === 1 && (record.deck || 'pools') === deckId && modeInfo[record.mode] && Number.isFinite(record.total) && record.total > 0 && Array.isArray(record.events) && record.events.length <= 1000 && record.events.every(e => Number.isFinite(e.t) && e.t >= 0 && Number.isFinite(e.score) && Number.isFinite(e.completed));
 }
 function finishTrainingPass() {
   const g = app.game; if (!g?.training) return;
   clearInterval(app.timer); app.timer = null;
   const { originalTotal, pass, misses } = g.training;
   if (!misses.length) {
-    app.stats.runs++; app.stats.correct += g.correct; app.stats.bestStreak = Math.max(app.stats.bestStreak, g.bestStreak); app.stats.bestScore = Math.max(app.stats.bestScore, g.score); writeJSON('pp_stats', app.stats); updateStats();
+    app.stats.runs++; app.stats.correct += g.correct; app.stats.bestStreak = Math.max(app.stats.bestStreak, g.bestStreak); app.stats.bestScore = Math.max(app.stats.bestScore, g.score); writeJSON(deckStorageKey('pp_stats'), app.stats); updateStats();
     const duration = Math.max(1, Math.round(performance.now() - g.startedAt));
     $('resultContent').innerHTML = `<div class="result-card"><div class="result-burst" aria-hidden="true">✳</div><span class="section-kicker">TRAINING COMPLETE</span><h1>Every question mastered!</h1><p>You mastered all ${originalTotal} questions, including every retry.</p><div class="result-metrics"><div><strong>${originalTotal}</strong><span>MASTERED</span></div><div><strong>${pass}</strong><span>PASSES</span></div><div><strong>${g.attempts}</strong><span>ANSWERS</span></div><div><strong>${elapsedTime(duration)}</strong><span>TIME</span></div></div><div class="result-actions"><button type="button" class="button button-primary" data-result="again">Train another set ↗</button><button type="button" class="button button-outline" data-result="home">Back to modes</button></div></div>`;
     setView('result'); announce(`Training complete. All ${originalTotal} questions mastered in ${pass} passes.`);
@@ -720,11 +738,11 @@ function finishGame() {
   clearInterval(app.timer); app.timer = null;
   if (rankedModes.includes(g.mode)) clearSavedRun(g.mode);
   const duration = Math.max(1, Math.round(performance.now() - g.startedAt));
-  const record = { version: 1, mode: g.mode, total: g.total, completed: g.completed, score: g.score, duration, events: g.events };
-  writeJSON(`pp_ghost_${g.mode}`, record);
+  const record = { version: 1, deck: deckId, mode: g.mode, total: g.total, completed: g.completed, score: g.score, duration, events: g.events };
+  writeJSON(deckStorageKey(`pp_ghost_${g.mode}`), record);
   app.stats.runs++; app.stats.correct += g.correct; app.stats.bestStreak = Math.max(app.stats.bestStreak, g.bestStreak); app.stats.bestScore = Math.max(app.stats.bestScore, g.score);
   if (rankedModes.includes(g.mode) && !g.firstCorrect) app.stats.rankedPoints = Math.min(1_000_000_000, lifetimeRankedPoints() + Math.max(0, g.score));
-  writeJSON('pp_stats', app.stats); updateStats();
+  writeJSON(deckStorageKey('pp_stats'), app.stats); updateStats();
   g.record = record; g.scoreSubmitted = false;
   const won = g.completed === g.total && g.hearts > 0;
   const accuracy = g.attempts ? Math.round((g.correct / g.attempts) * 100) : 0;
@@ -759,7 +777,7 @@ async function loadHomeLeaderboard() {
   $('homeLeadersList').textContent = 'Loading top scores…';
   $('homeLeadersChart').innerHTML = '';
   try {
-    const response = await fetch(`/api/leaderboard?mode=${encodeURIComponent(mode)}&hearts=all`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
+    const response = await fetch(`/api/leaderboard?deck=${deckId}&mode=${encodeURIComponent(mode)}&hearts=all`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
     if (!response.ok) throw new Error('Scores unavailable');
     const data = await response.json(), entries = Array.isArray(data.entries) ? data.entries.slice(0, 3) : [];
     if (request !== homeLeaderboardRequest) return;
@@ -774,7 +792,7 @@ async function loadLeaderboard() {
   $('leaderboardStatus').textContent = 'Loading scores…';
   $('leaderboardList').innerHTML = '';
   try {
-    const response = await fetch(`/api/leaderboard?mode=${encodeURIComponent(mode)}&hearts=${encodeURIComponent(hearts)}`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
+    const response = await fetch(`/api/leaderboard?deck=${deckId}&mode=${encodeURIComponent(mode)}&hearts=${encodeURIComponent(hearts)}`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Could not load scores.');
     if (request !== leaderboardRequest) return;
@@ -797,7 +815,7 @@ async function submitSoloScore() {
   try {
     const response = await fetch('/api/leaderboard', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ name, mode: g.mode, hearts: g.heartLimit, score: g.score, lifetimePoints: lifetimeRankedPoints(), correct: g.correct, total: g.total, duration: g.record.duration, firstCorrect: false }),
+      body: JSON.stringify({ name, deck: deckId, mode: g.mode, hearts: g.heartLimit, score: g.score, lifetimePoints: lifetimeRankedPoints(), correct: g.correct, total: g.total, duration: g.record.duration, firstCorrect: false }),
       signal: AbortSignal.timeout(12000)
     });
     const data = await response.json().catch(() => ({}));
@@ -813,15 +831,15 @@ async function submitSoloScore() {
 function exportGhost() {
   const record = app.game?.record; if (!record) return;
   const blob = new Blob([JSON.stringify(record, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob);
-  const link = document.createElement('a'); link.href = url; link.download = `packet-party-${record.mode}-ghost.json`; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const link = document.createElement('a'); link.href = url; link.download = `packet-party-${deckId}-${record.mode}-ghost.json`; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   toast('Ghost run exported. Share the file with a friend.');
 }
 
 async function loadQuestions() {
   try {
-    const response = await fetch('./questions.json', { cache: 'no-cache' }); if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const response = await fetch(deckId === 'ccst' ? './ccst-questions.json' : './questions.json', { cache: 'no-cache' }); if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json(); if (!Array.isArray(data.questions)) throw new Error('Missing questions');
-    try { const notesResponse = await fetch('./explanations.json', { cache: 'no-cache' }); if (notesResponse.ok) app.explanations = await notesResponse.json(); } catch { /* Quiz still works if the notes are unavailable. */ }
+    try { const notesResponse = await fetch(deckId === 'ccst' ? './ccst-explanations.json' : './explanations.json', { cache: 'no-cache' }); if (notesResponse.ok) app.explanations = await notesResponse.json(); } catch { /* Quiz still works if the notes are unavailable. */ }
     app.questions = data.questions.filter(q => q && q.question && Array.isArray(q.correctAnswers) && q.correctAnswers.length && Array.isArray(q.options)).map((q, index) => ({ ...q, id: Number(q.id) || index + 1 }));
     restorePractice(); prepareDifficulty(); renderHome(); renderBank();
   } catch (error) {
@@ -830,6 +848,17 @@ async function loadQuestions() {
   }
 }
 function attachEvents() {
+  document.addEventListener('click', event => {
+    const img = event.target.closest?.('.question-html img'); if (!img) return;
+    $('exhibitLarge').src = img.src; $('exhibitLarge').alt = img.alt;
+    $('exhibitDialog').showModal();
+  });
+  document.addEventListener('keydown', event => {
+    if (!['Enter', ' '].includes(event.key) || !event.target.matches?.('.question-html img')) return;
+    event.preventDefault(); event.target.click();
+  });
+  $('exhibitClose').addEventListener('click', () => $('exhibitDialog').close());
+  $('exhibitDialog').addEventListener('click', event => { if (event.target === $('exhibitDialog')) $('exhibitDialog').close(); });
   $('brandButton').addEventListener('click', () => setView('home'));
   document.querySelectorAll('.nav-link').forEach(button => button.addEventListener('click', () => { if (app.game && app.view === 'game') clearInterval(app.timer); setView(button.dataset.view); }));
   $('heroStart').addEventListener('click', () => openSetup('shuffle'));
@@ -896,7 +925,7 @@ function attachEvents() {
   $('bankList').addEventListener('click', event => {
     const button = event.target.closest('[data-bank-action]'); if (!button) return;
     const id = +button.closest('[data-id]').dataset.id;
-    if (button.dataset.bankAction === 'star') { if (app.favorites.has(id)) app.favorites.delete(id); else app.favorites.add(id); writeJSON('pp_favorites', [...app.favorites]); }
+    if (button.dataset.bankAction === 'star') { if (app.favorites.has(id)) app.favorites.delete(id); else app.favorites.add(id); writeJSON(deckStorageKey('pp_favorites'), [...app.favorites]); }
     else { if (app.bankRevealed.has(id)) app.bankRevealed.delete(id); else app.bankRevealed.add(id); }
     renderBank();
   });
@@ -960,6 +989,7 @@ const live = {
 function liveInviteURL(code = live.code) {
   const url = new URL(location.href);
   url.searchParams.set('room', code);
+  if (deckId === 'ccst') url.searchParams.set('deck', 'ccst'); else url.searchParams.delete('deck');
   url.hash = '';
   return url.toString();
 }
@@ -992,7 +1022,7 @@ async function liveAPI(path, { method = 'GET', body, auth = true } = {}) {
   return data;
 }
 function liveSaveSession() {
-  writeJSON('pp_live_session', { code: live.code, token: live.token, playerId: live.playerId, name: live.name });
+  writeJSON(deckStorageKey('pp_live_session'), { code: live.code, token: live.token, playerId: live.playerId, name: live.name });
 }
 function liveClearSession() {
   clearInterval(live.pollTimer); clearInterval(live.clockTimer);
@@ -1003,7 +1033,7 @@ function liveClearSession() {
   live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
   live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear(); live.hintStep = 0;
   live.seenReactions.clear(); live.sawReactions = false; live.revealKey = ''; live.lastQuestion = null;
-  try { localStorage.removeItem('pp_live_session'); } catch { /* Storage is optional. */ }
+  try { localStorage.removeItem(deckStorageKey('pp_live_session')); } catch { /* Storage is optional. */ }
   const url = new URL(location.href);
   if (url.searchParams.has('room')) { url.searchParams.delete('room'); history.replaceState(null, '', url); }
   $('liveEntry').hidden = false; $('liveRoom').hidden = true;
@@ -1020,6 +1050,7 @@ function liveApplyResponse(data, seq) {
 }
 function liveEnter(data, name) {
   if (!data?.token || !data?.room?.code || !data.playerId) throw new Error('The room did not return a player session.');
+  if ((data.room.deck || 'pools') !== deckId) throw new Error('This room uses a different study deck. Open its invite link.');
   live.code = String(data.room.code).toUpperCase(); live.token = data.token; live.playerId = data.playerId; live.name = name;
   live.lastPollAt = 0;
   live.pendingActions = new Set();
@@ -1045,7 +1076,7 @@ async function liveCreate() {
   if (!name) { toast('Add your name to create a room.'); return; }
   const button = $('liveCreateForm').querySelector('button[type="submit"]'); button.disabled = true;
   try {
-    const data = await liveAPI('/api/rooms', { method: 'POST', body: { name, questionCount }, auth: false });
+    const data = await liveAPI('/api/rooms', { method: 'POST', body: { name, questionCount, deck: deckId }, auth: false });
     writeJSON('pp_live_name', name); liveEnter(data, name); toast('Room created. Share the code with a friend!');
   } catch (error) { toast(error.message); }
   finally { button.disabled = false; }
@@ -1056,7 +1087,7 @@ async function liveJoin() {
   if (!name || code.length !== 6) { toast('Enter your name and a 6-character room code.'); return; }
   const button = $('liveJoinForm').querySelector('button[type="submit"]'); button.disabled = true;
   try {
-    const data = await liveAPI(`/api/rooms/${encodeURIComponent(code)}/join`, { method: 'POST', body: { name }, auth: false });
+    const data = await liveAPI(`/api/rooms/${encodeURIComponent(code)}/join`, { method: 'POST', body: { name, deck: deckId }, auth: false });
     writeJSON('pp_live_name', name); liveEnter(data, name); toast('You joined the room!');
   } catch (error) { toast(error.message); }
   finally { button.disabled = false; }
@@ -1221,7 +1252,7 @@ async function liveResume() {
   const savedName = readJSON('pp_live_name', '');
   $('liveHostName').value = savedName; $('liveGuestName').value = savedName;
   if (inviteCode) { $('liveJoinCode').value = inviteCode; setView('live'); }
-  const session = readJSON('pp_live_session', null);
+  const session = readJSON(deckStorageKey('pp_live_session'), null);
   if (!session?.code || !session?.token || !session?.playerId || (inviteCode && inviteCode !== session.code)) return;
   live.code = session.code; live.token = session.token; live.playerId = session.playerId; live.name = session.name || savedName;
   liveShowConnection('connecting');
@@ -1310,5 +1341,5 @@ function setupInstall() {
   window.addEventListener('appinstalled', () => { button.hidden = true; deferredInstall = null; toast('Packet Party is installed!'); });
 }
 
-updateSoundButton(); updateStats(); renderLeaderboardModeTabs(); attachEvents(); attachLiveEvents(); setupInstall(); loadQuestions(); liveResume();
+renderDeckChrome(); updateSoundButton(); updateStats(); renderLeaderboardModeTabs(); attachEvents(); attachLiveEvents(); setupInstall(); loadQuestions(); liveResume();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});

@@ -2,6 +2,8 @@
 
 A playful, mobile-friendly networking quiz built from eight supplied question pools. The frontend is static, with Vercel Functions for live rooms and public leaderboards. Deploy this folder to Vercel with **Framework Preset: Other** and no build command.
 
+The **CCST midterm** tab adds a separate 90-card certification review deck from `CCST Networking Reviewer 1.pdf`. It uses the same solo, practice, training, leaderboard, and live multiplayer modes. Progress and public scores are kept separate from the original question pools. See [CCST_REVIEW_NOTES.md](CCST_REVIEW_NOTES.md) for corrected source answers and omitted slides.
+
 ## Play
 
 - Browse all 198 distinct questions and reveal the source-marked answers. **Show all 198 questions** in the question bank clears search and filters, then displays the entire deck at once; **Show fewer** returns to the shorter list.

@@ -3,7 +3,7 @@
   "framework": null,
   "functions": {
     "api/rooms.mjs": {
-      "includeFiles": "questions.json",
+      "includeFiles": "*.json",
       "regions": ["sin1"]
     },
     "api/leaderboard.mjs": {

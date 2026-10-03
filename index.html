@@ -41,22 +41,23 @@
       </div>
     </header>
 
+    <nav class="deck-switch" aria-label="Study deck"><a id="poolsDeckLink" href="/">Question pools</a><a id="ccstDeckLink" href="/?deck=ccst">CCST midterm</a><span id="deckSwitchNote">Choose what to study</span></nav>
     <div class="quote-strip" aria-hidden="true"><div class="quote-track" id="quoteTrack"></div></div>
 
     <main id="main">
       <section id="homeView" class="view home-view">
         <div class="hero">
           <div class="hero-copy">
-            <div class="eyebrow"><span class="status-dot"></span> NETWORKING QUIZ ARCADE</div>
+            <div class="eyebrow"><span class="status-dot"></span> <span id="heroEyebrowText">NETWORKING QUIZ ARCADE</span></div>
             <h1>Make every<br><span class="hero-word">answer</span> count<span class="hero-spark">✳</span></h1>
-            <p class="hero-lede">Study the real questions. Play solo or race friends.</p>
+            <p class="hero-lede" id="heroLede">Study the real questions. Play solo or race friends.</p>
             <div class="hero-actions">
               <button type="button" id="heroStart" class="button button-primary">Play solo <span aria-hidden="true">↗</span></button>
               <button type="button" id="heroLive" class="button button-live">Play with friends <span aria-hidden="true">↗</span></button>
             </div>
             <div class="hero-facts">
               <div><strong id="questionCount">—</strong><span>questions</span></div>
-              <div><strong id="sourceCount">—</strong><span>pools</span></div>
+              <div><strong id="sourceCount">—</strong><span id="sourceCountLabel">pools</span></div>
               <div><strong id="runsCount">0</strong><span>runs played</span></div>
             </div>
             <details class="career-badge"><summary><span class="career-badge-mark" aria-hidden="true">✦</span><span><small>YOUR TITLE</small><strong id="careerBadgeTitle">Noob</strong><em id="careerBadgeProgress">0 lifetime points</em></span><span class="career-badge-more">See badges ↓</span></summary><div id="badgeLadder" class="badge-ladder"></div></details>
@@ -171,6 +172,8 @@
   </dialog>
 
   <dialog id="answerHistoryDialog" class="answer-history-dialog" aria-labelledby="answerHistoryTitle"><div class="answer-history-head"><span class="section-kicker">ANSWER HISTORY</span><button type="button" id="answerHistoryClose" class="icon-button close-button" aria-label="Close answer history">×</button></div><div id="answerHistoryContent"></div><div class="answer-history-actions"><button type="button" id="answerHistoryOlder" class="button button-outline">← Older</button><button type="button" id="answerHistoryNewer" class="button button-outline">Newer →</button><button type="button" id="answerHistoryReturn" class="button button-primary">Back to question ↗</button></div></dialog>
+
+  <dialog id="exhibitDialog" class="exhibit-dialog" aria-label="Enlarged question exhibit"><button type="button" id="exhibitClose" class="exhibit-close" aria-label="Close enlarged exhibit">×</button><img id="exhibitLarge" alt=""></dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
