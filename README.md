@@ -4,7 +4,7 @@ A playful, mobile-friendly networking quiz built from eight supplied question po
 
 ## Play
 
-- Browse all 198 distinct questions and reveal the source-marked answers.
+- Browse all 198 distinct questions and reveal the source-marked answers. **Show all 198 questions** in the question bank clears search and filters, then displays the entire deck at once; **Show fewer** returns to the shorter list.
 - Play the complete deck in source order or shuffle every question and its choices.
 - Open **Practice path** for the full deck in a fixed question order. You can keep the original choice order or turn on **Shuffle answer choices**; each question keeps its shuffled choice positions when you revisit it. It saves your answers and current question on this device, so you can resume later, move backward or forward, skip, or jump straight to any question number. **Reset all progress** clears saved answers, position, and shuffled choice positions after confirmation. Practice path has no timer or leaderboard score.
 - Choose **Training loop** for 20 or 30 random questions with unlimited hearts. After each pass, review every miss alongside your answer, the correct answer, and an explanation. Retry only the missed questions, with fresh choice order, until you complete a perfect pass. Training is unranked.

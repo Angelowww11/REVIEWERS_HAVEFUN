@@ -96,11 +96,12 @@
         <div class="page-intro"><div><span class="section-kicker">THE WHOLE DECK</span><h1>Question bank<span class="title-period">.</span></h1></div><span class="count-badge" id="bankCountBadge">— questions</span></div>
         <div class="bank-toolbar">
           <label class="search-field"><span aria-hidden="true">⌕</span><span class="sr-only">Search questions and choices</span><input id="bankSearch" type="search" placeholder="Search a topic, question, or choice…"></label>
-          <label class="select-field"><span class="sr-only">Filter by question pool</span><select id="bankSource"><option value="all">All pools</option></select></label>
+          <label class="select-field"><span class="sr-only">Filter by question pool</span><select id="bankSource"><option value="all">All question pools</option></select></label>
           <label class="select-field"><span class="sr-only">Filter by question type</span><select id="bankType"><option value="all">All types</option><option value="multiple_choice_question">Multiple choice</option><option value="true_false_question">True / false</option><option value="short_answer_question">Short answer</option><option value="favorites">Starred questions</option></select></label>
+          <button type="button" id="bankShowAll" class="small-button bank-show-all" aria-pressed="false">Show all questions</button>
           <button type="button" id="revealAllButton" class="small-button" aria-pressed="false">Reveal answers</button>
         </div>
-        <div class="bank-summary"><span id="bankResultText">Loading questions…</span><button type="button" id="bankShowAll" class="text-button">Show all at once</button></div>
+        <div class="bank-summary"><span id="bankResultText">Loading questions…</span></div>
         <div id="bankList" class="bank-list"></div>
         <div class="bank-footer"><button type="button" id="bankMore" class="button button-outline">Show more questions</button></div>
       </section>

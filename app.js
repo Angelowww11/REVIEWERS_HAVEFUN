@@ -221,7 +221,8 @@ function filteredBank() {
 function renderBank() {
   const matches = filteredBank(); const visible = app.bankAll ? matches : matches.slice(0, app.bankLimit);
   $('bankResultText').textContent = `Showing ${visible.length} of ${matches.length} questions`;
-  $('bankShowAll').textContent = app.bankAll ? 'Show fewer' : 'Show all at once';
+  $('bankShowAll').textContent = app.bankAll ? 'Show fewer' : `Show all ${app.questions.length} questions`;
+  $('bankShowAll').setAttribute('aria-pressed', String(app.bankAll));
   $('bankMore').hidden = app.bankAll || visible.length >= matches.length;
   $('revealAllButton').textContent = app.bankRevealAll ? 'Hide answers' : 'Reveal answers';
   $('revealAllButton').setAttribute('aria-pressed', String(app.bankRevealAll));
@@ -885,7 +886,12 @@ function attachEvents() {
   });
   for (const id of ['bankSearch', 'bankSource', 'bankType']) $(id).addEventListener(id === 'bankSearch' ? 'input' : 'change', () => { app.bankLimit = 16; app.bankAll = false; renderBank(); });
   $('revealAllButton').addEventListener('click', () => { app.bankRevealAll = !app.bankRevealAll; renderBank(); });
-  $('bankShowAll').addEventListener('click', () => { app.bankAll = !app.bankAll; app.bankLimit = 16; renderBank(); });
+  $('bankShowAll').addEventListener('click', () => {
+    app.bankAll = !app.bankAll; app.bankLimit = 16;
+    if (app.bankAll) { $('bankSearch').value = ''; $('bankSource').value = 'all'; $('bankType').value = 'all'; }
+    renderBank();
+    if (!app.bankAll) $('bankList').scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  });
   $('bankMore').addEventListener('click', () => { app.bankLimit += 16; renderBank(); });
   $('bankList').addEventListener('click', event => {
     const button = event.target.closest('[data-bank-action]'); if (!button) return;
