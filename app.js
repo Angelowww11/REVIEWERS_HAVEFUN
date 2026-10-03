@@ -186,6 +186,14 @@ function practiceGoTo(index) {
   scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
   announce(`Question ${index + 1} of ${app.questions.length}.`);
 }
+function resetPractice() {
+  if (!confirm('Erase all Practice path answers and start again at question 1?')) return;
+  practice.index = 0; practice.entries = {}; practice.selected = new Set(); practice.choiceOrder = {};
+  $('practiceJumpInput').value = '';
+  savePractice(); renderPractice(); renderPracticeCard();
+  scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  toast('Practice progress reset. Start fresh at question 1!');
+}
 function practiceRecord(q) { return practice.entries[q.id]; }
 function practiceAnswered(record) { return record?.status === 'correct' || record?.status === 'wrong' || record?.status === 'revealed'; }
 function practiceOptionsOrder(q) {
@@ -308,7 +316,7 @@ function nextQuestion() {
   const preferHard = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100;
   g.current = g.mode === 'adaptive' ? selectAdaptiveQuestion(g, preferHard) : g.order[g.completed];
   if (!g.current) { finishGame(); return; }
-  g.selected = new Set(); g.answered = false; g.wager = 0; g.hiddenChoices = new Set(); g.hintStep = 0; g.coachOpen = false;
+  g.selected = new Set(); g.answered = false; g.wager = 0; g.hiddenChoices = new Set(); g.displayOptions = null; g.hintStep = 0; g.coachOpen = false;
   g.questionAt = performance.now();
   if (g.mode === 'blitz') { g.remainingTime = Math.max(5, 15 - Math.floor(g.completed * .7)); g.timerLast = performance.now(); }
   const wagerRound = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100 && difficulty(g.current) >= .55 && g.mode !== 'typing';
@@ -340,12 +348,12 @@ function powerMarkup(g, q) {
 }
 function renderQuestion() {
   const g = app.game, q = g.current;
-  g.displayOptions = optionOrder(q, g.firstCorrect);
+  g.displayOptions ||= optionOrder(q, g.firstCorrect);
   const isType = g.mode === 'typing' || q.type === 'short_answer_question' || !g.displayOptions.length;
   const isMulti = !isType && q.correctAnswers.length > 1;
   let answers;
   if (isType) answers = `<label class="sr-only" for="answerInput">Type your answer</label><input id="answerInput" class="answer-input" type="text" autocomplete="off" spellcheck="false" placeholder="Type your answer…"><p class="input-helper">${q.type === 'short_answer_question' ? 'Follow the format in the question.' : 'Use the same answer wording. Capitalization is ignored.'}</p>`;
-  else answers = `<div class="game-choices" role="group" aria-label="Answer choices">${g.displayOptions.map((option, index) => `<button type="button" class="choice-button" data-choice-index="${index}" aria-pressed="false"><span class="choice-key">${index + 1}</span><span>${escapeHTML(option)}</span></button>`).join('')}</div>`;
+  else answers = `<div class="game-choices" role="group" aria-label="Answer choices">${g.displayOptions.map((option, index) => `<button type="button" class="choice-button ${g.hiddenChoices.has(index) ? 'is-eliminated' : ''}" data-choice-index="${index}" aria-pressed="false" ${g.hiddenChoices.has(index) ? `disabled aria-label="Choice ${index + 1} eliminated"` : ''}><span class="choice-key">${index + 1}</span><span>${escapeHTML(option)}</span></button>`).join('')}</div>`;
   $('gameContent').innerHTML = `<article class="question-card"><div class="question-card-head"><span class="question-tag">${escapeHTML(typeName(q).toUpperCase())} · ${escapeHTML(sourceName(q).toUpperCase())}</span><span class="difficulty-tag">${difficulty(q) > .72 ? 'HARD' : difficulty(q) > .38 ? 'MEDIUM' : 'WARM-UP'} · ${100 + Math.round(difficulty(q) * 75)} PTS</span></div><div class="question-prompt" id="currentQuestion">${safeQuestionHTML(q)}</div>${answers}<div id="feedbackSlot"></div><div class="question-actions"><div class="question-actions-left">${powerMarkup(g, q)}<button type="button" class="hint-button" data-action="hint">💡 Hint bot</button></div><button type="button" id="answerAction" class="question-submit" data-action="${isType || isMulti ? 'submit' : 'skip'}" ${isType || isMulti ? 'disabled' : ''}>${isType || isMulti ? 'Check answer' : 'Skip question'}</button></div><div id="coachSlot"></div></article>`;
   if (isType) $('answerInput').focus();
   g.questionAt = performance.now();
@@ -374,10 +382,10 @@ function usePower(name) {
   if (name === 'fifty') {
     const wrong = g.displayOptions.map((option, index) => ({ option, index })).filter(item => !isCorrectOption(q, item.option));
     if (wrong.length < 2) return;
-    shuffle(wrong).slice(0, 2).forEach(item => { g.hiddenChoices.add(item.index); const button = document.querySelector(`[data-choice-index="${item.index}"]`); if (button) { button.disabled = true; button.classList.add('is-muted'); } });
+    shuffle(wrong).slice(0, 2).forEach(item => { g.hiddenChoices.add(item.index); const button = $('gameContent').querySelector(`[data-choice-index="${item.index}"]`); if (button) { button.disabled = true; button.classList.add('is-eliminated'); button.setAttribute('aria-label', `Choice ${item.index + 1} eliminated`); } });
   } else if (name === 'shield') g.activeShield = true;
   else if (name === 'freeze') g.freezeUntil = performance.now() + 8000;
-  g.used[name] = true; playTone('click'); toast(name === 'fifty' ? 'Two wrong choices removed.' : name === 'shield' ? 'Shield ready for one missed answer.' : 'Clock frozen for 8 seconds.');
+  g.used[name] = true; playTone('click'); toast(name === 'fifty' ? 'Two wrong choices crossed out.' : name === 'shield' ? 'Shield ready for one missed answer.' : 'Clock frozen for 8 seconds.');
   document.querySelectorAll(`[data-power="${name}"]`).forEach(button => { button.disabled = true; button.classList.add('is-active'); });
 }
 function checkTypedAnswer(q, typed) {
@@ -631,6 +639,7 @@ function attachEvents() {
   $('practiceNext').addEventListener('click', () => practiceGoTo(practice.index + 1));
   $('practiceSkip').addEventListener('click', () => { const q = app.questions[practice.index]; if (!practiceAnswered(practiceRecord(q))) practice.entries[q.id] = { status: 'skipped', response: '' }; practiceGoTo(practice.index + 1); });
   $('practiceStartOver').addEventListener('click', () => practiceGoTo(0));
+  $('practiceReset').addEventListener('click', resetPractice);
   $('practiceJumpForm').addEventListener('submit', event => { event.preventDefault(); const number = Number($('practiceJumpInput').value); practiceGoTo(number - 1); $('practiceJumpInput').value = ''; });
   $('practiceNumberGrid').addEventListener('click', event => { const number = Number(event.target.closest('[data-practice-number]')?.dataset.practiceNumber); if (number) practiceGoTo(number - 1); });
   $('practiceContent').addEventListener('click', event => {

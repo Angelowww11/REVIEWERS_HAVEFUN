@@ -6,12 +6,12 @@ A playful, mobile-friendly networking quiz built from eight supplied question po
 
 - Browse all 198 distinct questions and reveal the source-marked answers.
 - Play the complete deck in source order or shuffle every question and its choices.
-- Open **Practice path** for the full deck in a fixed question order. You can keep the original choice order or turn on **Shuffle answer choices**; each question keeps its shuffled choice positions when you revisit it. It saves your answers and current question on this device, so you can resume later, move backward or forward, skip, or jump straight to any question number. Practice path has no timer or leaderboard score.
+- Open **Practice path** for the full deck in a fixed question order. You can keep the original choice order or turn on **Shuffle answer choices**; each question keeps its shuffled choice positions when you revisit it. It saves your answers and current question on this device, so you can resume later, move backward or forward, skip, or jump straight to any question number. **Reset all progress** clears saved answers, position, and shuffled choice positions after confirmation. Practice path has no timer or leaderboard score.
 - On a keyboard, press **1–4** to choose a displayed answer in solo, Practice path, and live matches. In Match maker, press 1–4 for a question, then 1–4 for its answer. Number keys still type normally in answer fields and chat.
 - Choose 1, 3, 5, or unlimited hearts. Public leaderboards cover **All questions**, **Shuffle run**, **Level up**, and **Boss blitz**, each with a hearts filter and top-score graph. The home page shows a switchable top-three preview.
 - Turn on **Correct answer first** for a single practice run. The switch resets to off for each new run, and those practice scores are never submitted.
 - Try Level up, Boss blitz, Match maker, and Type it out for shorter rounds.
-- Build streaks, protect hearts, unlock one-use power-ups, request offline hints, and wager points before selected hard questions.
+- Build streaks, protect hearts, unlock one-use power-ups, request offline hints, and wager points before selected hard questions. The 50/50 power-up crosses out two wrong choices on desktop and mobile.
 - Export a completed run as a ghost file and share it with a friend to race their progress offline.
 - Host a live room for up to eight players. Friends join by code, answer the same timed questions, and see a shared leaderboard, chat, and reactions. Players can change their saved answer while the question is open; the final saved answer counts. A question reveals as soon as everyone answers, or after 25 seconds. Scores and streaks update on the reveal, so answering early does not give away the result.
 - Read a short explanation after every answer in solo and live play, or when revealing an answer in the question bank.
