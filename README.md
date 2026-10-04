@@ -36,3 +36,19 @@ The original saved course pages are not needed to run the site. The site preserv
 The live API is in `api/rooms.mjs` and the score API is in `api/leaderboard.mjs`. In Vercel, connect the free Upstash for Redis integration to the project. The functions read `KV_REST_API_URL` and `KV_REST_API_TOKEN` from server-side environment variables. Never expose the token in browser code. Rooms expire after six hours. Each ranked mode shows its top 50 scores across heart settings, with a separate filter for each setting.
 
 Voice chat, shared deck voting, and a model-backed tutor are not included. Hints remain local, and ghost files can be shared without an account.
+
+## Study space update
+
+- Appearance menu: dark, light, pink, green, blue and purple palettes. Shared semantic answer colors, opaque reading surfaces, larger question line spacing and a calm-motion preference.
+- Background particles are capped at 12 on small screens / 26 on larger screens, rendered at 20 fps with a 1.5 DPR cap, and suspended in hidden tabs, reduced-motion mode or data-saver mode.
+- Answer feedback labels the correct answer and its explanation, then prompts the learner to explain the concept from memory. 50/50 elimination uses a neutral cross-out without text blur.
+- Optional username/password accounts at `/api/account`: scrypt password hashing, secure HttpOnly same-site sessions, recovery keys, rate limits, bounded saves and optimistic revision checks. Cloud saves contain only whitelisted study progress/preferences for both decks; room tokens are excluded. Save/restore are explicit; auto-save is optional per session. Recovery keys must be retained by the player. Public leaderboard names remain independent of account identities.
+- Casual co-op rooms: untimed questions, group chat, free once-per-question 50/50, shared solved-question count, no individual ranking or attacks, and host-controlled advance after feedback. The shared count records questions answered correctly by at least one participant, not mastery by every participant.
+- Competitive items: Splatter costs 40 points (4 seconds; free wipe); Zap costs 60 and removes at most 20 banked points; Ward costs 35 and blocks an attack. A player can send one attack and receive one attack per question. Attacks cannot target players who have already answered. Hosts can disable playful items. Item spending/damage settles with the round. Every three consecutive correct answers grants a shield for the next round; every five adds 25 points. These are conservative initial balance values, not empirically validated optimums.
+
+### Design and learning references
+
+- Retrieval Practice, feedback guidance: https://www.retrievalpractice.org/feedback — feedback and recall drive the study flow; no claim is made that a particular palette improves memory.
+- Duolingo design reference: https://blog.duolingo.com/core-tabs-redesign/ — consistent navigation and playful, legible visual hierarchy.
+- W3C reduced motion: https://www.w3.org/WAI/WCAG22/Techniques/css/C39 — optional decoration respects system motion preferences.
+- Riot balance philosophy: https://2xko.riotgames.com/en-us/news/dev/2xko-live-balance-philosophy/ — clear counterplay and limited payoff inform the initial item rules; future player feedback should guide adjustments.

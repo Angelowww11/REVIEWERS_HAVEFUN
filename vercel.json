@@ -4,14 +4,29 @@
   "functions": {
     "api/rooms.mjs": {
       "includeFiles": "*.json",
-      "regions": ["sin1"]
+      "regions": [
+        "sin1"
+      ]
     },
     "api/leaderboard.mjs": {
-      "regions": ["sin1"]
+      "regions": [
+        "sin1"
+      ]
+    },
+    "api/account.mjs": {
+      "regions": [
+        "sin1"
+      ]
     }
   },
   "rewrites": [
-    { "source": "/api/rooms/:code/:action", "destination": "/api/rooms?code=:code&action=:action" },
-    { "source": "/api/rooms/:code", "destination": "/api/rooms?code=:code" }
+    {
+      "source": "/api/rooms/:code/:action",
+      "destination": "/api/rooms?code=:code&action=:action"
+    },
+    {
+      "source": "/api/rooms/:code",
+      "destination": "/api/rooms?code=:code"
+    }
   ]
 }
