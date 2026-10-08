@@ -1,31 +1,34 @@
 {
-  "title": "CCST Networking Midterm Certification Review",
+  "title": "CCST Networking Certification Review",
   "sourceFiles": [
-    "CCST Networking Reviewer 1.pdf"
+    "CCST_Networking_Reviewer_Notebook_Detailed-2.html",
+    "Cisco CCST Networking (100-150) topic-aligned supplemental review"
   ],
   "sourceSlideCount": 99,
-  "questionCount": 90,
+  "questionCount": 99,
+  "sourceQuestionCount": 79,
+  "supplementalQuestionCount": 20,
   "questions": [
     {
       "id": 1,
-      "sourceFile": "CCST · Concepts",
+      "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 5,
       "type": "multiple_choice_question",
-      "question": "Given IP address 172.16.199.25 and subnet mask 255.255.252.0, what is the CIDR notation?",
-      "questionHtml": "<p>Given IP address 172.16.199.25 and subnet mask 255.255.252.0, what is the CIDR notation?</p>",
+      "question": "How is given the IP Address 172.16.199.25 and the subnet mask 255.255.252.0. What is the CIDR notation for this address?",
+      "questionHtml": "<p>How is given the IP Address 172.16.199.25 and the subnet mask 255.255.252.0. What is the CIDR notation for this address?</p>",
       "options": [
-        "172.16.199.25/20",
-        "172.16.199.25/21",
-        "172.16.199.25/23",
-        "172.16.199.25/22"
+        "172.16.100.25/22",
+        "172.16.100.25/21",
+        "172.16.100.25/23",
+        "172.16.100.25/20"
       ],
       "correctAnswers": [
-        "172.16.199.25/22"
+        "172.16.100.25/22"
       ]
     },
     {
       "id": 2,
-      "sourceFile": "CCST · Concepts",
+      "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 6,
       "type": "multiple_choice_question",
       "question": "How is the following IP address written when using a CIDR notation? IP Address: 192.168.0.16 Subnet Mask: 255.255.255.240",
@@ -42,7 +45,7 @@
     },
     {
       "id": 3,
-      "sourceFile": "CCST · Concepts",
+      "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 7,
       "type": "multiple_choice_question",
       "question": "What is the CIDR prefix notation for a subnet mask of 255.255.0.0?",
@@ -59,11 +62,11 @@
     },
     {
       "id": 4,
-      "sourceFile": "CCST · Concepts",
+      "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 8,
       "type": "multiple_choice_question",
-      "question": "A host has IP address 172.16.100.25 and subnet mask 255.255.252.0. What is its CIDR notation?",
-      "questionHtml": "<p>A host has IP address 172.16.100.25 and subnet mask 255.255.252.0. What is its CIDR notation?</p>",
+      "question": "A host is given the IP address 172.16.100.25 and the subnet mask 255.255.252.0.",
+      "questionHtml": "<p>A host is given the IP address 172.16.100.25 and the subnet mask 255.255.252.0.</p>",
       "options": [
         "172.16.100.25 /23",
         "172.16.100.25 /20",
@@ -76,7 +79,7 @@
     },
     {
       "id": 5,
-      "sourceFile": "CCST · Concepts",
+      "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 9,
       "type": "multiple_choice_question",
       "question": "Which address is included in the 192.168.200.0/24 network?",
@@ -93,24 +96,24 @@
     },
     {
       "id": 6,
-      "sourceFile": "CCST · Concepts",
+      "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 10,
       "type": "multiple_choice_question",
-      "question": "What is the shortest valid notation for 2001:0db8:0000:0016:0000:001b:2000:0056?",
-      "questionHtml": "<p>What is the shortest valid notation for 2001:0db8:0000:0016:0000:001b:2000:0056?</p>",
+      "question": "What is the most compressed valid format of the IPv6 address 2001 :0db8:0000:0016:0000:001b: 2000:0056?",
+      "questionHtml": "<p>What is the most compressed valid format of the IPv6 address 2001 :0db8:0000:0016:0000:001b: 2000:0056?</p>",
       "options": [
-        "2001:db8::16::1b:2000:56",
-        "2001:db8:0:16::1b:2:56",
-        "2001:db8:16::1b:2000:56",
-        "2001:db8:0:16:0:1b:2000:56"
+        "2001:db8: : 16: : 1b:2:56",
+        "2001:db8: : 16: : 1b: 2000: 56",
+        "2001:db8: 16: :1b:2:56",
+        "2001:db8: 0:16: :1b: 2000:56"
       ],
       "correctAnswers": [
-        "2001:db8:0:16:0:1b:2000:56"
+        "2001:db8: 0:16: :1b: 2000:56"
       ]
     },
     {
       "id": 7,
-      "sourceFile": "CCST · Concepts",
+      "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 12,
       "type": "multiple_choice_question",
       "question": "Which address is a link-local IPV6 address?",
@@ -127,11 +130,11 @@
     },
     {
       "id": 8,
-      "sourceFile": "CCST · Concepts",
+      "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 13,
       "type": "multiple_choice_question",
-      "question": "At which OSI layer is a data stream split into segments with source and destination port numbers?",
-      "questionHtml": "<p>At which OSI layer is a data stream split into segments with source and destination port numbers?</p>",
+      "question": "At which OSI layer is the data stream broken up into segments that include source and destination port numbers?",
+      "questionHtml": "<p>At which OSI layer is the data stream broken up into segments that include source and destination port numbers?</p>",
       "options": [
         "Network",
         "Session",
@@ -144,8 +147,8 @@
     },
     {
       "id": 9,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 14,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 15,
       "type": "multiple_choice_question",
       "question": "Which information is included in the header of UDP segment?",
       "questionHtml": "<p>Which information is included in the header of UDP segment?</p>",
@@ -161,11 +164,11 @@
     },
     {
       "id": 10,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 15,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 16,
       "type": "multiple_choice_question",
-      "question": "Which OSI layer adds MAC addresses and a trailer for frame error detection during encapsulation?",
-      "questionHtml": "<p>Which OSI layer adds MAC addresses and a trailer for frame error detection during encapsulation?</p>",
+      "question": "During the data encapsulation process which OSI layer adds a header that contains MAC addressing information and a trailer used for error checking.",
+      "questionHtml": "<p>During the data encapsulation process which OSI layer adds a header that contains MAC addressing information and a trailer used for error checking.</p>",
       "options": [
         "Network",
         "Session",
@@ -178,8 +181,8 @@
     },
     {
       "id": 11,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 16,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 17,
       "type": "multiple_choice_question",
       "question": "Which protocol allows you to securely upload files to another computer on the internet?",
       "questionHtml": "<p>Which protocol allows you to securely upload files to another computer on the internet?</p>",
@@ -195,16 +198,16 @@
     },
     {
       "id": 12,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 17,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 18,
       "type": "multiple_choice_question",
-      "question": "Which protocol uses SSH on port 22 for secure file transfer?",
-      "questionHtml": "<p>Which protocol uses SSH on port 22 for secure file transfer?</p>",
+      "question": "A secure file transfer uses SSH keys and TCP port 22. Which protocol provides this service?",
+      "questionHtml": "<p>A secure file transfer uses SSH keys and TCP port 22. Which protocol provides this service?</p>",
       "options": [
         "SFTP",
         "TFTP",
         "DNS",
-        "DHCP"
+        "ICMP"
       ],
       "correctAnswers": [
         "SFTP"
@@ -212,113 +215,28 @@
     },
     {
       "id": 13,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 17,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 19,
       "type": "multiple_choice_question",
-      "question": "Which protocol uses UDP port 69 for small unauthenticated file transfers?",
-      "questionHtml": "<p>Which protocol uses UDP port 69 for small unauthenticated file transfers?</p>",
+      "question": "Which device operates at the OSI Data Link layer to forward frames using MAC addresses?",
+      "questionHtml": "<p>Which device operates at the OSI Data Link layer to forward frames using MAC addresses?</p>",
       "options": [
-        "SFTP",
-        "TFTP",
-        "ICMP",
-        "DNS"
+        "Router",
+        "Switch",
+        "Hub",
+        "DNS server"
       ],
       "correctAnswers": [
-        "TFTP"
+        "Switch"
       ]
     },
     {
       "id": 14,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 17,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 20,
       "type": "multiple_choice_question",
-      "question": "Which protocol resolves a domain name to an IP address?",
-      "questionHtml": "<p>Which protocol resolves a domain name to an IP address?</p>",
-      "options": [
-        "DNS",
-        "DHCP",
-        "SFTP",
-        "ICMP"
-      ],
-      "correctAnswers": [
-        "DNS"
-      ]
-    },
-    {
-      "id": 15,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 17,
-      "type": "multiple_choice_question",
-      "question": "Which protocol can reserve and assign an IP address to a server?",
-      "questionHtml": "<p>Which protocol can reserve and assign an IP address to a server?</p>",
-      "options": [
-        "DNS",
-        "DHCP",
-        "ICMP",
-        "TFTP"
-      ],
-      "correctAnswers": [
-        "DHCP"
-      ]
-    },
-    {
-      "id": 16,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 17,
-      "type": "multiple_choice_question",
-      "question": "Which protocol does ping use to test whether a host responds?",
-      "questionHtml": "<p>Which protocol does ping use to test whether a host responds?</p>",
-      "options": [
-        "ICMP",
-        "TFTP",
-        "DNS",
-        "SFTP"
-      ],
-      "correctAnswers": [
-        "ICMP"
-      ]
-    },
-    {
-      "id": 17,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 18,
-      "type": "multiple_choice_question",
-      "question": "Which OSI layer handles TCP and UDP?",
-      "questionHtml": "<p>Which OSI layer handles TCP and UDP?</p>",
-      "options": [
-        "Application",
-        "Transport",
-        "Network",
-        "Physical"
-      ],
-      "correctAnswers": [
-        "Transport"
-      ]
-    },
-    {
-      "id": 18,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 18,
-      "type": "multiple_choice_question",
-      "question": "Which OSI layer contains switches and Ethernet frames?",
-      "questionHtml": "<p>Which OSI layer contains switches and Ethernet frames?</p>",
-      "options": [
-        "Physical",
-        "Data Link",
-        "Network",
-        "Application"
-      ],
-      "correctAnswers": [
-        "Data Link"
-      ]
-    },
-    {
-      "id": 19,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 19,
-      "type": "multiple_choice_question",
-      "question": "Which TCP/IP model layer contains IP?",
-      "questionHtml": "<p>Which TCP/IP model layer contains IP?</p>",
+      "question": "In the four-layer TCP/IP model, which layer includes Ethernet?",
+      "questionHtml": "<p>In the four-layer TCP/IP model, which layer includes Ethernet?</p>",
       "options": [
         "Application",
         "Transport",
@@ -326,47 +244,30 @@
         "Network Access"
       ],
       "correctAnswers": [
-        "Internet"
+        "Network Access"
       ]
     },
     {
-      "id": 20,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 20,
+      "id": 15,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 21,
       "type": "multiple_choice_question",
-      "question": "Which network type usually covers personal devices within about 10 meters?",
-      "questionHtml": "<p>Which network type usually covers personal devices within about 10 meters?</p>",
+      "question": "Which network type typically connects personal devices over a short range, such as a phone and Bluetooth headset?",
+      "questionHtml": "<p>Which network type typically connects personal devices over a short range, such as a phone and Bluetooth headset?</p>",
       "options": [
+        "WAN",
         "PAN",
-        "LAN",
         "MAN",
-        "WAN"
+        "CAN"
       ],
       "correctAnswers": [
         "PAN"
       ]
     },
     {
-      "id": 21,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 20,
-      "type": "multiple_choice_question",
-      "question": "Which network type spans a large geographic distance and connects smaller networks?",
-      "questionHtml": "<p>Which network type spans a large geographic distance and connects smaller networks?</p>",
-      "options": [
-        "PAN",
-        "LAN",
-        "WAN",
-        "WLAN"
-      ],
-      "correctAnswers": [
-        "WAN"
-      ]
-    },
-    {
-      "id": 22,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 21,
+      "id": 16,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 22,
       "type": "multiple_choice_question",
       "question": "Which command will display all the current operational settings configured on a Cisco router?",
       "questionHtml": "<p>Which command will display all the current operational settings configured on a Cisco router?</p>",
@@ -381,12 +282,12 @@
       ]
     },
     {
-      "id": 23,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 22,
-      "type": "true_false_question",
-      "question": "Does higher latency by itself reduce the bandwidth capacity of a network link?",
-      "questionHtml": "<p>Does higher latency by itself reduce the bandwidth capacity of a network link?</p>",
+      "id": 17,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 23,
+      "type": "multiple_choice_question",
+      "question": "True or False: Increasing a link’s latency by itself changes its rated bandwidth.",
+      "questionHtml": "<p>True or False: Increasing a link’s latency by itself changes its rated bandwidth.</p>",
       "options": [
         "True",
         "False"
@@ -396,12 +297,12 @@
       ]
     },
     {
-      "id": 24,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 23,
+      "id": 18,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 24,
       "type": "multiple_choice_question",
-      "question": "A company develops an app using cloud-hosted development tools. Which model is this?",
-      "questionHtml": "<p>A company develops an app using cloud-hosted development tools. Which model is this?</p>",
+      "question": "A user pays monthly to use a hosted graphics-design app in a web browser. Which cloud service model is this?",
+      "questionHtml": "<p>A user pays monthly to use a hosted graphics-design app in a web browser. Which cloud service model is this?</p>",
       "options": [
         "IaaS",
         "PaaS",
@@ -409,47 +310,13 @@
         "On-premises"
       ],
       "correctAnswers": [
-        "PaaS"
-      ]
-    },
-    {
-      "id": 25,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 23,
-      "type": "multiple_choice_question",
-      "question": "A user pays monthly for a browser-based graphics app. Which model is this?",
-      "questionHtml": "<p>A user pays monthly for a browser-based graphics app. Which model is this?</p>",
-      "options": [
-        "IaaS",
-        "PaaS",
-        "SaaS",
-        "Private cloud"
-      ],
-      "correctAnswers": [
         "SaaS"
       ]
     },
     {
-      "id": 26,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 24,
-      "type": "multiple_choice_question",
-      "question": "Cloud virtual machines and virtual storage are examples of which model?",
-      "questionHtml": "<p>Cloud virtual machines and virtual storage are examples of which model?</p>",
-      "options": [
-        "IaaS",
-        "PaaS",
-        "SaaS",
-        "WLAN"
-      ],
-      "correctAnswers": [
-        "IaaS"
-      ]
-    },
-    {
-      "id": 27,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 25,
+      "id": 19,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 26,
       "type": "multiple_choice_question",
       "question": "Which protocol does an IPv6 host use to resolve the MAC address associated with a destination IPv6 address?",
       "questionHtml": "<p>Which protocol does an IPv6 host use to resolve the MAC address associated with a destination IPv6 address?</p>",
@@ -464,9 +331,9 @@
       ]
     },
     {
-      "id": 28,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 26,
+      "id": 20,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 27,
       "type": "multiple_choice_question",
       "question": "Which protocol is used by IPV6 enabled host to perform automatic stateless address configuration?",
       "questionHtml": "<p>Which protocol is used by IPV6 enabled host to perform automatic stateless address configuration?</p>",
@@ -481,9 +348,9 @@
       ]
     },
     {
-      "id": 29,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 28,
+      "id": 21,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 29,
       "type": "multiple_choice_question",
       "question": "A user initiates a trouble ticket stating that an external web page is not loading. You determine that other resources both internal and external are still reachable. Which command can you use to help locate where the issue is in the network path to the external web page?",
       "questionHtml": "<p>A user initiates a trouble ticket stating that an external web page is not loading. You determine that other resources both internal and external are still reachable. Which command can you use to help locate where the issue is in the network path to the external web page?</p>",
@@ -498,12 +365,12 @@
       ]
     },
     {
-      "id": 30,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 29,
+      "id": 22,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 30,
       "type": "multiple_choice_question",
-      "question": "Which two statements are true about the IPv4 address of the default gateway configured on a host? Note: You will receive partial credit for each (Choose 2.) correct selection.",
-      "questionHtml": "<p>Which two statements are true about the IPv4 address of the default gateway configured on a host? Note: You will receive partial credit for each (Choose 2.) correct selection.</p>",
+      "question": "Which two statements are true about the IPv4 address of the default gateway configured on a host? (Choose 2.)Note: You will receive partial credit for each correct selection.",
+      "questionHtml": "<p>Which two statements are true about the IPv4 address of the default gateway configured on a host? (Choose 2.)Note: You will receive partial credit for each correct selection.</p>",
       "options": [
         "The IPv4 address of the default gateway must be the first host address in the subnet.",
         "The same default gateway IPv4 address is configured on each host on the local network.",
@@ -517,9 +384,9 @@
       ]
     },
     {
-      "id": 31,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 31,
+      "id": 23,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 32,
       "type": "multiple_choice_question",
       "question": "An engineer configured a new VLAN named VLAN2 for the Data Center team. When the team tries to ping addresses outside VLAN2 from a computer in VLAN2, they are unable to reach them. What should the engineer configure?",
       "questionHtml": "<p>An engineer configured a new VLAN named VLAN2 for the Data Center team. When the team tries to ping addresses outside VLAN2 from a computer in VLAN2, they are unable to reach them. What should the engineer configure?</p>",
@@ -534,9 +401,26 @@
       ]
     },
     {
-      "id": 32,
-      "sourceFile": "CCST · Concepts",
+      "id": 24,
+      "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 33,
+      "type": "multiple_choice_question",
+      "question": "Which information is included in the header of a UDP segment?",
+      "questionHtml": "<p>Which information is included in the header of a UDP segment?</p>",
+      "options": [
+        "IP addresses",
+        "Sequence numbers",
+        "Port numbers",
+        "MAC addresses"
+      ],
+      "correctAnswers": [
+        "Port numbers"
+      ]
+    },
+    {
+      "id": 25,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 34,
       "type": "multiple_choice_question",
       "question": "What is the purpose of assigning an IP address to the management VLAN interface on a Layer 2 switch?",
       "questionHtml": "<p>What is the purpose of assigning an IP address to the management VLAN interface on a Layer 2 switch?</p>",
@@ -551,9 +435,9 @@
       ]
     },
     {
-      "id": 33,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 34,
+      "id": 26,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 35,
       "type": "multiple_choice_question",
       "question": "Which of the following is a characteristic of the Spanning Tree Protocol (STP)?",
       "questionHtml": "<p>Which of the following is a characteristic of the Spanning Tree Protocol (STP)?</p>",
@@ -568,26 +452,26 @@
       ]
     },
     {
-      "id": 34,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 35,
+      "id": 27,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 36,
       "type": "multiple_choice_question",
-      "question": "Which protocol carries OSPF Hello packets used to discover neighbors?",
-      "questionHtml": "<p>Which protocol carries OSPF Hello packets used to discover neighbors?</p>",
+      "question": "What packets does OSPF use to discover neighbors and form adjacencies?",
+      "questionHtml": "<p>What packets does OSPF use to discover neighbors and form adjacencies?</p>",
       "options": [
-        "TCP port 89",
-        "UDP port 89",
-        "ICMP",
-        "OSPF directly over IP (protocol 89)"
+        "Hello packets carried directly over IP",
+        "TCP SYN packets on port 179",
+        "ARP requests",
+        "DHCP Discover messages"
       ],
       "correctAnswers": [
-        "OSPF directly over IP (protocol 89)"
+        "Hello packets carried directly over IP"
       ]
     },
     {
-      "id": 35,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 36,
+      "id": 28,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 37,
       "type": "multiple_choice_question",
       "question": "What information is contained in the MAC address table of a switch?",
       "questionHtml": "<p>What information is contained in the MAC address table of a switch?</p>",
@@ -602,9 +486,9 @@
       ]
     },
     {
-      "id": 36,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 37,
+      "id": 29,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 38,
       "type": "multiple_choice_question",
       "question": "What is the purpose of a subnet mask?",
       "questionHtml": "<p>What is the purpose of a subnet mask?</p>",
@@ -619,43 +503,43 @@
       ]
     },
     {
-      "id": 37,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 38,
+      "id": 30,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 39,
       "type": "multiple_choice_question",
       "question": "A user at you company cannot connect to website on the internet. However, they can connect to network resources on the company LAN. You want to use the divide and conquer approach to troubleshoot the issue. What should you do first?",
       "questionHtml": "<p>A user at you company cannot connect to website on the internet. However, they can connect to network resources on the company LAN. You want to use the divide and conquer approach to troubleshoot the issue. What should you do first?</p>",
       "options": [
-        "Run the Telnet command from the user's computer",
-        "Ping the default gateway from the user's computer",
-        "Check the computer's cable connections",
+        "Run the Telnet command from the user’s computer",
+        "Ping the default gateway from the user’s computer",
+        "Check the computer’s cable connections",
         "Check the computer's network adapter"
       ],
       "correctAnswers": [
-        "Ping the default gateway from the user's computer"
+        "Ping the default gateway from the user’s computer"
       ]
     },
     {
-      "id": 38,
-      "sourceFile": "CCST · Concepts",
-      "sourcePage": 39,
+      "id": 31,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 40,
       "type": "multiple_choice_question",
-      "question": "You need to view each Cisco switch's running configuration remotely from a command line. Which protocol should you use?",
-      "questionHtml": "<p>You need to view each Cisco switch&#x27;s running configuration remotely from a command line. Which protocol should you use?</p>",
+      "question": "Your company has 20 Cisco switches throughout its building. You need to view the configuration of each switch from the command line. Which protocol should you use?",
+      "questionHtml": "<p>Your company has 20 Cisco switches throughout its building. You need to view the configuration of each switch from the command line. Which protocol should you use?</p>",
       "options": [
-        "FTP",
-        "RDP",
-        "SNMP",
-        "SSH"
+        "FTP (File Transfer Protocol)",
+        "RDP (Remote Desktop Protocol)",
+        "SMTP (Simple Mail Transfer Protocol)",
+        "SNMP (Simple Network Management Protocol)"
       ],
       "correctAnswers": [
-        "SSH"
+        "SNMP (Simple Network Management Protocol)"
       ]
     },
     {
-      "id": 39,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 42,
+      "id": 32,
+      "sourceFile": "Certification · Security",
+      "sourcePage": 43,
       "type": "multiple_choice_question",
       "question": "Which device protects the network by permitting or denying traffic based on IP address, port number, or application?",
       "questionHtml": "<p>Which device protects the network by permitting or denying traffic based on IP address, port number, or application?</p>",
@@ -670,9 +554,9 @@
       ]
     },
     {
-      "id": 40,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 43,
+      "id": 33,
+      "sourceFile": "Certification · Security",
+      "sourcePage": 44,
       "type": "multiple_choice_question",
       "question": "How does a firewall determine which traffic to block?",
       "questionHtml": "<p>How does a firewall determine which traffic to block?</p>",
@@ -687,39 +571,26 @@
       ]
     },
     {
-      "id": 41,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 44,
-      "type": "true_false_question",
-      "question": "Can a network firewall block traffic to specific ports on internal computers?",
-      "questionHtml": "<p>Can a network firewall block traffic to specific ports on internal computers?</p>",
-      "options": [
-        "True",
-        "False"
-      ],
-      "correctAnswers": [
-        "True"
-      ]
-    },
-    {
-      "id": 42,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 44,
-      "type": "true_false_question",
-      "question": "Can a network firewall by itself prevent an app from running on a computer?",
-      "questionHtml": "<p>Can a network firewall by itself prevent an app from running on a computer?</p>",
-      "options": [
-        "True",
-        "False"
-      ],
-      "correctAnswers": [
-        "False"
-      ]
-    },
-    {
-      "id": 43,
-      "sourceFile": "CCST · Security",
+      "id": 34,
+      "sourceFile": "Certification · Security",
       "sourcePage": 45,
+      "type": "multiple_choice_question",
+      "question": "Which action can a network firewall directly perform using a traffic rule?",
+      "questionHtml": "<p>Which action can a network firewall directly perform using a traffic rule?</p>",
+      "options": [
+        "Block traffic to a specified port",
+        "Prevent a user from launching an app on their PC",
+        "Repair a damaged cable",
+        "Change an endpoint password"
+      ],
+      "correctAnswers": [
+        "Block traffic to a specified port"
+      ]
+    },
+    {
+      "id": 35,
+      "sourceFile": "Certification · Security",
+      "sourcePage": 46,
       "type": "multiple_choice_question",
       "question": "Which best describes confidentiality with regards to network security?",
       "questionHtml": "<p>Which best describes confidentiality with regards to network security?</p>",
@@ -734,9 +605,9 @@
       ]
     },
     {
-      "id": 44,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 46,
+      "id": 36,
+      "sourceFile": "Certification · Security",
+      "sourcePage": 47,
       "type": "multiple_choice_question",
       "question": "Which component of the AAA service security model provides identify verification?",
       "questionHtml": "<p>Which component of the AAA service security model provides identify verification?</p>",
@@ -751,9 +622,9 @@
       ]
     },
     {
-      "id": 45,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 47,
+      "id": 37,
+      "sourceFile": "Certification · Security",
+      "sourcePage": 48,
       "type": "multiple_choice_question",
       "question": "When setting up a wireless network which security benefit is provided by enabling WPA3?",
       "questionHtml": "<p>When setting up a wireless network which security benefit is provided by enabling WPA3?</p>",
@@ -768,63 +639,29 @@
       ]
     },
     {
-      "id": 46,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 48,
+      "id": 38,
+      "sourceFile": "Certification · Security",
+      "sourcePage": 49,
       "type": "multiple_choice_question",
-      "question": "A digital signature primarily supports which CIA principle?",
-      "questionHtml": "<p>A digital signature primarily supports which CIA principle?</p>",
+      "question": "A digital signature used to detect unauthorized changes to a message supports which CIA security principle?",
+      "questionHtml": "<p>A digital signature used to detect unauthorized changes to a message supports which CIA security principle?</p>",
       "options": [
         "Availability",
-        "Integrity",
         "Confidentiality",
-        "Redundancy"
+        "Integrity",
+        "Authentication"
       ],
       "correctAnswers": [
         "Integrity"
       ]
     },
     {
-      "id": 47,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 48,
+      "id": 39,
+      "sourceFile": "Certification · Security",
+      "sourcePage": 50,
       "type": "multiple_choice_question",
-      "question": "Encrypting a sensitive email primarily supports which CIA principle?",
-      "questionHtml": "<p>Encrypting a sensitive email primarily supports which CIA principle?</p>",
-      "options": [
-        "Availability",
-        "Integrity",
-        "Confidentiality",
-        "Accounting"
-      ],
-      "correctAnswers": [
-        "Confidentiality"
-      ]
-    },
-    {
-      "id": 48,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 48,
-      "type": "multiple_choice_question",
-      "question": "Three redundant web servers primarily support which CIA principle?",
-      "questionHtml": "<p>Three redundant web servers primarily support which CIA principle?</p>",
-      "options": [
-        "Availability",
-        "Integrity",
-        "Confidentiality",
-        "Authentication"
-      ],
-      "correctAnswers": [
-        "Availability"
-      ]
-    },
-    {
-      "id": 49,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 49,
-      "type": "multiple_choice_question",
-      "question": "A password is which MFA factor?",
-      "questionHtml": "<p>A password is which MFA factor?</p>",
+      "question": "A one-time security code sent to a phone is which authentication factor?",
+      "questionHtml": "<p>A one-time security code sent to a phone is which authentication factor?</p>",
       "options": [
         "Knowledge",
         "Possession",
@@ -832,115 +669,64 @@
         "Location"
       ],
       "correctAnswers": [
-        "Knowledge"
-      ]
-    },
-    {
-      "id": 50,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 49,
-      "type": "multiple_choice_question",
-      "question": "A one-time code sent to your phone is which MFA factor?",
-      "questionHtml": "<p>A one-time code sent to your phone is which MFA factor?</p>",
-      "options": [
-        "Knowledge",
-        "Possession",
-        "Inherence",
-        "Accounting"
-      ],
-      "correctAnswers": [
         "Possession"
       ]
     },
     {
-      "id": 51,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 49,
+      "id": 40,
+      "sourceFile": "Certification · Security",
+      "sourcePage": 51,
       "type": "multiple_choice_question",
-      "question": "Face recognition is which MFA factor?",
-      "questionHtml": "<p>Face recognition is which MFA factor?</p>",
-      "options": [
-        "Knowledge",
-        "Possession",
-        "Inherence",
-        "Authorization"
-      ],
-      "correctAnswers": [
-        "Inherence"
-      ]
-    },
-    {
-      "id": 52,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 50,
-      "type": "multiple_choice_question",
-      "question": "Which older Wi-Fi security scheme could use a 40-bit key?",
-      "questionHtml": "<p>Which older Wi-Fi security scheme could use a 40-bit key?</p>",
+      "question": "Which wireless security mode commonly authenticates users through a RADIUS server?",
+      "questionHtml": "<p>Which wireless security mode commonly authenticates users through a RADIUS server?</p>",
       "options": [
         "WEP",
         "WPA2-Personal",
         "WPA-Enterprise",
-        "WPA3"
-      ],
-      "correctAnswers": [
-        "WEP"
-      ]
-    },
-    {
-      "id": 53,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 50,
-      "type": "multiple_choice_question",
-      "question": "Which wireless security mode uses a RADIUS authentication server?",
-      "questionHtml": "<p>Which wireless security mode uses a RADIUS authentication server?</p>",
-      "options": [
-        "WEP",
-        "WPA2-Personal",
-        "WPA-Enterprise",
-        "Open"
+        "Open authentication"
       ],
       "correctAnswers": [
         "WPA-Enterprise"
       ]
     },
     {
-      "id": 54,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 51,
+      "id": 41,
+      "sourceFile": "Certification · Security",
+      "sourcePage": 52,
       "type": "multiple_choice_question",
-      "question": "Which feature should be disabled to prevent push-button Wi-Fi joining?",
-      "questionHtml": "<p>Which feature should be disabled to prevent push-button Wi-Fi joining?</p>",
+      "question": "Which home-router setting disables the push-button connection method?",
+      "questionHtml": "<p>Which home-router setting disables the push-button connection method?</p>",
       "options": [
-        "SSID broadcast",
-        "WPS",
-        "WPA2-PSK",
-        "DHCP"
+        "Disable WPS",
+        "Disable DHCP",
+        "Hide the SSID",
+        "Enable port forwarding"
       ],
       "correctAnswers": [
-        "WPS"
+        "Disable WPS"
       ]
     },
     {
-      "id": 55,
-      "sourceFile": "CCST · Security",
-      "sourcePage": 51,
+      "id": 42,
+      "sourceFile": "Certification · Security",
+      "sourcePage": 53,
       "type": "multiple_choice_question",
-      "question": "Which wireless mode should be selected when clients connect using a shared passphrase?",
-      "questionHtml": "<p>Which wireless mode should be selected when clients connect using a shared passphrase?</p>",
+      "question": "Which component of the AAA service security model provides identity verification?",
+      "questionHtml": "<p>Which component of the AAA service security model provides identity verification?</p>",
       "options": [
-        "WPA2-PSK",
-        "WPA-Enterprise",
-        "WEP open authentication",
-        "802.1Q"
+        "Authorization",
+        "Auditing",
+        "Authentication",
+        "Accounting"
       ],
       "correctAnswers": [
-        "WPA2-PSK"
+        "Authentication"
       ]
     },
     {
-      "id": 56,
-      "sourceFile": "CCST · Endpoints",
-      "sourcePage": 55,
+      "id": 43,
+      "sourceFile": "Certification · Endpoints & Media Types",
+      "sourcePage": 56,
       "type": "multiple_choice_question",
       "question": "Which wireless security option uses a pre-shared key to authenticate clients?",
       "questionHtml": "<p>Which wireless security option uses a pre-shared key to authenticate clients?</p>",
@@ -955,12 +741,12 @@
       ]
     },
     {
-      "id": 57,
-      "sourceFile": "CCST · Endpoints",
-      "sourcePage": 56,
+      "id": 44,
+      "sourceFile": "Certification · Endpoints & Media Types",
+      "sourcePage": 57,
       "type": "multiple_choice_question",
       "question": "You need to connect a computer's network adapter to a switch using a 1000BASE-T cable. Which connector should you use?",
-      "questionHtml": "<p>You need to connect a computer&#x27;s network adapter to a switch using a 1000BASE-T cable. Which connector should you use?</p>",
+      "questionHtml": "<p>You need to connect a computer&#39;s network adapter to a switch using a 1000BASE-T cable. Which connector should you use?</p>",
       "options": [
         "Coax",
         "RJ-11",
@@ -972,9 +758,26 @@
       ]
     },
     {
-      "id": 58,
-      "sourceFile": "CCST · Endpoints",
+      "id": 45,
+      "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 58,
+      "type": "multiple_choice_question",
+      "question": "Which type of connector should you use to terminate unshielded twisted pair (UTP) cable?",
+      "questionHtml": "<p>Which type of connector should you use to terminate unshielded twisted pair (UTP) cable?</p>",
+      "options": [
+        "ST (Straight Tip)",
+        "SC (Subscriber Connector)",
+        "RJ-45 (Registered Jack 45)",
+        "OS2 LC"
+      ],
+      "correctAnswers": [
+        "RJ-45 (Registered Jack 45)"
+      ]
+    },
+    {
+      "id": 46,
+      "sourceFile": "Certification · Endpoints & Media Types",
+      "sourcePage": 59,
       "type": "multiple_choice_question",
       "question": "You want to store files that will be accessible by every user on your network. Which endpoint device do you need?",
       "questionHtml": "<p>You want to store files that will be accessible by every user on your network. Which endpoint device do you need?</p>",
@@ -989,12 +792,12 @@
       ]
     },
     {
-      "id": 59,
-      "sourceFile": "CCST · Endpoints",
-      "sourcePage": 59,
+      "id": 47,
+      "sourceFile": "Certification · Endpoints & Media Types",
+      "sourcePage": 60,
       "type": "multiple_choice_question",
       "question": "What type of interface is the administrator installing in the router?",
-      "questionHtml": "<p><img src=\"exhibits/ccst-page-59.png\" alt=\"Exhibit from CCST reviewer page 59\"></p><p>What type of interface is the administrator installing in the router?</p>",
+      "questionHtml": "<p>What type of interface is the administrator installing in the router?</p><p><img src=\"exhibits/ccst_notebook_60.jpg\" alt=\"Reviewer exhibit for slide 60\"></p>",
       "options": [
         "USB (Universal Serial Bus)",
         "SFP (Small Form-factor Pluggable)",
@@ -1006,9 +809,26 @@
       ]
     },
     {
-      "id": 60,
-      "sourceFile": "CCST · Endpoints",
+      "id": 48,
+      "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 61,
+      "type": "multiple_choice_question",
+      "question": "Which Ethernet port feature can deliver both network data and electrical power to an IP phone over one cable?",
+      "questionHtml": "<p>Which Ethernet port feature can deliver both network data and electrical power to an IP phone over one cable?</p>",
+      "options": [
+        "PoE-capable switch port",
+        "Console port",
+        "SFP uplink only",
+        "USB management port"
+      ],
+      "correctAnswers": [
+        "PoE-capable switch port"
+      ]
+    },
+    {
+      "id": 49,
+      "sourceFile": "Certification · Endpoints & Media Types",
+      "sourcePage": 62,
       "type": "multiple_choice_question",
       "question": "Which standard contains the specifications for Wi-Fi networks?",
       "questionHtml": "<p>Which standard contains the specifications for Wi-Fi networks?</p>",
@@ -1024,9 +844,9 @@
       ]
     },
     {
-      "id": 61,
-      "sourceFile": "CCST · Endpoints",
-      "sourcePage": 62,
+      "id": 50,
+      "sourceFile": "Certification · Endpoints & Media Types",
+      "sourcePage": 63,
       "type": "multiple_choice_question",
       "question": "Which device is an Internet of Things (IoT) device?",
       "questionHtml": "<p>Which device is an Internet of Things (IoT) device?</p>",
@@ -1041,9 +861,9 @@
       ]
     },
     {
-      "id": 62,
-      "sourceFile": "CCST · Endpoints",
-      "sourcePage": 63,
+      "id": 51,
+      "sourceFile": "Certification · Endpoints & Media Types",
+      "sourcePage": 64,
       "type": "multiple_choice_question",
       "question": "Which network technology is not impacted by electromagnetic and radio wave interference?",
       "questionHtml": "<p>Which network technology is not impacted by electromagnetic and radio wave interference?</p>",
@@ -1058,9 +878,9 @@
       ]
     },
     {
-      "id": 63,
-      "sourceFile": "CCST · Endpoints",
-      "sourcePage": 64,
+      "id": 52,
+      "sourceFile": "Certification · Endpoints & Media Types",
+      "sourcePage": 65,
       "type": "multiple_choice_question",
       "question": "A cisco switch is not accessible from the network. You need to view its running configuration. Which out of band method can you use to access it?",
       "questionHtml": "<p>A cisco switch is not accessible from the network. You need to view its running configuration. Which out of band method can you use to access it?</p>",
@@ -1075,60 +895,26 @@
       ]
     },
     {
-      "id": 64,
-      "sourceFile": "CCST · Infrastructure",
-      "sourcePage": 67,
-      "type": "multiple_choice_question",
-      "question": "Which cable type usually connects a switch Ethernet port to a router Ethernet port?",
-      "questionHtml": "<p>Which cable type usually connects a switch Ethernet port to a router Ethernet port?</p>",
-      "options": [
-        "Straight-through UTP",
-        "Crossover UTP",
-        "Coaxial",
-        "Serial"
-      ],
-      "correctAnswers": [
-        "Straight-through UTP"
-      ]
-    },
-    {
-      "id": 65,
-      "sourceFile": "CCST · Infrastructure",
-      "sourcePage": 67,
-      "type": "multiple_choice_question",
-      "question": "Which medium is suitable for the diagram's underground connection between two routers?",
-      "questionHtml": "<p>Which medium is suitable for the diagram&#x27;s underground connection between two routers?</p>",
-      "options": [
-        "Straight-through UTP",
-        "Fiber optic",
-        "Console cable",
-        "RJ-11"
-      ],
-      "correctAnswers": [
-        "Fiber optic"
-      ]
-    },
-    {
-      "id": 66,
-      "sourceFile": "CCST · Infrastructure",
-      "sourcePage": 67,
-      "type": "multiple_choice_question",
-      "question": "Which traditional UTP cable type connects two router Ethernet interfaces directly?",
-      "questionHtml": "<p>Which traditional UTP cable type connects two router Ethernet interfaces directly?</p>",
-      "options": [
-        "Straight-through UTP",
-        "Crossover UTP",
-        "Console cable",
-        "Coaxial"
-      ],
-      "correctAnswers": [
-        "Crossover UTP"
-      ]
-    },
-    {
-      "id": 67,
-      "sourceFile": "CCST · Infrastructure",
+      "id": 53,
+      "sourceFile": "Certification · Infrastructure",
       "sourcePage": 68,
+      "type": "multiple_choice_question",
+      "question": "In the rack diagram, which cable type is appropriate for the link between the two routers over the underground conduit?",
+      "questionHtml": "<p>In the rack diagram, which cable type is appropriate for the link between the two routers over the underground conduit?</p><p><img src=\"exhibits/ccst_notebook_68.jpg\" alt=\"Reviewer exhibit for slide 68\"></p>",
+      "options": [
+        "Straight-through UTP",
+        "Crossover UTP",
+        "Fiber-optic cable",
+        "RJ-11 telephone cable"
+      ],
+      "correctAnswers": [
+        "Fiber-optic cable"
+      ]
+    },
+    {
+      "id": 54,
+      "sourceFile": "Certification · Infrastructure",
+      "sourcePage": 69,
       "type": "multiple_choice_question",
       "question": "A local company requires two networks in two new buildings. The addresses used in these networks must be in the private network range. Which two address ranges should the company use? (Choose 2.)",
       "questionHtml": "<p>A local company requires two networks in two new buildings. The addresses used in these networks must be in the private network range. Which two address ranges should the company use? (Choose 2.)</p>",
@@ -1144,28 +930,28 @@
       ]
     },
     {
-      "id": 68,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 71,
+      "id": 55,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 72,
       "type": "multiple_choice_question",
-      "question": "The tracert output reaches www.cisco.com after two intermediate timeouts. Which two conclusions are supported?",
-      "questionHtml": "<p><img src=\"exhibits/ccst-page-71.png\" alt=\"Exhibit from CCST reviewer page 71\"></p><p>The tracert output reaches www.cisco.com after two intermediate timeouts. Which two conclusions are supported?</p>",
+      "question": "Examine the following Command Output Which two conclusions can you make from the output of the tracert command? (Choose 2.)",
+      "questionHtml": "<p>Examine the following Command Output Which two conclusions can you make from the output of the tracert command? (Choose 2.)</p><p><img src=\"exhibits/ccst_notebook_72.jpg\" alt=\"Reviewer exhibit for slide 72\"></p>",
       "options": [
-        "The trace reached the destination server.",
-        "The trace failed after hop 4.",
-        "The destination IPv6 address is 2600:1408:c400:38d::b33.",
-        "Routers at hops 5 and 6 are definitely offline.",
-        "The sending device has address 2600:1408:c400:38d::b33."
+        "The trace successfully reached the www.cisco.com server.",
+        "The trace failed after the fourth hop.",
+        "The IPv6 address associated with the www.cisco.com server is 2600:1408: c400: 38d: : b33.",
+        "The routers at hops 5 and 6 are offline.",
+        "The device sending the trace has IPv6 address 2600:1408:c400:38d :: b33."
       ],
       "correctAnswers": [
-        "The trace reached the destination server.",
-        "The destination IPv6 address is 2600:1408:c400:38d::b33."
+        "The trace successfully reached the www.cisco.com server.",
+        "The IPv6 address associated with the www.cisco.com server is 2600:1408: c400: 38d: : b33."
       ]
     },
     {
-      "id": 69,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 72,
+      "id": 56,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 73,
       "type": "multiple_choice_question",
       "question": "Which two pieces of information should you include when you initially create a support ticket? (Choose 2.)",
       "questionHtml": "<p>Which two pieces of information should you include when you initially create a support ticket? (Choose 2.)</p>",
@@ -1182,26 +968,45 @@
       ]
     },
     {
-      "id": 70,
-      "sourceFile": "CCST · Diagnostics",
+      "id": 57,
+      "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 74,
       "type": "multiple_choice_question",
-      "question": "The diagram shows network 172.100.0.0/16, router 172.100.0.1, and DNS server 172.100.0.254. Which settings should PC-A use?",
-      "questionHtml": "<p><img src=\"exhibits/ccst-page-74.png\" alt=\"Exhibit from CCST reviewer page 74\"></p><p>The diagram shows network 172.100.0.0/16, router 172.100.0.1, and DNS server 172.100.0.254. Which settings should PC-A use?</p>",
+      "question": "Which two statements are true about the IPv4 address of the default gateway configured on a host? (Choose 2.)",
+      "questionHtml": "<p>Which two statements are true about the IPv4 address of the default gateway configured on a host? (Choose 2.)</p>",
       "options": [
-        "IP 172.100.0.10, mask 255.255.0.0, gateway 172.100.0.1, DNS 172.100.0.254",
-        "IP 172.100.0.1, mask 255.255.0.0, gateway 172.100.0.10, DNS 172.100.0.254",
-        "IP 10.10.100.10, mask 255.255.255.0, gateway 172.100.0.1, DNS 172.100.0.254",
-        "IP 172.100.0.10, mask 255.255.255.0, gateway 10.10.100.254, DNS 172.100.0.254"
+        "The IPv4 address of the default gateway must be the first host address in the subnet.",
+        "The same default gateway IPv4 address is configured on each host on the local network.",
+        "The default gateway is the Loopback0 interface IPv4 address of the router connected to the same local network as the host.",
+        "The default gateway is the IPv4 address of the router interface connected to the same local network as the host.",
+        "Hosts learn the default gateway IPv4 address through router advertisement messages."
       ],
       "correctAnswers": [
-        "IP 172.100.0.10, mask 255.255.0.0, gateway 172.100.0.1, DNS 172.100.0.254"
+        "The same default gateway IPv4 address is configured on each host on the local network.",
+        "The default gateway is the IPv4 address of the router interface connected to the same local network as the host."
       ]
     },
     {
-      "id": 71,
-      "sourceFile": "CCST · Diagnostics",
+      "id": 58,
+      "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 75,
+      "type": "multiple_choice_question",
+      "question": "The diagram shows PC-A on 172.100.0.0/16, Router1 at 172.100.0.1, and a server at 172.100.0.254. With no DHCP server, which PC-A configuration is valid?",
+      "questionHtml": "<p>The diagram shows PC-A on 172.100.0.0/16, Router1 at 172.100.0.1, and a server at 172.100.0.254. With no DHCP server, which PC-A configuration is valid?</p><p><img src=\"exhibits/ccst_notebook_75.jpg\" alt=\"Reviewer exhibit for slide 75\"></p>",
+      "options": [
+        "IP 172.100.0.1, mask 255.255.0.0, gateway 172.100.0.254",
+        "IP 172.100.0.10, mask 255.255.0.0, gateway 172.100.0.1",
+        "IP 172.100.0.254, mask 255.255.255.0, gateway 172.100.0.10",
+        "IP 172.100.1.1, mask 255.255.255.0, no gateway"
+      ],
+      "correctAnswers": [
+        "IP 172.100.0.10, mask 255.255.0.0, gateway 172.100.0.1"
+      ]
+    },
+    {
+      "id": 59,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 76,
       "type": "multiple_choice_question",
       "question": "A help desk technician receives the four trouble tickets listed below. Which ticket should receive the highest priority and be addressed first?",
       "questionHtml": "<p>A help desk technician receives the four trouble tickets listed below. Which ticket should receive the highest priority and be addressed first?</p>",
@@ -1216,9 +1021,9 @@
       ]
     },
     {
-      "id": 72,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 77,
+      "id": 60,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 78,
       "type": "multiple_choice_question",
       "question": "You are a senior network administrator tasked with diagnosing intermittent connectivity issues on the executive floor of a multinational corporation, which primarily uses iOS devices. After initial checks, you suspect that the problem may be related to SSID settings and network configuration specifics not aligning correctly with the corporate security protocols. Given the high-security requirements and the exclusive use of iOS devices on this floor, which approach should you take to verify and rectify the network settings directly on the affected devices?",
       "questionHtml": "<p>You are a senior network administrator tasked with diagnosing intermittent connectivity issues on the executive floor of a multinational corporation, which primarily uses iOS devices. After initial checks, you suspect that the problem may be related to SSID settings and network configuration specifics not aligning correctly with the corporate security protocols. Given the high-security requirements and the exclusive use of iOS devices on this floor, which approach should you take to verify and rectify the network settings directly on the affected devices?</p>",
@@ -1233,31 +1038,31 @@
       ]
     },
     {
-      "id": 73,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 78,
+      "id": 61,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 79,
       "type": "multiple_choice_question",
-      "question": "Router1 is temporarily offline. Which two statements about this diagram are true?",
-      "questionHtml": "<p><img src=\"exhibits/ccst-page-78.png\" alt=\"Exhibit from CCST reviewer page 78\"></p><p>Router1 is temporarily offline. Which two statements about this diagram are true?</p>",
+      "question": "Which two statements are true about the impact to communication on the network while the router is temporarily offline. Evaluate the Graphic.",
+      "questionHtml": "<p>Which two statements are true about the impact to communication on the network while the router is temporarily offline. Evaluate the Graphic.</p><p><img src=\"exhibits/ccst_notebook_79.jpg\" alt=\"Reviewer exhibit for slide 79\"></p>",
       "options": [
-        "No PC can reach File-Srv in VLAN 16.",
-        "File-Srv can still reach the Internet.",
-        "PC-A and PC-B can still communicate within VLAN 100.",
-        "All four PCs can still communicate across VLANs.",
-        "PC-C and PC-D can still communicate with File-Srv in VLAN 16."
+        "None of the PC’s can access the file server (File-Srv)",
+        "The file server (File-Srv) can still access the internet",
+        "PC-A and PC-B can still communicate with each other.",
+        "PC-A , PC-B, PC-C and PC-D can still communicate with each other",
+        "PC-C and PC-D can still communicate with the file server (File-Srv)"
       ],
       "correctAnswers": [
-        "No PC can reach File-Srv in VLAN 16.",
-        "PC-A and PC-B can still communicate within VLAN 100."
+        "None of the PC’s can access the file server (File-Srv)",
+        "PC-A and PC-B can still communicate with each other."
       ]
     },
     {
-      "id": 74,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 79,
+      "id": 62,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 80,
       "type": "multiple_choice_question",
-      "question": "PC-A sends a frame to PC-C. Switch1 has no MAC-table entry for PC-C. What does Switch1 do?",
-      "questionHtml": "<p><img src=\"exhibits/ccst-page-79.png\" alt=\"Exhibit from CCST reviewer page 79\"></p><p>PC-A sends a frame to PC-C. Switch1 has no MAC-table entry for PC-C. What does Switch1 do?</p>",
+      "question": "Which action does Switch1 take?",
+      "questionHtml": "<p>Which action does Switch1 take?</p><p><img src=\"exhibits/ccst_notebook_80.jpg\" alt=\"Reviewer exhibit for slide 80\"></p>",
       "options": [
         "Switch1 queries Switch2 for the MAC address of PC-C",
         "Switch1 drops the frame and sends an error message back to PC-A",
@@ -1269,26 +1074,26 @@
       ]
     },
     {
-      "id": 75,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 80,
+      "id": 63,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 81,
       "type": "multiple_choice_question",
-      "question": "A laptop sends a broadcast into port A of the first switch. Which of its labeled ports forward the frame?",
-      "questionHtml": "<p><img src=\"exhibits/ccst-page-80.png\" alt=\"Exhibit from CCST reviewer page 80\"></p><p>A laptop sends a broadcast into port A of the first switch. Which of its labeled ports forward the frame?</p>",
+      "question": "A laptop sends a broadcast into Switch 1 on port A. Switch 2 connects to port D on Switch 1. Which Switch 1 ports forward the broadcast?",
+      "questionHtml": "<p>A laptop sends a broadcast into Switch 1 on port A. Switch 2 connects to port D on Switch 1. Which Switch 1 ports forward the broadcast?</p><p><img src=\"exhibits/ccst_notebook_81.jpg\" alt=\"Reviewer exhibit for slide 81\"></p>",
       "options": [
         "D only",
-        "A,B and D only",
+        "A, B, and D only",
         "B and C only",
-        "B, C and D only"
+        "B, C, and D only"
       ],
       "correctAnswers": [
-        "B, C and D only"
+        "B, C, and D only"
       ]
     },
     {
-      "id": 76,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 81,
+      "id": 64,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 82,
       "type": "multiple_choice_question",
       "question": "A support technician examines the front panel of a Cisco switch and sees 4 Ethernet cables connected in the first four ports. Port 1,2 and 3 have a green LED. Port 4 has a blinking green light. What is the state of the Port 4?",
       "questionHtml": "<p>A support technician examines the front panel of a Cisco switch and sees 4 Ethernet cables connected in the first four ports. Port 1,2 and 3 have a green LED. Port 4 has a blinking green light. What is the state of the Port 4?</p>",
@@ -1303,12 +1108,12 @@
       ]
     },
     {
-      "id": 77,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 82,
+      "id": 65,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 83,
       "type": "multiple_choice_question",
       "question": "A user reports a problem connecting to network resources. Other users connected to the same switch are not experiencing the same problem. The user's computer is patched to a switch port Gi0/15. The status indicator for this port is blinking alternately green then amber. What does the light pattern indicate about the status of port Gi0/15?",
-      "questionHtml": "<p>A user reports a problem connecting to network resources. Other users connected to the same switch are not experiencing the same problem. The user&#x27;s computer is patched to a switch port Gi0/15. The status indicator for this port is blinking alternately green then amber. What does the light pattern indicate about the status of port Gi0/15?</p>",
+      "questionHtml": "<p>A user reports a problem connecting to network resources. Other users connected to the same switch are not experiencing the same problem. The user&#39;s computer is patched to a switch port Gi0/15. The status indicator for this port is blinking alternately green then amber. What does the light pattern indicate about the status of port Gi0/15?</p>",
       "options": [
         "The port is administratively shutdown",
         "The port is experiencing a high rate of errors.",
@@ -1320,12 +1125,12 @@
       ]
     },
     {
-      "id": 78,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 83,
+      "id": 66,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 84,
       "type": "multiple_choice_question",
-      "question": "What does this tracert output show about the destination 192.168.1.10?",
-      "questionHtml": "<p><img src=\"exhibits/ccst-page-83.png\" alt=\"Exhibit from CCST reviewer page 83\"></p><p>What does this tracert output show about the destination 192.168.1.10?</p>",
+      "question": "What can you tell from the command output? A user report that a company website is not available. The help desk technician issues a tracert command to determine if the server hosting the website is reachable over the network. The output of the command is shown as follows:",
+      "questionHtml": "<p>What can you tell from the command output? A user report that a company website is not available. The help desk technician issues a tracert command to determine if the server hosting the website is reachable over the network. The output of the command is shown as follows:</p><p><img src=\"exhibits/ccst_notebook_84.jpg\" alt=\"Reviewer exhibit for slide 84\"></p>",
       "options": [
         "The server with address 192.168.1.10 is reachable over the network",
         "The router at hop 3 is not forwarding packets to the IP address 192.168.1.10",
@@ -1337,29 +1142,29 @@
       ]
     },
     {
-      "id": 79,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 84,
+      "id": 67,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 85,
       "type": "multiple_choice_question",
-      "question": "Which action can be run directly from the Cisco router's IOS mode shown?",
-      "questionHtml": "<p><img src=\"exhibits/ccst-page-84.png\" alt=\"Exhibit from CCST reviewer page 84\"></p><p>Which action can be run directly from the Cisco router&#x27;s IOS mode shown?</p>",
+      "question": "At the Cisco router prompt router1#, which action is available in privileged EXEC mode?",
+      "questionHtml": "<p>At the Cisco router prompt router1#, which action is available in privileged EXEC mode?</p><p><img src=\"exhibits/ccst_notebook_85.jpg\" alt=\"Reviewer exhibit for slide 85\"></p>",
       "options": [
-        "Enable a routing process",
-        "Show running system information",
-        "Enter interface IP configuration subcommands",
-        "Select an interface to configure"
+        "Run show commands such as show running-config",
+        "Enter interface subcommands without selecting an interface",
+        "Change an interface address without entering configuration mode",
+        "Use user EXEC mode only"
       ],
       "correctAnswers": [
-        "Show running system information"
+        "Run show commands such as show running-config"
       ]
     },
     {
-      "id": 80,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 85,
+      "id": 68,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 86,
       "type": "multiple_choice_question",
-      "question": "What can be inferred from this switch MAC address table?",
-      "questionHtml": "<p><img src=\"exhibits/ccst-page-85.png\" alt=\"Exhibit from CCST reviewer page 85\"></p><p>What can be inferred from this switch MAC address table?</p>",
+      "question": "What can you determine about this switch from the command output? Examine the output of the show mac-address-table command on a Cisco 24 ports Ethernet switch",
+      "questionHtml": "<p>What can you determine about this switch from the command output? Examine the output of the show mac-address-table command on a Cisco 24 ports Ethernet switch</p><p><img src=\"exhibits/ccst_notebook_86.jpg\" alt=\"Reviewer exhibit for slide 86\"></p>",
       "options": [
         "There are eleven active ports on this switch",
         "Port Fa0/5 is set to administratively down.",
@@ -1371,124 +1176,145 @@
       ]
     },
     {
-      "id": 81,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 86,
-      "type": "true_false_question",
-      "question": "The output shows GigabitEthernet0/2 as administratively down. Was the shutdown command applied?",
-      "questionHtml": "<p>The output shows GigabitEthernet0/2 as administratively down. Was the shutdown command applied?</p>",
+      "id": 69,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 87,
+      "type": "multiple_choice_question",
+      "question": "The exhibit shows show ip interface brief. Which statement is true?",
+      "questionHtml": "<p>The exhibit shows show ip interface brief. Which statement is true?</p><p><img src=\"exhibits/ccst_notebook_87.jpg\" alt=\"Reviewer exhibit for slide 87\"></p>",
       "options": [
-        "True",
-        "False"
+        "Gi0/1 is up/up and forwarding broadcasts.",
+        "Gi0/2 has a manually configured IP address.",
+        "Gi0/2 is administratively down.",
+        "Gi0/0 is administratively down."
       ],
       "correctAnswers": [
-        "True"
+        "Gi0/2 is administratively down."
       ]
     },
     {
-      "id": 82,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 86,
-      "type": "true_false_question",
-      "question": "The output shows GigabitEthernet0/1 as down/down. Can that port currently forward broadcasts?",
-      "questionHtml": "<p>The output shows GigabitEthernet0/1 as down/down. Can that port currently forward broadcasts?</p>",
-      "options": [
-        "True",
-        "False"
-      ],
-      "correctAnswers": [
-        "False"
-      ]
-    },
-    {
-      "id": 83,
-      "sourceFile": "CCST · Diagnostics",
+      "id": 70,
+      "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 88,
       "type": "multiple_choice_question",
-      "question": "The DNS server is 64.100.8.8. Which command shows the path from this PC to that server?",
-      "questionHtml": "<p>The DNS server is 64.100.8.8. Which command shows the path from this PC to that server?</p>",
+      "question": "A new switch’s running configuration lists interface GigabitEthernet0/1 and 0/2 with no other settings. What can you conclude from the shown lines?",
+      "questionHtml": "<p>A new switch’s running configuration lists interface GigabitEthernet0/1 and 0/2 with no other settings. What can you conclude from the shown lines?</p><p><img src=\"exhibits/ccst_notebook_88.jpg\" alt=\"Reviewer exhibit for slide 88\"></p>",
       "options": [
+        "Both ports were shut down.",
+        "Both ports have manually assigned IP addresses.",
+        "The shown configuration does not indicate shutdown or assigned IP addresses.",
+        "The switch has no Layer 2 ports."
+      ],
+      "correctAnswers": [
+        "The shown configuration does not indicate shutdown or assigned IP addresses."
+      ]
+    },
+    {
+      "id": 71,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 89,
+      "type": "multiple_choice_question",
+      "question": "The PC’s DNS server is 64.100.8.8. Which command shows the router hops on the path to that DNS server?",
+      "questionHtml": "<p>The PC’s DNS server is 64.100.8.8. Which command shows the router hops on the path to that DNS server?</p><p><img src=\"exhibits/ccst_notebook_89.jpg\" alt=\"Reviewer exhibit for slide 89\"></p>",
+      "options": [
+        "ipconfig /all",
+        "ping 64.100.8.8",
         "tracert 64.100.8.8",
-        "nslookup 64.100.8.8",
-        "ipconfig /renew",
-        "netstat -a"
+        "nslookup 64.100.8.8"
       ],
       "correctAnswers": [
         "tracert 64.100.8.8"
       ]
     },
     {
-      "id": 84,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 89,
+      "id": 72,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 90,
       "type": "multiple_choice_question",
-      "question": "For HTTPS traffic to www.companypro.net:7100/api, which Wireshark display filter selects the TCP port?",
-      "questionHtml": "<p>For HTTPS traffic to www.companypro.net:7100/api, which Wireshark display filter selects the TCP port?</p>",
+      "question": "A web application uses https://www.companypro.net:7100/api. Which Wireshark display filter selects TCP packets using that port?",
+      "questionHtml": "<p>A web application uses https://www.companypro.net:7100/api. Which Wireshark display filter selects TCP packets using that port?</p>",
       "options": [
         "tcp.port == 7100",
-        "udp.port == 53",
-        "tcp.port == 80",
-        "icmp"
+        "dns.port == 7100",
+        "ip.addr == 7100",
+        "http.host == 7100"
       ],
       "correctAnswers": [
         "tcp.port == 7100"
       ]
     },
     {
-      "id": 85,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 90,
+      "id": 73,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 91,
       "type": "multiple_choice_question",
-      "question": "The PC's default gateway is 192.168.0.1. Which command checks if the router responds?",
-      "questionHtml": "<p>The PC&#x27;s default gateway is 192.168.0.1. Which command checks if the router responds?</p>",
+      "question": "A PC has IPv4 address 192.168.0.14/24 and default gateway 192.168.0.1. Which command checks whether the gateway responds?",
+      "questionHtml": "<p>A PC has IPv4 address 192.168.0.14/24 and default gateway 192.168.0.1. Which command checks whether the gateway responds?</p><p><img src=\"exhibits/ccst_notebook_91.jpg\" alt=\"Reviewer exhibit for slide 91\"></p>",
       "options": [
         "ping 192.168.0.1",
-        "ping 8.8.8.8",
-        "nslookup companypro.net",
-        "ipconfig /release"
+        "nslookup 192.168.0.1",
+        "tracert 8.8.8.8",
+        "ipconfig /renew"
       ],
       "correctAnswers": [
         "ping 192.168.0.1"
       ]
     },
     {
-      "id": 86,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 91,
+      "id": 74,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 92,
       "type": "multiple_choice_question",
-      "question": "Which command lists IP addresses associated with www.companypro.net?",
-      "questionHtml": "<p>Which command lists IP addresses associated with www.companypro.net?</p>",
+      "question": "Which command queries DNS for the IPv4 addresses associated with www.companypro.net?",
+      "questionHtml": "<p>Which command queries DNS for the IPv4 addresses associated with www.companypro.net?</p>",
       "options": [
+        "ipconfig www.companypro.net",
         "nslookup www.companypro.net",
-        "tracert www.companypro.net",
-        "ipconfig /all",
-        "netstat -r"
+        "ping /dns www.companypro.net",
+        "tracert www.companypro.net"
       ],
       "correctAnswers": [
         "nslookup www.companypro.net"
       ]
     },
     {
-      "id": 87,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 94,
+      "id": 75,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 93,
       "type": "multiple_choice_question",
-      "question": "Which Cisco command displays neighboring devices with Device ID, Local Interface, and Platform columns?",
-      "questionHtml": "<p>Which Cisco command displays neighboring devices with Device ID, Local Interface, and Platform columns?</p>",
+      "question": "A support technician examines the front panel of a Cisco switch and sees 4 Ethernet cables connected in the first four ports. Ports 1, 2, and 3 have a green LED. Port 4 has a blinking green light.",
+      "questionHtml": "<p>A support technician examines the front panel of a Cisco switch and sees 4 Ethernet cables connected in the first four ports. Ports 1, 2, and 3 have a green LED. Port 4 has a blinking green light.</p>",
       "options": [
-        "show cdp neighbors",
+        "Link is up with cable malfunctions.",
+        "Link is up and not stable.",
+        "Link is up and active.",
+        "Link is up and there is no activity."
+      ],
+      "correctAnswers": [
+        "Link is up and active."
+      ]
+    },
+    {
+      "id": 76,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 95,
+      "type": "multiple_choice_question",
+      "question": "Which Cisco IOS command displays the neighbor table shown in the exhibit?",
+      "questionHtml": "<p>Which Cisco IOS command displays the neighbor table shown in the exhibit?</p><p><img src=\"exhibits/ccst_notebook_95.jpg\" alt=\"Reviewer exhibit for slide 95\"></p>",
+      "options": [
         "show ip route",
-        "show running-config",
-        "show mac address-table"
+        "show mac address-table",
+        "show cdp neighbors",
+        "show interfaces status"
       ],
       "correctAnswers": [
         "show cdp neighbors"
       ]
     },
     {
-      "id": 88,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 95,
+      "id": 77,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 96,
       "type": "multiple_choice_question",
       "question": "A network administrator can successfully ping the URL www.cisco.com, but cannot ping a corporate server located at a remote branch in another city. You need to identify the specific router where packets are being dropped in the path to the remote branch. Which utility should you use?",
       "questionHtml": "<p>A network administrator can successfully ping the URL www.cisco.com, but cannot ping a corporate server located at a remote branch in another city. You need to identify the specific router where packets are being dropped in the path to the remote branch. Which utility should you use?</p>",
@@ -1503,9 +1329,9 @@
       ]
     },
     {
-      "id": 89,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 96,
+      "id": 78,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 97,
       "type": "multiple_choice_question",
       "question": "You need to determine whether a remote host is reachable through the network. Which two commands can you see? Each correct command is a complete solution.",
       "questionHtml": "<p>You need to determine whether a remote host is reachable through the network. Which two commands can you see? Each correct command is a complete solution.</p>",
@@ -1522,9 +1348,9 @@
       ]
     },
     {
-      "id": 90,
-      "sourceFile": "CCST · Diagnostics",
-      "sourcePage": 97,
+      "id": 79,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 98,
       "type": "multiple_choice_question",
       "question": "In a network with multiple VLANs, a user is unable to communicate with other users in the same VLAN but can communicate with users in different VLANs. Which of the following could be the cause of this issue?",
       "questionHtml": "<p>In a network with multiple VLANs, a user is unable to communicate with other users in the same VLAN but can communicate with users in different VLANs. Which of the following could be the cause of this issue?</p>",
@@ -1536,6 +1362,346 @@
       ],
       "correctAnswers": [
         "user's switchport is not assigned to the correct VLAN."
+      ]
+    },
+    {
+      "id": 80,
+      "sourceFile": "Certification · Standards & Concepts",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "What does network throughput measure?",
+      "questionHtml": "<p>What does network throughput measure?</p>",
+      "options": [
+        "The maximum theoretical capacity of a link",
+        "The amount of data successfully transferred over time",
+        "The physical cable length",
+        "The number of addresses in a subnet"
+      ],
+      "correctAnswers": [
+        "The amount of data successfully transferred over time"
+      ]
+    },
+    {
+      "id": 81,
+      "sourceFile": "Certification · Standards & Concepts",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "Which DNS record type maps a host name to an IPv6 address?",
+      "questionHtml": "<p>Which DNS record type maps a host name to an IPv6 address?</p>",
+      "options": [
+        "A",
+        "AAAA",
+        "MX",
+        "CNAME"
+      ],
+      "correctAnswers": [
+        "AAAA"
+      ]
+    },
+    {
+      "id": 82,
+      "sourceFile": "Certification · Standards & Concepts",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "In DHCP’s DORA exchange, what does a client send first when requesting a lease?",
+      "questionHtml": "<p>In DHCP’s DORA exchange, what does a client send first when requesting a lease?</p>",
+      "options": [
+        "Discover",
+        "Offer",
+        "Request",
+        "Acknowledge"
+      ],
+      "correctAnswers": [
+        "Discover"
+      ]
+    },
+    {
+      "id": 83,
+      "sourceFile": "Certification · Addressing",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "Which address is a public IPv4 address?",
+      "questionHtml": "<p>Which address is a public IPv4 address?</p>",
+      "options": [
+        "10.20.30.40",
+        "172.20.5.6",
+        "192.168.10.5",
+        "8.8.8.8"
+      ],
+      "correctAnswers": [
+        "8.8.8.8"
+      ]
+    },
+    {
+      "id": 84,
+      "sourceFile": "Certification · Addressing",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "A Windows PC self-assigns an address in 169.254.0.0/16. What is the most likely explanation?",
+      "questionHtml": "<p>A Windows PC self-assigns an address in 169.254.0.0/16. What is the most likely explanation?</p>",
+      "options": [
+        "It did not receive a DHCP lease",
+        "It is using the IPv6 loopback",
+        "It has a public address",
+        "The DNS server assigned it"
+      ],
+      "correctAnswers": [
+        "It did not receive a DHCP lease"
+      ]
+    },
+    {
+      "id": 85,
+      "sourceFile": "Certification · Addressing",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "What does the IPv6 address ::1 represent?",
+      "questionHtml": "<p>What does the IPv6 address ::1 represent?</p>",
+      "options": [
+        "The default route",
+        "The loopback address",
+        "A link-local gateway",
+        "A multicast group"
+      ],
+      "correctAnswers": [
+        "The loopback address"
+      ]
+    },
+    {
+      "id": 86,
+      "sourceFile": "Certification · Endpoints & Media",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "Which connector is commonly used with fiber-optic links in local-area network equipment?",
+      "questionHtml": "<p>Which connector is commonly used with fiber-optic links in local-area network equipment?</p>",
+      "options": [
+        "RJ-11",
+        "LC fiber connector",
+        "BNC coaxial connector",
+        "USB-A"
+      ],
+      "correctAnswers": [
+        "LC fiber connector"
+      ]
+    },
+    {
+      "id": 87,
+      "sourceFile": "Certification · Endpoints & Media",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "Compared with 5 GHz Wi-Fi, 2.4 GHz Wi-Fi generally offers which tradeoff?",
+      "questionHtml": "<p>Compared with 5 GHz Wi-Fi, 2.4 GHz Wi-Fi generally offers which tradeoff?</p>",
+      "options": [
+        "Shorter range and less interference",
+        "Longer range but often more interference",
+        "No radio interference",
+        "Wired-level latency"
+      ],
+      "correctAnswers": [
+        "Longer range but often more interference"
+      ]
+    },
+    {
+      "id": 88,
+      "sourceFile": "Certification · Endpoints & Media",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "What is the main purpose of Power over Ethernet (PoE)?",
+      "questionHtml": "<p>What is the main purpose of Power over Ethernet (PoE)?</p>",
+      "options": [
+        "Carry electrical power and data over Ethernet cabling",
+        "Convert IPv4 addresses to IPv6",
+        "Encrypt a Wi-Fi password",
+        "Connect two fiber strands"
+      ],
+      "correctAnswers": [
+        "Carry electrical power and data over Ethernet cabling"
+      ]
+    },
+    {
+      "id": 89,
+      "sourceFile": "Certification · Infrastructure",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "How does a Layer 2 switch learn which port leads to a device?",
+      "questionHtml": "<p>How does a Layer 2 switch learn which port leads to a device?</p>",
+      "options": [
+        "It records the source MAC address of an arriving frame",
+        "It reads the destination IP address in DNS",
+        "It sends every frame to the router first",
+        "It learns only from DHCP offers"
+      ],
+      "correctAnswers": [
+        "It records the source MAC address of an arriving frame"
+      ]
+    },
+    {
+      "id": 90,
+      "sourceFile": "Certification · Infrastructure",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "What does a router primarily use to choose where to forward an IP packet?",
+      "questionHtml": "<p>What does a router primarily use to choose where to forward an IP packet?</p>",
+      "options": [
+        "The destination IP address and its routing table",
+        "The source application name only",
+        "The Ethernet cable color",
+        "A DNS MX record"
+      ],
+      "correctAnswers": [
+        "The destination IP address and its routing table"
+      ]
+    },
+    {
+      "id": 91,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "Which protocol does the common ping utility use for its echo request and reply?",
+      "questionHtml": "<p>Which protocol does the common ping utility use for its echo request and reply?</p>",
+      "options": [
+        "ICMP",
+        "FTP",
+        "ARP only",
+        "SMTP"
+      ],
+      "correctAnswers": [
+        "ICMP"
+      ]
+    },
+    {
+      "id": 92,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "What does tracert/traceroute show as it probes toward a destination?",
+      "questionHtml": "<p>What does tracert/traceroute show as it probes toward a destination?</p>",
+      "options": [
+        "The sequence of Layer 3 hops that respond",
+        "The switch MAC table on the PC",
+        "The DNS zone file",
+        "The Wi-Fi password"
+      ],
+      "correctAnswers": [
+        "The sequence of Layer 3 hops that respond"
+      ]
+    },
+    {
+      "id": 93,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "On Windows, which command displays detailed local IP, gateway, and DNS configuration?",
+      "questionHtml": "<p>On Windows, which command displays detailed local IP, gateway, and DNS configuration?</p>",
+      "options": [
+        "ipconfig /all",
+        "show ip route",
+        "nslookup /all",
+        "tracert /config"
+      ],
+      "correctAnswers": [
+        "ipconfig /all"
+      ]
+    },
+    {
+      "id": 94,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "Which command displays the local routing table on Windows?",
+      "questionHtml": "<p>Which command displays the local routing table on Windows?</p>",
+      "options": [
+        "route print",
+        "ping",
+        "hostname",
+        "net use"
+      ],
+      "correctAnswers": [
+        "route print"
+      ]
+    },
+    {
+      "id": 95,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "On a Cisco switch, which command gives a brief list of interface IP addresses and status?",
+      "questionHtml": "<p>On a Cisco switch, which command gives a brief list of interface IP addresses and status?</p>",
+      "options": [
+        "show ip interface brief",
+        "show cdp neighbors",
+        "show startup-config",
+        "show vlan password"
+      ],
+      "correctAnswers": [
+        "show ip interface brief"
+      ]
+    },
+    {
+      "id": 96,
+      "sourceFile": "Certification · Security",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "Which part of the CIA triad protects information from unauthorized modification?",
+      "questionHtml": "<p>Which part of the CIA triad protects information from unauthorized modification?</p>",
+      "options": [
+        "Availability",
+        "Confidentiality",
+        "Integrity",
+        "Accounting"
+      ],
+      "correctAnswers": [
+        "Integrity"
+      ]
+    },
+    {
+      "id": 97,
+      "sourceFile": "Certification · Security",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "In AAA, which function records resource use and user activity?",
+      "questionHtml": "<p>In AAA, which function records resource use and user activity?</p>",
+      "options": [
+        "Authentication",
+        "Authorization",
+        "Accounting",
+        "Encryption"
+      ],
+      "correctAnswers": [
+        "Accounting"
+      ]
+    },
+    {
+      "id": 98,
+      "sourceFile": "Certification · Security",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "Which Wi-Fi security deployment typically uses individual usernames and a RADIUS/802.1X server rather than one shared home passphrase?",
+      "questionHtml": "<p>Which Wi-Fi security deployment typically uses individual usernames and a RADIUS/802.1X server rather than one shared home passphrase?</p>",
+      "options": [
+        "WPA2-Personal",
+        "WPA2-Enterprise",
+        "Open Wi-Fi",
+        "WEP only"
+      ],
+      "correctAnswers": [
+        "WPA2-Enterprise"
+      ]
+    },
+    {
+      "id": 99,
+      "sourceFile": "Certification · Security",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "Which security principle is most directly supported by encrypting a sensitive email so unauthorized people cannot read it?",
+      "questionHtml": "<p>Which security principle is most directly supported by encrypting a sensitive email so unauthorized people cannot read it?</p>",
+      "options": [
+        "Confidentiality",
+        "Availability",
+        "Routing",
+        "Address translation"
+      ],
+      "correctAnswers": [
+        "Confidentiality"
       ]
     }
   ]

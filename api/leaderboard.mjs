@@ -3,7 +3,7 @@ import { isIP } from 'node:net';
 
 const MODES = new Set(['all', 'shuffle', 'adaptive', 'blitz']);
 const HEARTS = new Set(['1', '3', '5', 'unlimited']);
-const DECKS = new Set(['pools', 'ccst']);
+const DECKS = new Set(['pools', 'ccst', 'ccst-notebook']);
 const BADGE_TIERS = [
   ['Noob', 0], ['Beginner', 1000], ['Intermediate', 5000],
   ['Pro', 15000], ['Packet Hacker', 40000], ['Packet Gods', 100000]

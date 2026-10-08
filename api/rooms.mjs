@@ -5,7 +5,8 @@ import { isIP } from 'node:net';
 const require = createRequire(import.meta.url);
 const questionBanks = {
   pools: require('../questions.json').questions,
-  ccst: require('../ccst-questions.json').questions
+  ccst: require('../ccst-questions.json').questions,
+  'ccst-notebook': require('../ccst-questions.json').questions
 };
 const questionsByDeck = Object.fromEntries(Object.entries(questionBanks).map(([deck, questions]) => [deck, new Map(questions.map(question => [question.id, question]))]));
 

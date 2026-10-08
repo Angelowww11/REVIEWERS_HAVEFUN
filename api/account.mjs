@@ -7,7 +7,7 @@ const COOKIE = '__Host-pp_account';
 const SESSION_SECONDS = 30 * 24 * 60 * 60;
 const MAX_BODY = 1024 * 1024;
 const KDF = { N: 131072, r: 8, p: 1, maxmem: 160 * 1024 * 1024 };
-const DATA_KEY = /^(?:pp_(?:ccst_)?(?:practice_v1|stats|favorites|heart_limit|ranked_run_(?:all|shuffle|adaptive|blitz))|pp_(?:theme|motion|sound|leaderboard_name|live_name))$/;
+const DATA_KEY = /^(?:pp_(?:ccst_(?:notebook_)?)?(?:practice_v1|stats|favorites|heart_limit|ranked_run_(?:all|shuffle|adaptive|blitz))|pp_(?:theme|motion|sound|leaderboard_name|live_name))$/;
 const RATE = `local n=redis.call('INCR',KEYS[1]); if n==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return n`;
 const REGISTER = `
 if redis.call('EXISTS',KEYS[1])==1 then return 0 end

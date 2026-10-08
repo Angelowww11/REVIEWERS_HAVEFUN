@@ -294,7 +294,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .deck-switch a:hover{background:rgba(255,255,255,.12);transform:translateY(-1px)}
 .deck-switch a[aria-current="page"]{background:var(--cyan);color:var(--ink);box-shadow:0 4px 12px rgba(4,7,41,.16)}
 .deck-switch span{padding:0 11px;color:var(--text);font-size:10px;font-weight:800;letter-spacing:.35px;white-space:nowrap}
-body[data-deck="ccst"] .deck-switch a[aria-current="page"]{background:var(--coral)}
+body[data-deck^="ccst"] .deck-switch a[aria-current="page"]{background:var(--coral)}
 @media(max-width:620px){.deck-switch{width:100%;margin-top:9px}.deck-switch a{flex:1;justify-content:center;padding:7px 8px}.deck-switch span{display:none}}
 .question-html img{cursor:zoom-in}.question-html img:focus-visible{outline:3px solid var(--coral);outline-offset:3px}
 .exhibit-dialog{width:min(96vw,1250px);max-width:96vw;max-height:94dvh;overflow:auto;border:1px solid rgba(255,255,255,.24);border-radius:18px;background:var(--surface-2);padding:18px;box-shadow:0 30px 90px rgba(0,0,0,.55)}

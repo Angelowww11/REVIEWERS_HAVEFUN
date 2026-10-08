@@ -2,14 +2,14 @@
 
 A playful, mobile-friendly networking quiz built from eight supplied question pools. The frontend is static, with Vercel Functions for live rooms and public leaderboards. Deploy this folder to Vercel with **Framework Preset: Other** and no build command.
 
-The **CCST midterm** tab adds a separate 90-card certification review deck from `CCST Networking Reviewer 1.pdf`. It uses the same solo, practice, training, leaderboard, and live multiplayer modes. Progress and public scores are kept separate from the original question pools. See [CCST_REVIEW_NOTES.md](CCST_REVIEW_NOTES.md) for corrected source answers and omitted slides.
+The **CCST certification** tab adds a separate 99-question deck built from `CCST_Networking_Reviewer_Notebook_Detailed-2.html`. It uses the same solo, practice, training, leaderboard, and live multiplayer modes. Progress and public scores are kept separate from the original question pools. See [CCST_REVIEW_NOTES.md](CCST_REVIEW_NOTES.md) for reviewed answers and corrections.
 
 ## Play
 
 - Browse all 198 distinct questions and reveal the source-marked answers. **Show all 198 questions** in the question bank clears search and filters, then displays the entire deck at once; **Show fewer** returns to the shorter list.
 - Play the complete deck in source order or shuffle every question and its choices.
 - Open **Practice path** for the full deck in a fixed question order. You can keep the original choice order or turn on **Shuffle answer choices**; each question keeps its shuffled choice positions when you revisit it. It saves your answers and current question on this device, so you can resume later, move backward or forward, skip, or jump straight to any question number. **Reset all progress** clears saved answers, position, and shuffled choice positions after confirmation. Practice path has no timer or leaderboard score.
-- Choose **Training loop** for 20 or 30 random questions with unlimited hearts. After each pass, review every miss alongside your answer, the correct answer, and an explanation. Retry only the missed questions, with fresh choice order, until you complete a perfect pass. Training is unranked.
+- Choose **Training loop** for 20, 30, or 99 random questions with unlimited hearts. The certification deck selects all 99 by default. After each pass, review every miss alongside your answer, the correct answer, and an explanation. Retry only the missed questions, with fresh choice order, until you complete a perfect pass. Training is unranked.
 - On a keyboard, press **1–4** to choose a displayed answer in solo, Practice path, and live matches. In Match maker, press 1–4 for a question, then 1–4 for its answer. Number keys still type normally in answer fields and chat.
 - Choose 1, 3, 5, or unlimited hearts. Public leaderboards cover **All questions**, **Shuffle run**, **Level up**, and **Boss blitz**, each with a hearts filter and top-score graph. The home page shows a switchable top-three preview.
 - Unfinished ranked runs save automatically on this device, one per ranked mode. Use **Continue a run** on the home page or **Continue** in that mode’s setup to pick up the same question, choice order, score, hearts, and power-ups. Boss blitz pauses its timer when you leave, close, or hide the page. Starting a new run in the same mode replaces its saved run; finishing clears it.
@@ -27,9 +27,9 @@ Solo progress, preferences, and ghosts are stored in the browser on each device.
 
 ## Question bank
 
-`questions.json` contains 198 distinct questions from 764 valid source entries. A duplicate was removed only when the normalized question, available choices, and marked correct answer all matched. Distinct answer variants were retained. The 22 referenced exhibits are in `exhibits/`.
+`questions.json` contains 198 distinct questions from 764 valid source entries. A duplicate was removed only when the normalized question, available choices, and marked correct answer all matched. Distinct answer variants were retained. The 22 referenced exhibits for the original pools and certification reviewer exhibits are in `exhibits/`.
 
-The original saved course pages are not needed to run the site. The site preserves the question wording, choices, and labeled answers from the supplied files. `explanations.json` adds concise study notes and flags a few source-keyed answers that conflict with standard networking behavior.
+The original saved course pages are not needed to run the site. The original question pool preserves its source wording, choices, and labeled answers. The certification deck is generated separately from the supplied reviewer notebook and reviewed answers. `explanations.json` adds concise study notes and flags a few source-keyed answers that conflict with standard networking behavior.
 
 ## Online setup
 

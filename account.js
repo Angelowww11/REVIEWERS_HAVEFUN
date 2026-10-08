@@ -1,5 +1,5 @@
 (() => {
-  const allowed=/^(?:pp_(?:ccst_)?(?:practice_v1|stats|favorites|heart_limit|ranked_run_(?:all|shuffle|adaptive|blitz))|pp_(?:theme|motion|sound|leaderboard_name|live_name))$/;
+  const allowed=/^(?:pp_(?:ccst_(?:notebook_)?)?(?:practice_v1|stats|favorites|heart_limit|ranked_run_(?:all|shuffle|adaptive|blitz))|pp_(?:theme|motion|sound|leaderboard_name|live_name))$/;
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let user=null,cloud={revision:0,data:{}},sync=false,busy=false,chosen=false,timer,mode='login';
   const mount=document.getElementById('accountMount');if(!mount)return;

@@ -1,7 +1,7 @@
 /* Solo progress stays in this browser; ranked scores and live rooms use the API. */
 const $ = id => document.getElementById(id);
-const deckId = new URL(location.href).searchParams.get('deck') === 'ccst' ? 'ccst' : 'pools';
-function deckStorageKey(key) { return deckId === 'ccst' ? key.replace(/^pp_/, 'pp_ccst_') : key; }
+const deckId = new URL(location.href).searchParams.get('deck') === 'ccst' ? 'ccst-notebook' : 'pools';
+function deckStorageKey(key) { return deckId === 'ccst-notebook' ? key.replace(/^pp_/, 'pp_ccst_notebook_') : key; }
 const modeInfo = {
   all: { name: 'All questions', eyebrow: 'COMPLETE DECK', description: 'The full deck, in order.' },
   shuffle: { name: 'Shuffle run', eyebrow: 'FRESH EACH TIME', description: 'The full deck, reshuffled.' },
@@ -9,7 +9,7 @@ const modeInfo = {
   blitz: { name: 'Boss blitz', eyebrow: 'BEAT THE CLOCK', description: '15 questions against the clock.' },
   matching: { name: 'Match maker', eyebrow: 'TAP TO PAIR', description: 'Pair questions with answers.' },
   typing: { name: 'Type it out', eyebrow: 'NO CHOICES', description: 'Answer from memory.' },
-  training: { name: 'Training loop', eyebrow: 'MASTER EVERY QUESTION', description: 'Choose 20 or 30. Review misses, then retry them until every answer is right.' }
+  training: { name: 'Training loop', eyebrow: 'MASTER EVERY QUESTION', description: 'Choose 20, 30, or all 99. Retry misses until every answer is right.' }
 };
 const rankedModes = ['all', 'shuffle', 'adaptive', 'blitz'];
 const badgeTiers = [
@@ -197,7 +197,7 @@ function setView(view) {
 function renderHome() {
   const sources = new Set(app.questions.map(q => q.sourceFile).filter(Boolean));
   $('questionCount').textContent = formatNumber(app.questions.length);
-  $('sourceCount').textContent = deckId === 'ccst' ? '1' : formatNumber(sources.size || 8);
+  $('sourceCount').textContent = deckId === 'ccst-notebook' ? '1' : formatNumber(sources.size || 8);
   $('bankCountBadge').textContent = `${formatNumber(app.questions.length)} questions`;
   updateStats();
   renderPracticeCard();
@@ -214,9 +214,9 @@ function renderHome() {
 function renderDeckChrome() {
   document.body.dataset.deck = deckId;
   $('poolsDeckLink').setAttribute('aria-current', deckId === 'pools' ? 'page' : 'false');
-  $('ccstDeckLink').setAttribute('aria-current', deckId === 'ccst' ? 'page' : 'false');
-  if (deckId !== 'ccst') return;
-  document.title = 'CCST Midterm Review — Packet Party';
+  $('ccstDeckLink').setAttribute('aria-current', deckId === 'ccst-notebook' ? 'page' : 'false');
+  if (deckId !== 'ccst-notebook') return;
+  document.title = 'CCST Certification Review — Packet Party';
   $('deckSwitchNote').textContent = 'Midterm certification review';
   $('heroEyebrowText').textContent = 'CCST MIDTERM CERTIFICATION';
   $('heroLede').textContent = 'Study the checked CCST reviewer. Play solo or race friends.';
@@ -387,7 +387,7 @@ function startGame() {
   const heartLimit = mode === 'training' ? 'unlimited' : ['1', '3', '5', 'unlimited'].includes($('heartLimitSelect').value) ? $('heartLimitSelect').value : '3';
   if (mode !== 'training') writeJSON(deckStorageKey('pp_heart_limit'), heartLimit);
   const questions = app.questions;
-  let order = mode === 'all' ? [...questions] : mode === 'shuffle' ? shuffle(questions) : mode === 'typing' ? shuffle(typingPool()).slice(0, 20) : mode === 'matching' ? matchingPool().slice(0, 12) : mode === 'blitz' ? shuffle(questions).slice(0, 15) : mode === 'training' ? shuffle(questions).slice(0, Number($('trainingLengthSelect').value) === 30 ? 30 : 20) : [];
+  let order = mode === 'all' ? [...questions] : mode === 'shuffle' ? shuffle(questions) : mode === 'typing' ? shuffle(typingPool()).slice(0, 20) : mode === 'matching' ? matchingPool().slice(0, 12) : mode === 'blitz' ? shuffle(questions).slice(0, 15) : mode === 'training' ? shuffle(questions).slice(0, Math.min(Number($('trainingLengthSelect').value) || 99, questions.length)) : [];
   if (mode === 'matching' && order.length < 4) { toast('Not enough matching pairs in this deck.'); return; }
   if (mode === 'typing' && !order.length) { toast('No short answers are available.'); return; }
   if (rankedModes.includes(mode)) clearSavedRun(mode);
@@ -837,9 +837,9 @@ function exportGhost() {
 
 async function loadQuestions() {
   try {
-    const response = await fetch(deckId === 'ccst' ? './ccst-questions.json' : './questions.json', { cache: 'no-cache' }); if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const response = await fetch(deckId === 'ccst-notebook' ? './ccst-questions.json' : './questions.json', { cache: 'no-cache' }); if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json(); if (!Array.isArray(data.questions)) throw new Error('Missing questions');
-    try { const notesResponse = await fetch(deckId === 'ccst' ? './ccst-explanations.json' : './explanations.json', { cache: 'no-cache' }); if (notesResponse.ok) app.explanations = await notesResponse.json(); } catch { /* Quiz still works if the notes are unavailable. */ }
+    try { const notesResponse = await fetch(deckId === 'ccst-notebook' ? './ccst-explanations.json' : './explanations.json', { cache: 'no-cache' }); if (notesResponse.ok) app.explanations = await notesResponse.json(); } catch { /* Quiz still works if the notes are unavailable. */ }
     app.questions = data.questions.filter(q => q && q.question && Array.isArray(q.correctAnswers) && q.correctAnswers.length && Array.isArray(q.options)).map((q, index) => ({ ...q, id: Number(q.id) || index + 1 }));
     restorePractice(); prepareDifficulty(); renderHome(); renderBank();
   } catch (error) {
@@ -989,7 +989,7 @@ const live = {
 function liveInviteURL(code = live.code) {
   const url = new URL(location.href);
   url.searchParams.set('room', code);
-  if (deckId === 'ccst') url.searchParams.set('deck', 'ccst'); else url.searchParams.delete('deck');
+  if (deckId === 'ccst-notebook') url.searchParams.set('deck', 'ccst'); else url.searchParams.delete('deck');
   url.hash = '';
   return url.toString();
 }
