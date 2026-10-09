@@ -102,9 +102,10 @@ function dragAnswer(q, pairIndex, targetIndex) { return `${dragItems(q)[pairInde
 function renderDragMatch(q, mapping, disabled = false, side = 'solo') {
   const id = side === 'live' ? 'liveDrag' : side === 'practice' ? 'practiceDrag' : 'drag';
   const items = dragItems(q), targetList = dragTargets(q), targets = shuffle(targetList.map((_, index) => index));
+  if (targets.length > 1 && targets.every((targetIndex, index) => targetIndex === index)) targets.push(targets.shift());
   const targetFor = index => mapping?.[index] ?? '';
   const left = items.map((item, index) => `<div class="drag-match-row"><div class="drag-match-prompt"><span class="drag-match-grip" aria-hidden="true">⠿</span><span>${escapeHTML(item)}</span></div><span class="drag-match-connector" aria-hidden="true">↔</span><div class="drag-match-drop" data-drag-left="${index}" aria-label="Drop a match for ${escapeHTML(item)}" ${disabled ? 'aria-disabled="true"' : ''}><select class="drag-match-target" data-drag-select="${index}" aria-label="Match ${escapeHTML(item)}" ${disabled ? 'disabled' : ''}><option value="">Choose a match…</option>${targets.map(targetIndex => `<option value="${targetIndex}" ${String(targetFor(index)) === String(targetIndex) ? 'selected' : ''}>${escapeHTML(targetList[targetIndex])}</option>`).join('')}</select></div></div>`).join('');
-  const right = targetList.map((target, index) => `<div class="drag-match-chip" draggable="${!disabled}" data-drag-right="${index}" aria-label="Drag ${escapeHTML(target)} to its match"><span aria-hidden="true">⠿</span>${escapeHTML(target)}</div>`).join('');
+  const right = targets.map(targetIndex => { const target = targetList[targetIndex]; return `<div class="drag-match-chip" draggable="${!disabled}" data-drag-right="${targetIndex}" aria-label="Drag ${escapeHTML(target)} to its match"><span aria-hidden="true">⠿</span>${escapeHTML(target)}</div>`; }).join('');
   return `<div class="drag-match-board ${side === 'live' ? 'drag-match-live' : ''}" data-drag-board="${id}"><div class="drag-match-list">${left}</div><div class="drag-match-targets"><span class="drag-match-caption">DRAG A MATCH HERE · OR USE THE MENU</span>${right}</div></div>`;
 }
 function dragMappingFrom(board) { return [...board.querySelectorAll('[data-drag-select]')].map(select => select.value === '' ? -1 : Number(select.value)); }
