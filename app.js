@@ -187,7 +187,7 @@ function playTone(kind) {
     app.audio ||= new Audio();
     if (app.audio.state === 'suspended') app.audio.resume();
     const now = app.audio.currentTime;
-    const tones = kind === 'good' ? [[530, 0], [660, .075], [840, .15]] : kind === 'bad' ? [[330, 0], [250, .13]] : [[590, 0]];
+    const tones = ({ good: [[530, 0], [660, .075], [840, .15]], bad: [[330, 0], [250, .13]], power: [[520, 0], [720, .07]], fifty: [[660, 0], [900, .06], [1120, .13]], shield: [[440, 0], [660, .08], [880, .16]], freeze: [[950, 0], [720, .11], [1050, .2]], splat: [[310, 0], [220, .08], [410, .16]], zap: [[880, 0], [520, .06], [980, .13]], ward: [[440, 0], [590, .08], [760, .16]], scramble: [[710, 0], [470, .07], [790, .14]], lucky: [[520, 0], [690, .07], [920, .14]], clear: [[610, 0], [820, .07]] })[kind] || [[590, 0]];
     tones.forEach(([frequency, offset]) => {
       const oscillator = app.audio.createOscillator(); const gain = app.audio.createGain();
       oscillator.type = 'sine'; oscillator.frequency.value = frequency;
@@ -1039,7 +1039,7 @@ const live = {
   pollTimer: null, clockTimer: null, fetching: false, lastPollAt: 0, pendingActions: new Set(),
   requestSeq: 0, appliedSeq: 0, stageSignature: '', playersSignature: '', messagesSignature: '',
   roundKey: '', submitted: false, pendingAnswer: null, selected: new Set(), dragMapping: [], savedDragMapping: [], hintStep: 0, seenReactions: new Set(),
-  sawReactions: false, revealKey: '', lastQuestion: null
+  sawReactions: false, revealKey: '', lastQuestion: null, effectSignature: ''
 };
 
 function liveInviteURL(code = live.code) {
@@ -1088,7 +1088,7 @@ function liveClearSession() {
   live.pendingActions = new Set();
   live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
   live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear(); live.dragMapping = []; live.savedDragMapping = []; live.hintStep = 0;
-  live.seenReactions.clear(); live.sawReactions = false; live.revealKey = ''; live.lastQuestion = null;
+  live.seenReactions.clear(); live.sawReactions = false; live.revealKey = ''; live.lastQuestion = null; live.effectSignature = '';
   try { localStorage.removeItem(deckStorageKey('pp_live_session')); } catch { /* Storage is optional. */ }
   const url = new URL(location.href);
   if (url.searchParams.has('room')) { url.searchParams.delete('room'); history.replaceState(null, '', url); }
@@ -1097,6 +1097,19 @@ function liveClearSession() {
 function liveApplyResponse(data, seq) {
   if (seq < live.appliedSeq || !live.code || !data.room) return;
   const previousRound = live.room && liveRoundKey(live.room);
+  const oldQuestion = live.room?.currentQuestion;
+  const nextQuestion = data.room.currentQuestion;
+  if (previousRound && previousRound === liveRoundKey(data.room) && oldQuestion && nextQuestion && oldQuestion.id === nextQuestion.id) {
+    if (oldQuestion.matching && nextQuestion.matching && JSON.stringify(oldQuestion.dragTargets) !== JSON.stringify(nextQuestion.dragTargets)) {
+      const remap = mapping => mapping.map(index => index < 0 ? -1 : nextQuestion.dragTargets.findIndex(target => normalize(target) === normalize(oldQuestion.dragTargets[index])));
+      live.dragMapping = remap(live.dragMapping);
+      live.savedDragMapping = remap(live.savedDragMapping);
+    }
+    if (oldQuestion.options && nextQuestion.options && JSON.stringify(oldQuestion.options) !== JSON.stringify(nextQuestion.options) && live.selected.size) {
+      const selectedValues = [...live.selected].map(index => oldQuestion.options[index]).filter(value => value != null);
+      live.selected = new Set(selectedValues.map(value => nextQuestion.options.findIndex(option => normalize(option) === normalize(value))).filter(index => index >= 0));
+    }
+  }
   const typedDraft = !live.submitted && live.room?.phase === 'question' ? $('liveAnswerInput')?.value : null;
   live.appliedSeq = seq;
   live.room = data.room;
@@ -1186,6 +1199,10 @@ function liveCurrentPlayer() { return live.room?.players?.find(player => player.
 function liveRoundKey(room) { return `${room.code}:${room.questionIndex}:${room.currentQuestion?.id || ''}`; }
 function liveRender() {
   const room = live.room; if (!room) return;
+  const incoming = room.myEffect;
+  const effectSignature = incoming ? `${room.questionIndex}:${incoming.type}:${incoming.until || 'active'}` : '';
+  if (effectSignature && effectSignature !== live.effectSignature) livePowerFeedback(incoming.type, true, incoming.from);
+  live.effectSignature = effectSignature;
   $('liveRoomCode').textContent = room.code || live.code;
   if (room.currentQuestion) live.lastQuestion = room.currentQuestion;
   const roundKey = liveRoundKey(room);
@@ -1220,13 +1237,36 @@ function liveRender() {
 }
 function livePowerMarkup(room, q, options) {
   const used = room.myPowers || {}, coop = room.mode === 'coop';
-  const costs = { fifty: coop ? 0 : 70, shield:45, freeze:60, splat:40, zap:60, ward:35 };
+  const costs = { fifty: coop ? 0 : 70, shield:45, freeze:60, splat:40, zap:60, ward:35, scramble:45, lucky:25 };
   const button = (name,label,disabled=false) => '<button type="button" class="power-button" data-live-power="'+name+'" '+(disabled || used[name] || live.submitted || (room.mySpendablePoints || 0) < costs[name] ? 'disabled' : '')+'>'+label+' · '+costs[name]+'</button>';
   const fifty = button('fifty','½ 50/50',q.type==='short_answer_question'||q.multiple||options.length<4);
   const hint = '<button type="button" class="hint-button" data-live-hint '+(live.hintStep>=3?'disabled':'')+'>💡 Hint</button>';
   if(coop)return '<div class="live-power-row">'+fifty+hint+'</div>';
   const targets=(room.players||[]).filter(p=>p.id!==live.playerId&&!p.answered);
-  return '<div class="live-power-balance">'+formatNumber(room.mySpendablePoints||0)+' spendable pts · scores settle at reveal'+(room.streakPerk?' · streak shield earned!':'')+'</div><div class="live-power-row">'+fifty+button('shield','◇ Streak shield')+button('freeze','❄ +4s for all',room.freezeUsed)+hint+'</div>'+(room.playful!==false?'<details class="battle-tools"><summary>Playful items · one attack per round</summary><select id="battleTarget" class="battle-target" aria-label="Choose a player to target"><option value="">Choose someone still thinking</option>'+targets.map(p=>'<option value="'+escapeHTML(p.id)+'">'+escapeHTML(p.name)+'</option>').join('')+'</select><div class="live-power-row">'+button('splat','🎨 Splatter',used.attack||!targets.length)+button('zap','ϟ Zap up to 20 pts',used.attack||!targets.length)+button('ward','◈ Protective ward')+'</div><p class="live-lobby-note">Splatter lasts 4s; wipe it away anytime. Ward blocks an attack. Each player can only be attacked once per round. Every 3 correct earns a streak shield; every 5 earns +25.</p></details>':'');
+  return '<div class="live-power-balance">'+formatNumber(room.mySpendablePoints||0)+' spendable pts · scores settle at reveal'+(room.streakPerk?' · streak shield earned!':'')+'</div><div class="live-power-row">'+fifty+button('shield','◇ Streak shield')+button('freeze','❄ +4s for all',room.freezeUsed)+button('lucky','🍀 Lucky Byte · +35 if right')+hint+'</div>'+(room.playful!==false?'<details class="battle-tools"><summary>Playful items · one attack per question</summary><select id="battleTarget" class="battle-target" aria-label="Choose a player to target"><option value="">Choose a player to target</option>'+targets.map(p=>'<option value="'+escapeHTML(p.id)+'">'+escapeHTML(p.name)+'</option>').join('')+'</select><div class="live-power-row">'+button('splat','🎨 Splatter',used.attack||!targets.length)+button('zap','ϟ Zap up to 20 pts',used.attack||!targets.length)+button('scramble','🌀 Packet Scramble',used.attack||!targets.length||q.type==='short_answer_question')+button('ward','◈ Protective ward')+'</div><p class="live-lobby-note">Scramble reshuffles only the target’s choices. Splatter lasts 4s; wipe it away anytime. Ward blocks an attack. One attack per player per question. Every 3 correct earns a streak shield; every 5 earns +25.</p></details>':'' );
+}
+const LIVE_POWER_FX = {
+  fifty: ['✂️', '50/50'], shield: ['🛡️', 'Shield'], freeze: ['❄️', 'Freeze'], splat: ['🎨', 'Splatter'],
+  zap: ['⚡', 'Zap'], ward: ['🔰', 'Ward'], 'ward-blocked': ['🛡️', 'Ward blocked it'], scramble: ['🌀', 'Packet Scramble'], lucky: ['🍀', 'Lucky Byte'], clear: ['🧽', 'Wipe clean']
+};
+function livePowerFeedback(name, incoming = false, targetName = '') {
+  const [icon, label] = LIVE_POWER_FX[name] || ['✨', 'Power up'];
+  playTone(name);
+  const layer = $('liveReactionLayer');
+  if (!layer) return;
+  const item = document.createElement('div');
+  item.className = `live-power-fx ${incoming ? 'is-incoming' : 'is-outgoing'} power-fx-${name}`;
+  item.setAttribute('role', 'status');
+  item.innerHTML = `<span>${icon}</span><strong>${incoming ? `${escapeHTML(targetName || 'A rival')} used ${label}` : `${label}!`}</strong>`;
+  layer.append(item);
+  setTimeout(() => item.remove(), 1850);
+  if (!incoming) burst();
+  announce(incoming ? `${targetName || 'A rival'} used ${label}.` : `${label} activated${targetName ? ` on ${targetName}` : ''}.`);
+}
+async function liveUsePower(name, targetId) {
+  const target = live.room?.players?.find(player => player.id === targetId);
+  const data = await liveAction('power', { name, targetId, questionIndex: live.room?.questionIndex });
+  if (data) livePowerFeedback(name, false, target?.name || '');
 }
 function liveRenderStage() {
   const room = live.room; if (!room) return;
@@ -1270,7 +1310,8 @@ function liveRenderStage() {
     : `<div class="live-answer-grid">${options.map((option, index) => { const correct = answers.some(a => normalize(a) === normalize(option)); const chosen = isReveal || !q.multiple ? displayedValues.some(value => value != null && normalize(value) === normalize(option)) : live.selected.has(index); const eliminated = !isReveal && (room.myPowers?.fifty || []).includes(index); const cls = isReveal ? correct ? 'is-correct' : chosen ? 'is-wrong' : '' : eliminated ? 'is-eliminated' : chosen ? 'is-selected' : ''; return `<button type="button" class="live-answer-option ${cls}" data-live-choice="${index}" ${isReveal || live.submitted || eliminated ? 'disabled' : ''} aria-pressed="${chosen}"><i>${index + 1}</i><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>${q.multiple && !isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-multi" ${live.submitted || !live.selected.size || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Lock in answers'} ↗</button></div>` : ''}`;
   const answerNote = isReveal ? '' : live.submitted ? 'Saving your answer…' : hasSavedAnswer && draftChanged ? `Your changes are not saved yet. Press ${drag ? 'Update matches' : 'Update answer'}.` : savedEliminated ? 'Your saved choice was eliminated. Pick another before the question closes.' : hasSavedAnswer ? '✓ Answer saved. You can change it until the question closes.' : q.multiple && live.selected.size ? 'Press Lock in answers to save your selection.' : '';
   const hint = !isReveal && live.hintStep ? `<div class="coach-panel live-hint-panel"><div class="coach-title">💡 STUDY HINT ${live.hintStep}/3</div><p class="coach-chat">${escapeHTML(hintMessages(q)[live.hintStep - 1])}</p></div>` : '';
-  stage.innerHTML = `<div class="live-quiz-meta"><span class="live-stage-kicker">${isReveal ? 'ANSWER REVEAL' : 'LIVE ROUND'} · QUESTION ${(room.questionIndex ?? 0) + 1} / ${room.total || 10}</span><span id="liveTimer" class="live-timer">◷ <span>—</span></span></div><div class="live-clock-track" aria-hidden="true"><div id="liveClockFill" class="live-clock-fill"></div></div><div class="live-question-text">${safeQuestionHTML(q)}</div>${answerMarkup}${answerNote ? `<div class="live-answer-note">${answerNote}</div>` : ''}${!isReveal ? livePowerMarkup(room, q, options) : ''}${hint}${isReveal ? `<div class="live-reveal ${mine?.correct ? '' : 'is-wrong'}"><strong>${mine?.correct ? room.mode === 'coop' ? 'You helped the team!' : `Nice hit! +${formatNumber(mine.points || 0)} points` : mine?.shielded ? 'Shield saved your streak' : 'Round complete'}</strong><span>Correct answer${answers.length > 1 ? 's' : ''}: ${escapeHTML(answers.join(' · '))}</span>${!mine?.correct && mine?.answer != null ? `<span>Your answer: ${escapeHTML(Array.isArray(mine.answer) ? mine.answer.join(' · ') : mine.answer)}</span>` : ''}<span class="feedback-explanation"><b>Why this answer works</b>${escapeHTML(explanationText(q))}</span><small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div><p class="live-lobby-note">${room.mode === 'coop' ? 'Take a moment to discuss the explanation.' : `Items: −${room.myPowers?.spent || 0} pts${room.myPowers?.penalty ? ` · Zapped: −${room.myPowers.penalty} pts` : ''}${room.myPowers?.blocked ? ' · Ward blocked an attack' : ''}. Next question starts automatically.`}</p>` : ''}`;
+  stage.classList.toggle('is-scrambled', Boolean(!isReveal && q.scrambled));
+  stage.innerHTML = `<div class="live-quiz-meta"><span class="live-stage-kicker">${isReveal ? 'ANSWER REVEAL' : 'LIVE ROUND'} · QUESTION ${(room.questionIndex ?? 0) + 1} / ${room.total || 10}</span><span id="liveTimer" class="live-timer">◷ <span>—</span></span></div><div class="live-clock-track" aria-hidden="true"><div id="liveClockFill" class="live-clock-fill"></div></div><div class="live-question-text">${safeQuestionHTML(q)}</div>${!isReveal && q.scrambled ? '<div class="live-power-banner">🌀 A rival scrambled your choices!</div>' : ''}${answerMarkup}${answerNote ? `<div class="live-answer-note">${answerNote}</div>` : ''}${!isReveal ? livePowerMarkup(room, q, options) : ''}${hint}${isReveal ? `<div class="live-reveal ${mine?.correct ? '' : 'is-wrong'}"><strong>${mine?.correct ? room.mode === 'coop' ? 'You helped the team!' : `Nice hit! +${formatNumber(mine.points || 0)} points` : mine?.shielded ? 'Shield saved your streak' : 'Round complete'}</strong><span>Correct answer${answers.length > 1 ? 's' : ''}: ${escapeHTML(answers.join(' · '))}</span>${!mine?.correct && mine?.answer != null ? `<span>Your answer: ${escapeHTML(Array.isArray(mine.answer) ? mine.answer.join(' · ') : mine.answer)}</span>` : ''}<span class="feedback-explanation"><b>Why this answer works</b>${escapeHTML(explanationText(q))}</span><small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div><p class="live-lobby-note">${room.mode === 'coop' ? 'Take a moment to discuss the explanation.' : `Items: −${room.myPowers?.spent || 0} pts${room.myPowers?.penalty ? ` · Zapped: −${room.myPowers.penalty} pts` : ''}${room.myPowers?.blocked ? ' · Ward blocked an attack' : ''}. Next question starts automatically.`}</p>` : ''}`;
   if (drag && !isReveal) {
     const board = stage.querySelector('[data-drag-board]'); attachDragInteraction(board, '#liveStage', live.submitted);
     board.addEventListener('change', () => { live.dragMapping = dragMappingFrom(board); const button = stage.querySelector('[data-live-action="submit-drag"]'); if (button) button.disabled = live.submitted || !isCompleteDrag(live.dragMapping) || JSON.stringify(live.dragMapping) === JSON.stringify(live.savedDragMapping); const note = stage.querySelector('.live-answer-note'); if (note) note.textContent = hasSavedAnswer ? 'Your changes are not saved yet. Press Update matches.' : 'Complete the pairs, then lock in your matches.'; });
@@ -1281,8 +1322,14 @@ function liveRenderStage() {
     stage.querySelector('.live-clock-track')?.remove();stage.querySelector('#liveTimer')?.remove();
     const next=document.createElement('div');next.className='live-lobby-bottom';next.innerHTML=room.hostId===live.playerId?'<button class="button button-primary" data-live-action="advance">'+(isReveal?'Next question →':'Reveal for everyone')+'</button>':'<p class="live-lobby-note">The host will move everyone forward when you’re ready.</p>';stage.append(next);
   }
-  if (!isReveal && room.myEffect) {
-    stage.classList.add('is-splattered');const notice=document.createElement('div');notice.className='splat-notice';notice.innerHTML='<button class="button-outline" data-live-power="clear">Wipe clean</button><strong>🎨 Splattered!</strong><p>Clears in a moment. Wipe now for free.</p>';stage.prepend(notice);
+  if (!isReveal && room.myEffect?.type === 'splat' && (!room.myEffect.until || room.myEffect.until > Date.now() + live.serverOffset)) {
+    stage.classList.add('is-splattered');const notice=document.createElement('div');notice.className='splat-notice';notice.innerHTML='<button class="button-outline" data-live-power="clear">Wipe clean</button><strong>🎨 Splattered by '+escapeHTML(room.myEffect.from||'a rival')+'!</strong><p>Your choices are blurred for 4 seconds. Wipe them clean anytime.</p>';stage.prepend(notice);
+  } else if (!isReveal && room.myEffect?.type === 'scramble') {
+    const notice=document.createElement('div');notice.className='live-power-banner is-scrambled';notice.textContent=`🌀 ${room.myEffect.from} shuffled your choices · still the same answers`;stage.prepend(notice);
+  } else if (!isReveal && room.myEffect?.type === 'ward-blocked') {
+    const notice=document.createElement('div');notice.className='live-power-banner';notice.textContent=`🛡️ Your ward blocked ${room.myEffect.from}’s attack`;stage.prepend(notice);
+  } else if (!isReveal && room.myEffect?.type === 'zap') {
+    const notice=document.createElement('div');notice.className='live-power-banner is-zapped';notice.textContent=`⚡ Zapped by ${room.myEffect.from} · up to 20 points at reveal`;stage.prepend(notice);
   }
   liveUpdateClock();
 }
@@ -1359,7 +1406,7 @@ function attachLiveEvents() {
   $('liveCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(liveInviteURL()); toast('Invite link copied. Send it to a friend!'); } catch { toast(`Share this room code: ${live.code}`); } });
   $('liveStage').addEventListener('click', event => {
     const power = event.target.closest('[data-live-power]');
-    if (power && live.room?.phase === 'question' && !power.disabled) { const name = power.dataset.livePower; const targetId = $('battleTarget')?.value; if (['splat','zap'].includes(name) && !targetId) { toast('Choose a player first.'); return; } if(name==='clear') { $('liveStage').classList.remove('is-splattered'); $('liveStage').querySelector('.splat-notice')?.remove(); } liveAction('power', { name, targetId, questionIndex: live.room.questionIndex }); return; }
+    if (power && live.room?.phase === 'question' && !power.disabled) { const name = power.dataset.livePower; const targetId = $('battleTarget')?.value; if (['splat','zap','scramble'].includes(name) && !targetId) { toast('Choose a player first.'); return; } if(name==='clear') { $('liveStage').classList.remove('is-splattered'); $('liveStage').querySelector('.splat-notice')?.remove(); liveAction('power', { name, questionIndex: live.room.questionIndex }).then(data => { if (data) livePowerFeedback(name); }); } else liveUsePower(name,targetId); return; }
     if (event.target.closest('[data-live-hint]') && live.room?.phase === 'question' && live.hintStep < 3) {
       const draft = $('liveAnswerInput')?.value;
       live.hintStep++; live.stageSignature = ''; liveRender();

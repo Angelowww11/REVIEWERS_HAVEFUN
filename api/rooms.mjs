@@ -15,7 +15,7 @@ const MAX_PLAYERS = 20;
 const QUESTION_MS = 25_000;
 const REVEAL_MS = 5_000;
 const FREEZE_MS = 4_000;
-const POWER_COSTS = { fifty: 70, shield: 45, freeze: 60, splat: 40, zap: 60, ward: 35 };
+const POWER_COSTS = { fifty: 70, shield: 45, freeze: 60, splat: 40, zap: 60, ward: 35, scramble: 45, lucky: 25 };
 const ROUND_MS = QUESTION_MS + REVEAL_MS;
 const ROOM_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const ALLOWED_REACTIONS = new Set(['🎉', '🔥', '⚡', '💀', '😂', '😎', '👏', '😱', '🫡', '❤️']);
@@ -169,10 +169,11 @@ function roundQuestion(state, index) {
   return questionsByDeck[state.deck || 'pools']?.get(round.id) || null;
 }
 
-function currentQuestion(state, index) {
+function currentQuestion(state, index, viewer = null) {
   const round = state.sequence[index];
   const question = roundQuestion(state, index);
   if (!round || !question) return null;
+  const playerPowers = viewer?.powers?.[index] || {};
   return {
     id: question.id,
     question: question.question,
@@ -180,11 +181,12 @@ function currentQuestion(state, index) {
     type: question.type,
     matching: question.type === 'matching_question',
     dragItems: question.type === 'matching_question' ? question.dragPairs.map(pair => pair.item) : undefined,
-    dragTargets: question.type === 'matching_question' ? round.matchTargetOrder.map(targetIndex => question.dragPairs[targetIndex].target) : undefined,
+    dragTargets: question.type === 'matching_question' ? (playerPowers.matchTargetOrder || round.matchTargetOrder).map(targetIndex => question.dragPairs[targetIndex].target) : undefined,
     multiple: question.correctAnswers.length > 1,
+    scrambled: Boolean(playerPowers.scrambled),
     options: question.type === 'short_answer_question'
       ? []
-      : round.optionOrder.map(optionIndex => question.options[optionIndex])
+      : (playerPowers.optionOrder || round.optionOrder).map(optionIndex => question.options[optionIndex])
   };
 }
 
@@ -235,7 +237,11 @@ function publicRoom(state, viewer, now) {
     mode: state.mode || 'competitive',
     playful: state.playful !== false,
     team: { mastered: (state.coopSolved || []).length, total: state.questionCount },
-    myEffect: time.phase === 'question' && (viewer.powers?.[shownIndex]?.splatUntil || 0) > now ? { until: viewer.powers[shownIndex].splatUntil } : null,
+    myEffect: time.phase === 'question' && viewer.powers?.[shownIndex]?.attacked && (viewer.powers[shownIndex].attackType !== 'splat' || viewer.powers[shownIndex].splatUntil > now) ? {
+      type: viewer.powers[shownIndex].blocked ? 'ward-blocked' : viewer.powers[shownIndex].attackType || 'splat',
+      until: viewer.powers[shownIndex].splatUntil || null,
+      from: viewer.powers[shownIndex].attackedBy || 'A rival'
+    } : null,
     streakPerk: visibleTotals(viewer, time.index - 1).streak > 0 && visibleTotals(viewer, time.index - 1).streak % 3 === 0 && !viewer.answers[time.index - 1]?.shielded,
     status: time.status,
     phase: time.phase,
@@ -255,7 +261,7 @@ function publicRoom(state, viewer, now) {
     questionIndex: time.index,
     total: state.questionCount,
     currentQuestion: time.phase === 'lobby' || time.phase === 'finished'
-      ? null : currentQuestion(state, time.index),
+      ? null : currentQuestion(state, time.index, viewer),
     endsAt: time.endsAt,
     result: time.phase === 'reveal' || time.phase === 'finished'
       ? revealResult(state, shownIndex) : null,
@@ -440,7 +446,8 @@ function handleAnswer(room, player, now, body) {
   const correct = right.length === given.length && right.every((value, index) => value === given[index]);
   const streak = correct ? visibleTotals(player, time.index - 1).streak + 1 : 0;
   const secondsLeft = Math.max(0, time.endsAt - now);
-  const points = correct ? room.mode === 'coop' ? 100 : 100 + Math.round(Math.min(1, secondsLeft / QUESTION_MS) * 50) + Math.min(streak, 5) * 10 + (streak % 5 === 0 ? 25 : 0) : 0;
+  const basePoints = correct ? room.mode === 'coop' ? 100 : 100 + Math.round(Math.min(1, secondsLeft / QUESTION_MS) * 50) + Math.min(streak, 5) * 10 + (streak % 5 === 0 ? 25 : 0) : 0;
+  const points = basePoints + (correct && player.powers?.[time.index]?.lucky ? 35 : 0);
   const previousStreak = visibleTotals(player, time.index - 1).streak;
   const perk = previousStreak > 0 && previousStreak % 3 === 0 && !player.answers[time.index - 1]?.shielded;
   player.answers[time.index] = { answer, correct, points, at: now, shielded: !correct && Boolean(player.powers?.[time.index]?.shield || perk) };
@@ -456,12 +463,12 @@ function handlePower(room, player, now, body) {
   const used = player.powers[time.index] ||= {};
   if (name === 'clear') { used.splatUntil = 0; return; }
   if (room.mode === 'coop' && name !== 'fifty') throw new ApiError(409, 'Co-op uses helpful hints and 50/50 only.');
-  if (['splat', 'zap', 'ward'].includes(name) && room.playful === false) throw new ApiError(409, 'Playful attacks are off in this room.');
+  if (['splat', 'zap', 'scramble', 'ward'].includes(name) && room.playful === false) throw new ApiError(409, 'Playful attacks are off in this room.');
   if (used[name]) throw new ApiError(409, 'This power-up was already used on this question.');
   const available = visibleTotals(player, time.index - 1).score - (used.spent || 0) - (used.penalty || 0);
   const cost = room.mode === 'coop' ? 0 : POWER_COSTS[name];
   if (available < cost) throw new ApiError(409, `Earn ${POWER_COSTS[name]} points to use this power-up.`);
-  if (['splat', 'zap'].includes(name)) {
+  if (['splat', 'zap', 'scramble'].includes(name)) {
     if (used.attack) throw new ApiError(409, 'One playful attack per question.');
     const target = room.players.find(p => p.id === body.targetId && p.id !== player.id);
     if (!target || target.answers[time.index]) throw new ApiError(409, 'Choose a player who is still thinking.');
@@ -469,14 +476,22 @@ function handlePower(room, player, now, body) {
     if (targetPower.attacked) throw new ApiError(409, 'That player has already received an attack this round.');
     const targetAvailable = Math.max(0, visibleTotals(target, time.index - 1).score - (targetPower.spent || 0));
     if (name === 'zap' && !targetPower.ward && targetAvailable === 0) throw new ApiError(409, 'That player has no points to zap.');
-    targetPower.attacked = true; used.attack = true; used[name] = true;
+    targetPower.attacked = true; targetPower.attackType = name; targetPower.attackedBy = player.name; used.attack = true; used[name] = true;
     if (targetPower.ward) { targetPower.blocked = true; }
     else if (name === 'splat') targetPower.splatUntil = now + 4000;
-    else targetPower.penalty = Math.min(20, targetAvailable);
+    else if (name === 'zap') targetPower.penalty = Math.min(20, targetAvailable);
+    else {
+      const round = room.sequence[time.index];
+      const question = roundQuestion(room, time.index);
+      targetPower.scrambled = true;
+      if (question?.type === 'matching_question') targetPower.matchTargetOrder = shuffled(round.matchTargetOrder);
+      else targetPower.optionOrder = shuffled(round.optionOrder);
+    }
   } else if (name === 'ward') { used.ward = true; used.splatUntil = 0; }
+  else if (name === 'lucky') { used.lucky = true; }
   else if (name === 'fifty') {
     const question = roundQuestion(room, time.index);
-    const options = currentQuestion(room, time.index)?.options || [];
+    const options = currentQuestion(room, time.index, player)?.options || [];
     if (!question || question.correctAnswers.length !== 1 || options.length < 4) throw new ApiError(409, '50/50 is for four-choice questions.');
     const wrong = options.map((option, index) => question.correctAnswers.some(answer => normalizeAnswer(answer) === normalizeAnswer(option)) ? -1 : index).filter(index => index >= 0);
     if (wrong.length < 2) throw new ApiError(409, '50/50 is unavailable for this question.');
