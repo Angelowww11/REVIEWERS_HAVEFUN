@@ -104,9 +104,12 @@ function renderDragMatch(q, mapping, disabled = false, side = 'solo') {
   const items = dragItems(q), targetList = dragTargets(q), targets = shuffle(targetList.map((_, index) => index));
   if (targets.length > 1 && targets.every((targetIndex, index) => targetIndex === index)) targets.push(targets.shift());
   const targetFor = index => mapping?.[index] ?? '';
-  const left = items.map((item, index) => `<div class="drag-match-row"><div class="drag-match-prompt"><span class="drag-match-grip" aria-hidden="true">⠿</span><span>${escapeHTML(item)}</span></div><span class="drag-match-connector" aria-hidden="true">↔</span><div class="drag-match-drop" data-drag-left="${index}" aria-label="Drop a match for ${escapeHTML(item)}" ${disabled ? 'aria-disabled="true"' : ''}><select class="drag-match-target" data-drag-select="${index}" aria-label="Match ${escapeHTML(item)}" ${disabled ? 'disabled' : ''}><option value="">Choose a match…</option>${targets.map(targetIndex => `<option value="${targetIndex}" ${String(targetFor(index)) === String(targetIndex) ? 'selected' : ''}>${escapeHTML(targetList[targetIndex])}</option>`).join('')}</select></div></div>`).join('');
+  const left = items.map((item, index) => {
+    const chosen = Number.isInteger(Number(targetFor(index))) && targetFor(index) !== '' ? targetList[Number(targetFor(index))] : '';
+    return `<div class="drag-match-row"><div class="drag-match-prompt"><span class="drag-match-grip" aria-hidden="true">⠿</span><span>${escapeHTML(item)}</span></div><span class="drag-match-connector" aria-hidden="true">↔</span><div class="drag-match-answer-area"><button type="button" class="drag-match-slot ${chosen ? 'has-match' : ''}" data-drag-slot="${index}" aria-label="${chosen ? `Remove ${escapeHTML(chosen)} from ${escapeHTML(item)}` : `Drop a match for ${escapeHTML(item)}`}" ${disabled ? 'disabled' : ''}><span>${chosen ? escapeHTML(chosen) : 'Drop answer here'}</span></button><select class="drag-match-target" data-drag-select="${index}" aria-label="Or choose a match for ${escapeHTML(item)}" ${disabled ? 'disabled' : ''}><option value="">Choose instead…</option>${targets.map(targetIndex => `<option value="${targetIndex}" ${String(targetFor(index)) === String(targetIndex) ? 'selected' : ''}>${escapeHTML(targetList[targetIndex])}</option>`).join('')}</select></div></div>`;
+  }).join('');
   const right = targets.map(targetIndex => { const target = targetList[targetIndex]; return `<div class="drag-match-chip" draggable="${!disabled}" data-drag-right="${targetIndex}" aria-label="Drag ${escapeHTML(target)} to its match"><span aria-hidden="true">⠿</span>${escapeHTML(target)}</div>`; }).join('');
-  return `<div class="drag-match-board ${side === 'live' ? 'drag-match-live' : ''}" data-drag-board="${id}"><div class="drag-match-list">${left}</div><div class="drag-match-targets"><span class="drag-match-caption">DRAG A MATCH HERE · OR USE THE MENU</span>${right}</div></div>`;
+  return `<div class="drag-match-board ${side === 'live' ? 'drag-match-live' : ''}" data-drag-board="${id}"><div class="drag-match-list">${left}</div><div class="drag-match-targets"><span class="drag-match-caption">AVAILABLE ANSWERS · DRAG OR TAP</span>${right}</div></div>`;
 }
 function dragMappingFrom(board) { return [...board.querySelectorAll('[data-drag-select]')].map(select => select.value === '' ? -1 : Number(select.value)); }
 function dragPayload(q, mapping) { return mapping.map((target, index) => target < 0 ? '' : dragAnswer(q, index, target)); }
@@ -117,9 +120,21 @@ function attachDragInteraction(container, selector, disabled = false) {
   let dragged = null;
   container.addEventListener('dragstart', event => { const chip = event.target.closest('[data-drag-right]'); if (!chip) return; dragged = Number(chip.dataset.dragRight); event.dataTransfer?.setData('text/plain', String(dragged)); });
   container.addEventListener('dragend', () => { dragged = null; });
-  container.addEventListener('dragover', event => { if (event.target.closest('.drag-match-drop')) event.preventDefault(); });
-  container.addEventListener('drop', event => { const drop = event.target.closest('.drag-match-drop'); if (!drop) return; event.preventDefault(); const select = drop.querySelector('[data-drag-select]'); const index = Number(event.dataTransfer?.getData('text/plain') || dragged); select.value = String(index); select.dispatchEvent(new Event('change', { bubbles: true })); });
-  container.addEventListener('click', event => { const chip = event.target.closest('[data-drag-right]'); if (!chip) return; const target = Number(chip.dataset.dragRight); const open = [...container.querySelectorAll('[data-drag-select]')].find(select => !select.disabled && select.value === ''); const select = open || container.querySelector(`${selector} [data-drag-select]`); if (select) { select.value = String(target); select.dispatchEvent(new Event('change', { bubbles: true })); } });
+  container.addEventListener('dragover', event => { if (event.target.closest('[data-drag-slot]')) event.preventDefault(); });
+  container.addEventListener('drop', event => { const slot = event.target.closest('[data-drag-slot]'); if (!slot) return; event.preventDefault(); const select = container.querySelector(`[data-drag-select="${slot.dataset.dragSlot}"]`); const index = Number(event.dataTransfer?.getData('text/plain') || dragged); if (select && index >= 0) { select.value = String(index); select.dispatchEvent(new Event('change', { bubbles: true })); } });
+  container.addEventListener('click', event => {
+    const slot = event.target.closest('[data-drag-slot]');
+    if (slot) { const select = container.querySelector(`[data-drag-select="${slot.dataset.dragSlot}"]`); if (select?.value) { select.value = ''; select.dispatchEvent(new Event('change', { bubbles: true })); } return; }
+    const chip = event.target.closest('[data-drag-right]'); if (!chip) return;
+    const target = Number(chip.dataset.dragRight); const open = [...container.querySelectorAll('[data-drag-select]')].find(select => !select.disabled && select.value === ''); const select = open || container.querySelector('[data-drag-select]'); if (select) { select.value = String(target); select.dispatchEvent(new Event('change', { bubbles: true })); }
+  });
+  container.addEventListener('change', event => {
+    const select = event.target.closest('[data-drag-select]'); if (!select) return;
+    const slot = container.querySelector(`[data-drag-slot="${select.dataset.dragSelect}"]`); if (!slot) return;
+    const text = select.selectedOptions[0]?.textContent || 'Drop answer here'; const chosen = select.value !== '';
+    slot.querySelector('span').textContent = chosen ? text : 'Drop answer here'; slot.classList.toggle('has-match', chosen);
+    slot.setAttribute('aria-label', chosen ? `Remove ${text} from this match` : 'Drop a match here');
+  });
 }
 function hasImage(q) { return /<img\b/i.test(q.questionHtml || ''); }
 function isCorrectOption(q, option) { return (q.correctAnswers || []).some(a => normalize(a) === normalize(option)); }
