@@ -178,6 +178,9 @@ function currentQuestion(state, index) {
     question: question.question,
     questionHtml: question.questionHtml,
     type: question.type,
+    matching: question.type === 'matching_question',
+    dragItems: question.type === 'matching_question' ? question.dragPairs.map(pair => pair.item) : undefined,
+    dragTargets: question.type === 'matching_question' ? round.matchTargetOrder.map(targetIndex => question.dragPairs[targetIndex].target) : undefined,
     multiple: question.correctAnswers.length > 1,
     options: question.type === 'short_answer_question'
       ? []
@@ -384,6 +387,7 @@ function handleStart(room, player, now) {
   room.sequence = selected.map((question, index) => ({
     id: question.id,
     optionOrder: shuffled(question.options.map((_, optionIndex) => optionIndex)),
+    matchTargetOrder: question.type === 'matching_question' ? shuffled(question.dragPairs.map((_, targetIndex) => targetIndex)) : undefined,
     revealAt: now + index * ROUND_MS + QUESTION_MS,
     endsAt: now + (index + 1) * ROUND_MS
   }));
@@ -424,7 +428,9 @@ function handleAnswer(room, player, now, body) {
   if (!question) throw new ApiError(503, 'Question unavailable.');
   const answer = normalizeSubmittedAnswer(body.answer);
   const selected = Array.isArray(answer) ? answer : [answer];
-  if (question.type !== 'short_answer_question' && selected.some(item => !question.options.some(option => normalizeAnswer(option) === normalizeAnswer(item)))) {
+  if (question.type === 'matching_question') {
+    if (!Array.isArray(answer) || answer.length !== question.dragPairs.length || answer.some(item => !question.correctAnswers.some(correct => normalizeAnswer(correct) === normalizeAnswer(item)))) throw new ApiError(400, 'Complete each matching pair.');
+  } else if (question.type !== 'short_answer_question' && selected.some(item => !question.options.some(option => normalizeAnswer(option) === normalizeAnswer(item)))) {
     throw new ApiError(400, 'Choose one of the displayed answers.');
   }
   const previous = player.answers[time.index];

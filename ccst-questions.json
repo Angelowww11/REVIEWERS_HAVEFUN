@@ -200,68 +200,158 @@
       "id": 12,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 18,
-      "type": "multiple_choice_question",
-      "question": "A secure file transfer uses SSH keys and TCP port 22. Which protocol provides this service?",
-      "questionHtml": "<p>A secure file transfer uses SSH keys and TCP port 22. Which protocol provides this service?</p>",
+      "type": "matching_question",
+      "question": "Move each of the protocol on the left to its their characteristics on the right [SFTP, TFTP, DNS, DHCP, ICMP] •Enables the use of SSH keys to prevent impostor from connecting to the server. •Ensures data integrity and data security for the file transfers using port 22. •Enables backup of network and router configuration files using UDP. •Transfer small files within a LAN using port 69. •Perform a query to translate companypro.net to an IP Address. •Assign the reserved IP Address 10.10.10.200 to a web server at your company. •Perform a ping to ensure that a server is responding to network connections. Match each item to its correct description.",
+      "questionHtml": "<p>Move each of the protocol on the left to its their characteristics on the right [SFTP, TFTP, DNS, DHCP, ICMP] •Enables the use of SSH keys to prevent impostor from connecting to the server. •Ensures data integrity and data security for the file transfers using port 22. •Enables backup of network and router configuration files using UDP. •Transfer small files within a LAN using port 69. •Perform a query to translate companypro.net to an IP Address. •Assign the reserved IP Address 10.10.10.200 to a web server at your company. •Perform a ping to ensure that a server is responding to network connections. Match each item to its correct description.</p>",
       "options": [
         "SFTP",
         "TFTP",
         "DNS",
+        "DHCP",
         "ICMP"
       ],
       "correctAnswers": [
-        "SFTP"
+        "SFTP → SSH key file transfer, port 22",
+        "TFTP → UDP transfers on port 69",
+        "DNS → Resolves domain names to IP addresses",
+        "DHCP → Reserves a server IP address",
+        "ICMP → Ping requests and replies"
+      ],
+      "dragPairs": [
+        {
+          "item": "SFTP",
+          "target": "SSH key file transfer, port 22"
+        },
+        {
+          "item": "TFTP",
+          "target": "UDP transfers on port 69"
+        },
+        {
+          "item": "DNS",
+          "target": "Resolves domain names to IP addresses"
+        },
+        {
+          "item": "DHCP",
+          "target": "Reserves a server IP address"
+        },
+        {
+          "item": "ICMP",
+          "target": "Ping requests and replies"
+        }
       ]
     },
     {
       "id": 13,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 19,
-      "type": "multiple_choice_question",
-      "question": "Which device operates at the OSI Data Link layer to forward frames using MAC addresses?",
-      "questionHtml": "<p>Which device operates at the OSI Data Link layer to forward frames using MAC addresses?</p>",
+      "type": "matching_question",
+      "question": "Move each protocol or device type from the list on the left to the correct OSI layer on the right. Protocol and Device Type. • Physical SMTP, FTP • Data Link TCP,UDP • Network Cable Hub, NIC • Application Switch • Transport Router Match each item to its correct description.",
+      "questionHtml": "<p>Move each protocol or device type from the list on the left to the correct OSI layer on the right. Protocol and Device Type. • Physical SMTP, FTP • Data Link TCP,UDP • Network Cable Hub, NIC • Application Switch • Transport Router Match each item to its correct description.</p>",
       "options": [
-        "Router",
-        "Switch",
-        "Hub",
-        "DNS server"
+        "Application",
+        "Transport",
+        "Physical",
+        "Data Link",
+        "Network"
       ],
       "correctAnswers": [
-        "Switch"
+        "Application → SMTP and FTP",
+        "Transport → TCP and UDP",
+        "Physical → Cable, hub, and NIC",
+        "Data Link → Switch",
+        "Network → Router"
+      ],
+      "dragPairs": [
+        {
+          "item": "Application",
+          "target": "SMTP and FTP"
+        },
+        {
+          "item": "Transport",
+          "target": "TCP and UDP"
+        },
+        {
+          "item": "Physical",
+          "target": "Cable, hub, and NIC"
+        },
+        {
+          "item": "Data Link",
+          "target": "Switch"
+        },
+        {
+          "item": "Network",
+          "target": "Router"
+        }
       ]
     },
     {
       "id": 14,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 20,
-      "type": "multiple_choice_question",
-      "question": "In the four-layer TCP/IP model, which layer includes Ethernet?",
-      "questionHtml": "<p>In the four-layer TCP/IP model, which layer includes Ethernet?</p>",
+      "type": "matching_question",
+      "question": "Move each protocol from the list on the left to the correct TCP/IP model layer on the right. • TCP Internetwork • IP Application • FTP Transport • Network Ethernet Match each item to its correct description.",
+      "questionHtml": "<p>Move each protocol from the list on the left to the correct TCP/IP model layer on the right. • TCP Internetwork • IP Application • FTP Transport • Network Ethernet Match each item to its correct description.</p>",
       "options": [
-        "Application",
-        "Transport",
-        "Internet",
-        "Network Access"
+        "TCP",
+        "IP",
+        "FTP",
+        "Ethernet"
       ],
       "correctAnswers": [
-        "Network Access"
+        "TCP → Transport",
+        "IP → Internet",
+        "FTP → Application",
+        "Ethernet → Network Access"
+      ],
+      "dragPairs": [
+        {
+          "item": "TCP",
+          "target": "Transport"
+        },
+        {
+          "item": "IP",
+          "target": "Internet"
+        },
+        {
+          "item": "FTP",
+          "target": "Application"
+        },
+        {
+          "item": "Ethernet",
+          "target": "Network Access"
+        }
       ]
     },
     {
       "id": 15,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 21,
-      "type": "multiple_choice_question",
-      "question": "Which network type typically connects personal devices over a short range, such as a phone and Bluetooth headset?",
-      "questionHtml": "<p>Which network type typically connects personal devices over a short range, such as a phone and Bluetooth headset?</p>",
+      "type": "matching_question",
+      "question": "Move each category on the left to its correct definition on the right LAN PAN WAN •Connects devices such as computers, telephones, tables, and printers within a range of about 10 meters. •Spans a small area such as a room, home, office building or small group of building. •Spans a large geographical distance and connects smaller networks over leased lines and VPN’s or tunnels. Match each item to its correct description.",
+      "questionHtml": "<p>Move each category on the left to its correct definition on the right LAN PAN WAN •Connects devices such as computers, telephones, tables, and printers within a range of about 10 meters. •Spans a small area such as a room, home, office building or small group of building. •Spans a large geographical distance and connects smaller networks over leased lines and VPN’s or tunnels. Match each item to its correct description.</p>",
       "options": [
-        "WAN",
         "PAN",
-        "MAN",
-        "CAN"
+        "LAN",
+        "WAN"
       ],
       "correctAnswers": [
-        "PAN"
+        "PAN → Personal devices within about 10 meters",
+        "LAN → Room or office network",
+        "WAN → Long-distance network"
+      ],
+      "dragPairs": [
+        {
+          "item": "PAN",
+          "target": "Personal devices within about 10 meters"
+        },
+        {
+          "item": "LAN",
+          "target": "Room or office network"
+        },
+        {
+          "item": "WAN",
+          "target": "Long-distance network"
+        }
       ]
     },
     {
@@ -300,17 +390,32 @@
       "id": 18,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 24,
-      "type": "multiple_choice_question",
-      "question": "A user pays monthly to use a hosted graphics-design app in a web browser. Which cloud service model is this?",
-      "questionHtml": "<p>A user pays monthly to use a hosted graphics-design app in a web browser. Which cloud service model is this?</p>",
+      "type": "matching_question",
+      "question": "Move each cloud computing service model from the list on the left to the correct example on the right. LAAS SAAS PAAS •A company develops application using cloud-based resources and tools. •These virtual machines are connected by a virtual network in the cloud •User access a web-based graphics design application in the cloud for a monthly fee Match each item to its correct description.",
+      "questionHtml": "<p>Move each cloud computing service model from the list on the left to the correct example on the right. LAAS SAAS PAAS •A company develops application using cloud-based resources and tools. •These virtual machines are connected by a virtual network in the cloud •User access a web-based graphics design application in the cloud for a monthly fee Match each item to its correct description.</p>",
       "options": [
-        "IaaS",
         "PaaS",
-        "SaaS",
-        "On-premises"
+        "IaaS",
+        "SaaS"
       ],
       "correctAnswers": [
-        "SaaS"
+        "PaaS → Application development platform",
+        "IaaS → Virtual machines and storage",
+        "SaaS → Web-based software"
+      ],
+      "dragPairs": [
+        {
+          "item": "PaaS",
+          "target": "Application development platform"
+        },
+        {
+          "item": "IaaS",
+          "target": "Virtual machines and storage"
+        },
+        {
+          "item": "SaaS",
+          "target": "Web-based software"
+        }
       ]
     },
     {
@@ -642,68 +747,128 @@
       "id": 38,
       "sourceFile": "Certification · Security",
       "sourcePage": 49,
-      "type": "multiple_choice_question",
-      "question": "A digital signature used to detect unauthorized changes to a message supports which CIA security principle?",
-      "questionHtml": "<p>A digital signature used to detect unauthorized changes to a message supports which CIA security principle?</p>",
+      "type": "matching_question",
+      "question": "Move the CIA security principles from the list on the left to its example on the right. Confidentiality- Integrity- Availability You generate a digital signature and attach it to a message You encrypt a sensitive email message You configure three redundant web servers at your company - Match each item to its correct description.",
+      "questionHtml": "<p>Move the CIA security principles from the list on the left to its example on the right. Confidentiality- Integrity- Availability You generate a digital signature and attach it to a message You encrypt a sensitive email message You configure three redundant web servers at your company - Match each item to its correct description.</p>",
       "options": [
-        "Availability",
-        "Confidentiality",
         "Integrity",
-        "Authentication"
+        "Confidentiality",
+        "Availability"
       ],
       "correctAnswers": [
-        "Integrity"
+        "Integrity → Digital signature detects changes",
+        "Confidentiality → Encrypt an email",
+        "Availability → Redundant web servers"
+      ],
+      "dragPairs": [
+        {
+          "item": "Integrity",
+          "target": "Digital signature detects changes"
+        },
+        {
+          "item": "Confidentiality",
+          "target": "Encrypt an email"
+        },
+        {
+          "item": "Availability",
+          "target": "Redundant web servers"
+        }
       ]
     },
     {
       "id": 39,
       "sourceFile": "Certification · Security",
       "sourcePage": 50,
-      "type": "multiple_choice_question",
-      "question": "A one-time security code sent to a phone is which authentication factor?",
-      "questionHtml": "<p>A one-time security code sent to a phone is which authentication factor?</p>",
+      "type": "matching_question",
+      "question": "Move the MFA factors from the list on the left to their correct examples on he right Factors: Possession , Inference, Knowledge Specifying your name and password to log on to a service Entering a one-time security code send to your device after logging in Holding your phone to your face to be recognized Match each item to its correct description.",
+      "questionHtml": "<p>Move the MFA factors from the list on the left to their correct examples on he right Factors: Possession , Inference, Knowledge Specifying your name and password to log on to a service Entering a one-time security code send to your device after logging in Holding your phone to your face to be recognized Match each item to its correct description.</p>",
       "options": [
         "Knowledge",
         "Possession",
-        "Inherence",
-        "Location"
+        "Inherence"
       ],
       "correctAnswers": [
-        "Possession"
+        "Knowledge → Username and password",
+        "Possession → One-time device code",
+        "Inherence → Face recognition"
+      ],
+      "dragPairs": [
+        {
+          "item": "Knowledge",
+          "target": "Username and password"
+        },
+        {
+          "item": "Possession",
+          "target": "One-time device code"
+        },
+        {
+          "item": "Inherence",
+          "target": "Face recognition"
+        }
       ]
     },
     {
       "id": 40,
       "sourceFile": "Certification · Security",
       "sourcePage": 51,
-      "type": "multiple_choice_question",
-      "question": "Which wireless security mode commonly authenticates users through a RADIUS server?",
-      "questionHtml": "<p>Which wireless security mode commonly authenticates users through a RADIUS server?</p>",
+      "type": "matching_question",
+      "question": "Move the security options from the list on the left to its characteristics on the right. You may use each security option once, more than once, or not at all. Security Options: WEP, WPA2- Personal, WPA-Enterprise Uses a minimum of 40 bits for encryption Use a RADIU Server for authentication Use AES and a pre-shared key for authentication Match each item to its correct description.",
+      "questionHtml": "<p>Move the security options from the list on the left to its characteristics on the right. You may use each security option once, more than once, or not at all. Security Options: WEP, WPA2- Personal, WPA-Enterprise Uses a minimum of 40 bits for encryption Use a RADIU Server for authentication Use AES and a pre-shared key for authentication Match each item to its correct description.</p>",
       "options": [
         "WEP",
-        "WPA2-Personal",
         "WPA-Enterprise",
-        "Open authentication"
+        "WPA2-Personal"
       ],
       "correctAnswers": [
-        "WPA-Enterprise"
+        "WEP → 40-bit encryption",
+        "WPA-Enterprise → RADIUS authentication",
+        "WPA2-Personal → AES and pre-shared key"
+      ],
+      "dragPairs": [
+        {
+          "item": "WEP",
+          "target": "40-bit encryption"
+        },
+        {
+          "item": "WPA-Enterprise",
+          "target": "RADIUS authentication"
+        },
+        {
+          "item": "WPA2-Personal",
+          "target": "AES and pre-shared key"
+        }
       ]
     },
     {
       "id": 41,
       "sourceFile": "Certification · Security",
       "sourcePage": 52,
-      "type": "multiple_choice_question",
-      "question": "Which home-router setting disables the push-button connection method?",
-      "questionHtml": "<p>Which home-router setting disables the push-button connection method?</p>",
+      "type": "matching_question",
+      "question": "You need to configure wireless settings for a home router. Move the actions from the list on the left to the correct scenarios on the right. • You want to prevent users from using the pushbutton method for accessing the. • You want devices to use a pre-shared key when connecting to the network. • You want to prevent devices from discovering the name of the WIFI network o Set the security mode to WPA2-PSK o Disable SSID broadcasting o Disable WPS Match each item to its correct description.",
+      "questionHtml": "<p>You need to configure wireless settings for a home router. Move the actions from the list on the left to the correct scenarios on the right. • You want to prevent users from using the pushbutton method for accessing the. • You want devices to use a pre-shared key when connecting to the network. • You want to prevent devices from discovering the name of the WIFI network o Set the security mode to WPA2-PSK o Disable SSID broadcasting o Disable WPS Match each item to its correct description.</p>",
       "options": [
         "Disable WPS",
-        "Disable DHCP",
-        "Hide the SSID",
-        "Enable port forwarding"
+        "Set WPA2-PSK",
+        "Disable SSID broadcast"
       ],
       "correctAnswers": [
-        "Disable WPS"
+        "Disable WPS → Stop push-button access",
+        "Set WPA2-PSK → Use a pre-shared key",
+        "Disable SSID broadcast → Hide Wi-Fi name"
+      ],
+      "dragPairs": [
+        {
+          "item": "Disable WPS",
+          "target": "Stop push-button access"
+        },
+        {
+          "item": "Set WPA2-PSK",
+          "target": "Use a pre-shared key"
+        },
+        {
+          "item": "Disable SSID broadcast",
+          "target": "Hide Wi-Fi name"
+        }
       ]
     },
     {
@@ -898,17 +1063,38 @@
       "id": 53,
       "sourceFile": "Certification · Infrastructure",
       "sourcePage": 68,
-      "type": "multiple_choice_question",
-      "question": "In the rack diagram, which cable type is appropriate for the link between the two routers over the underground conduit?",
-      "questionHtml": "<p>In the rack diagram, which cable type is appropriate for the link between the two routers over the underground conduit?</p><p><img src=\"exhibits/ccst_notebook_68.jpg\" alt=\"Reviewer exhibit for slide 68\"></p>",
+      "type": "matching_question",
+      "question": "Examine the connections shown in the following image. Move the cable types on the right to the appropriate connection description on the left. You may use each cable type more than once or not at all. • Straight-through UTP Cable • Fiber Optic • Crossover UTP Cable • Straight-through UTP Match each item to its correct description.",
+      "questionHtml": "<p>Examine the connections shown in the following image. Move the cable types on the right to the appropriate connection description on the left. You may use each cable type more than once or not at all. • Straight-through UTP Cable • Fiber Optic • Crossover UTP Cable • Straight-through UTP Match each item to its correct description.</p><p><img src=\"exhibits/ccst_notebook_68.jpg\" alt=\"Reviewer exhibit for slide 68\"></p>",
       "options": [
-        "Straight-through UTP",
-        "Crossover UTP",
-        "Fiber-optic cable",
-        "RJ-11 telephone cable"
+        "Switch to R1 Gi0/0/1",
+        "R2 to R3 underground conduit",
+        "R1 Gi0/0/0 to R2 Gi0/0/1",
+        "Switch S3 to Server0 NIC"
       ],
       "correctAnswers": [
-        "Fiber-optic cable"
+        "Switch to R1 Gi0/0/1 → Straight-through UTP",
+        "R2 to R3 underground conduit → Fiber-optic cable",
+        "R1 Gi0/0/0 to R2 Gi0/0/1 → Crossover UTP",
+        "Switch S3 to Server0 NIC → Straight-through UTP"
+      ],
+      "dragPairs": [
+        {
+          "item": "Switch to R1 Gi0/0/1",
+          "target": "Straight-through UTP"
+        },
+        {
+          "item": "R2 to R3 underground conduit",
+          "target": "Fiber-optic cable"
+        },
+        {
+          "item": "R1 Gi0/0/0 to R2 Gi0/0/1",
+          "target": "Crossover UTP"
+        },
+        {
+          "item": "Switch S3 to Server0 NIC",
+          "target": "Straight-through UTP"
+        }
       ]
     },
     {
@@ -990,17 +1176,32 @@
       "id": 58,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 75,
-      "type": "multiple_choice_question",
-      "question": "The diagram shows PC-A on 172.100.0.0/16, Router1 at 172.100.0.1, and a server at 172.100.0.254. With no DHCP server, which PC-A configuration is valid?",
-      "questionHtml": "<p>The diagram shows PC-A on 172.100.0.0/16, Router1 at 172.100.0.1, and a server at 172.100.0.254. With no DHCP server, which PC-A configuration is valid?</p><p><img src=\"exhibits/ccst_notebook_75.jpg\" alt=\"Reviewer exhibit for slide 75\"></p>",
+      "type": "matching_question",
+      "question": "An administrator is configuring the host PC-A on the network shown in the following graphic. PC-A must be able to communicate on the local network and on the internet. There is no DHCP server on the network. What information does the administrator need to input in the IPV4 protocol properties window? Match each item to its correct description.",
+      "questionHtml": "<p>An administrator is configuring the host PC-A on the network shown in the following graphic. PC-A must be able to communicate on the local network and on the internet. There is no DHCP server on the network. What information does the administrator need to input in the IPV4 protocol properties window? Match each item to its correct description.</p><p><img src=\"exhibits/ccst_notebook_75.jpg\" alt=\"Reviewer exhibit for slide 75\"></p>",
       "options": [
-        "IP 172.100.0.1, mask 255.255.0.0, gateway 172.100.0.254",
-        "IP 172.100.0.10, mask 255.255.0.0, gateway 172.100.0.1",
-        "IP 172.100.0.254, mask 255.255.255.0, gateway 172.100.0.10",
-        "IP 172.100.1.1, mask 255.255.255.0, no gateway"
+        "IP address",
+        "Subnet mask",
+        "Default gateway"
       ],
       "correctAnswers": [
-        "IP 172.100.0.10, mask 255.255.0.0, gateway 172.100.0.1"
+        "IP address → Unused host in 172.100.0.0/16, e.g. 172.100.0.10",
+        "Subnet mask → 255.255.0.0",
+        "Default gateway → 172.100.0.1"
+      ],
+      "dragPairs": [
+        {
+          "item": "IP address",
+          "target": "Unused host in 172.100.0.0/16, e.g. 172.100.0.10"
+        },
+        {
+          "item": "Subnet mask",
+          "target": "255.255.0.0"
+        },
+        {
+          "item": "Default gateway",
+          "target": "172.100.0.1"
+        }
       ]
     },
     {

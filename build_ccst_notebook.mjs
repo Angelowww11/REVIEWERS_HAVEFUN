@@ -6,7 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE = __dirname;
 const SOURCE = path.resolve(SITE, '../../CCST_Networking_Reviewer_Notebook_Detailed-2.html');
 const exhibitDir = path.join(SITE, 'exhibits');
-const raw = fs.readFileSync(SOURCE, 'utf8');
+let raw = fs.readFileSync(SOURCE, 'utf8');
 const marker = 'const D=';
 const start = raw.indexOf(marker);
 if (start < 0) throw new Error('Reviewer question data was not found.');
@@ -20,6 +20,7 @@ for (; i < raw.length; i++) {
 }
 const sections = JSON.parse(raw.slice(start + marker.length, i + 1));
 const dropPages = new Set([11, 25, 28, 31, 77, 94, 99]);
+const dragPages = new Set([18, 19, 20, 21, 24, 49, 50, 51, 52, 68, 75]);
 const pageNotes = {
   5: 'The source has a typo in the host address and highlights a wrong prefix. The supplied mask has 22 one-bits, so keep the stated host address and use /22.',
   8: '255.255.252.0 has 22 one-bits, so the prefix is /22.',
@@ -68,7 +69,47 @@ const replacements = {
   91: { question: 'A PC has IPv4 address 192.168.0.14/24 and default gateway 192.168.0.1. Which command checks whether the gateway responds?', options: ['ping 192.168.0.1', 'nslookup 192.168.0.1', 'tracert 8.8.8.8', 'ipconfig /renew'], correct: [0] },
   92: { question: 'Which command queries DNS for the IPv4 addresses associated with www.companypro.net?', options: ['ipconfig www.companypro.net', 'nslookup www.companypro.net', 'ping /dns www.companypro.net', 'tracert www.companypro.net'], correct: [1] },
   95: { question: 'Which Cisco IOS command displays the neighbor table shown in the exhibit?', options: ['show ip route', 'show mac address-table', 'show cdp neighbors', 'show interfaces status'], correct: [2] }
+,
+  18: { dragPairs: [['SFTP','SSH key file transfer, port 22'],['TFTP','UDP transfers on port 69'],['DNS','Resolves domain names to IP addresses'],['DHCP','Reserves a server IP address'],['ICMP','Ping requests and replies']] },
+  19: { dragPairs: [['Application','SMTP and FTP'],['Transport','TCP and UDP'],['Physical','Cable, hub, and NIC'],['Data Link','Switch'],['Network','Router']] },
+  20: { dragPairs: [['TCP','Transport'],['IP','Internet'],['FTP','Application'],['Ethernet','Network Access']] },
+  21: { dragPairs: [['PAN','Personal devices within about 10 meters'],['LAN','Room or office network'],['WAN','Long-distance network']] },
+  24: { dragPairs: [['PaaS','Application development platform'],['IaaS','Virtual machines and storage'],['SaaS','Web-based software']] },
+  49: { dragPairs: [['Integrity','Digital signature detects changes'],['Confidentiality','Encrypt an email'],['Availability','Redundant web servers']] },
+  50: { dragPairs: [['Knowledge','Username and password'],['Possession','One-time device code'],['Inherence','Face recognition']] },
+  51: { dragPairs: [['WEP','40-bit encryption'],['WPA-Enterprise','RADIUS authentication'],['WPA2-Personal','AES and pre-shared key']] },
+  52: { dragPairs: [['Disable WPS','Stop push-button access'],['Set WPA2-PSK','Use a pre-shared key'],['Disable SSID broadcast','Hide Wi-Fi name']] },
+  68: { dragPairs: [['Switch to R1 Gi0/0/1','Straight-through UTP'],['R2 to R3 underground conduit','Fiber-optic cable'],['R1 Gi0/0/0 to R2 Gi0/0/1','Crossover UTP'],['Switch S3 to Server0 NIC','Straight-through UTP']] },
+  75: { dragPairs: [['IP address','Unused host in 172.100.0.0/16, e.g. 172.100.0.10'],['Subnet mask','255.255.0.0'],['Default gateway','172.100.0.1']] }
 };
+
+const questions = [], explanations = {}, seen = new Map();
+for (const [section, cards] of sections) for (const card of cards) {
+  const [page, sourceQuestion, rawOptions, key, sourceExplanation, sourceNote, pictures] = card;
+  if (dropPages.has(page)) continue;
+  const patch = replacements[page] || {};
+  let question = patch.question || sourceQuestion.replace(/\s+/g, ' ').trim();
+  let options = (patch.options || rawOptions.map(([, text]) => text)).map(text => text.trim());
+  const dragPairs = dragPages.has(page) ? (patch.dragPairs || key.split('·').map(pair => pair.split('→').map(value => value.trim())).filter(pair => pair.length === 2)) : null;
+  if (dragPages.has(page)) { if (!dragPairs || dragPairs.length < 2) throw new Error(`Slide ${page} has no answer pairs.`); question += ' Match each item to its correct description.'; }
+  let correctAnswers = patch.correct ? patch.correct.map(index => options[index]) : [...key].map(letter => rawOptions.find(([label]) => label === letter)?.[1]?.trim()).filter(Boolean);
+  if (!correctAnswers.length && !dragPairs) throw new Error(`Question on slide ${page} has no usable key.`);
+  if (page === 36) { question = 'What packets does OSPF use to discover neighbors and form adjacencies?'; options = ['Hello packets carried directly over IP', 'TCP SYN packets on port 179', 'ARP requests', 'DHCP Discover messages']; correctAnswers = [options[0]]; }
+  const answers = dragPairs ? dragPairs.map(pair => `${pair[0]} → ${pair[1]}`) : correctAnswers;
+  const signature = question.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const answerSignature = answers.map(a => a.toLowerCase().replace(/[^a-z0-9]/g, '')).sort().join('|');
+  if (seen.has(signature) && seen.get(signature) === answerSignature) continue;
+  seen.set(signature, answerSignature);
+  const id = questions.length + 1;
+  let questionHtml = `<p>${escapeHTML(question)}</p>`;
+  if (pictures?.length) { const filename = `ccst_notebook_${page}.jpg`; const imageData = pictures[0]; if (!imageData.startsWith('data:image/jpeg;base64,')) throw new Error(`Unexpected exhibit encoding on slide ${page}.`); fs.writeFileSync(path.join(exhibitDir, filename), Buffer.from(imageData.split(',')[1], 'base64')); questionHtml += `<p><img src="exhibits/${filename}" alt="Reviewer exhibit for slide ${page}"></p>`; }
+  questions.push({ id, sourceFile: `Certification · ${section}`, sourcePage: page, type: dragPairs ? 'matching_question' : 'multiple_choice_question', question, questionHtml, options: dragPairs ? dragPairs.map(pair => pair[0]) : options, correctAnswers: answers, ...(dragPairs ? { dragPairs: dragPairs.map(pair => ({ item: pair[0], target: pair[1] })) } : {}) });
+  let explanation = patch.explanation || sourceExplanation || '';
+  if (pageNotes[page] && !explanation.includes(pageNotes[page])) explanation += `${explanation ? ' ' : ''}${pageNotes[page]}`;
+  if (page === 36) explanation = pageNotes[36];
+  explanations[String(id)] = explanation.trim();
+}
+function escapeHTML(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 const supplemental = [
   ['Standards & Concepts','What does network throughput measure?',['The maximum theoretical capacity of a link','The amount of data successfully transferred over time','The physical cable length','The number of addresses in a subnet'],'The amount of data successfully transferred over time','Bandwidth describes capacity; throughput is the achieved data-transfer rate.'],
   ['Standards & Concepts','Which DNS record type maps a host name to an IPv6 address?',['A','AAAA','MX','CNAME'],'AAAA','An AAAA record stores an IPv6 address; an A record stores IPv4.'],
@@ -92,72 +133,6 @@ const supplemental = [
   ['Security','Which security principle is most directly supported by encrypting a sensitive email so unauthorized people cannot read it?',['Confidentiality','Availability','Routing','Address translation'],'Confidentiality','Encryption helps keep information secret from people who are not authorized to read it.']
 ];
 
-const questions = [], explanations = {}, seen = new Map();
-for (const [section, cards] of sections) for (const card of cards) {
-  const [page, sourceQuestion, rawOptions, key, sourceExplanation, sourceNote, pictures] = card;
-  if (dropPages.has(page)) continue;
-  const patch = replacements[page] || {};
-  let question = patch.question || sourceQuestion.replace(/\s+/g, ' ').trim();
-  let options = (patch.options || rawOptions.map(([, text]) => text)).map(text => text.trim());
-  let correctAnswers = patch.correct ? patch.correct.map(index => options[index]) : [...key].map(letter => {
-    const found = rawOptions.find(([label]) => label === letter);
-    if (!found) throw new Error(`Answer key ${key} on slide ${page} does not map to an option.`);
-    return found[1].trim();
-  });
-  if (page === 36) {
-    question = 'What packets does OSPF use to discover neighbors and form adjacencies?';
-    options = ['Hello packets carried directly over IP', 'TCP SYN packets on port 179', 'ARP requests', 'DHCP Discover messages'];
-    correctAnswers = [options[0]];
-  }
-  if (page === 45) question = replacements[45].question;
-  if (page === 61) question = replacements[61].question;
-  if (page === 68) question = replacements[68].question;
-  if (page === 75) question = replacements[75].question;
-  if (page === 87) question = replacements[87].question;
-  if (page === 88) question = replacements[88].question;
-  if (page === 89) question = replacements[89].question;
-  if (page === 90) question = replacements[90].question;
-  if (page === 91) question = replacements[91].question;
-  if (page === 92) question = replacements[92].question;
-  if (page === 95) question = replacements[95].question;
-
-  const signature = question.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const answerSignature = correctAnswers.map(a => a.toLowerCase().replace(/[^a-z0-9]/g, '')).sort().join('|');
-  if (seen.has(signature) && seen.get(signature) === answerSignature) continue;
-  seen.set(signature, answerSignature);
-  const id = questions.length + 1;
-  let questionHtml = `<p>${escapeHTML(question).replace(/\n/g, '<br>')}</p>`;
-  if (pictures?.length) {
-    const filename = `ccst_notebook_${page}.jpg`;
-    const imageData = pictures[0];
-    if (!imageData.startsWith('data:image/jpeg;base64,')) throw new Error(`Unexpected exhibit encoding on slide ${page}.`);
-    fs.writeFileSync(path.join(exhibitDir, filename), Buffer.from(imageData.split(',')[1], 'base64'));
-    questionHtml += `<p><img src="exhibits/${filename}" alt="Reviewer exhibit for slide ${page}"></p>`;
-  }
-  questions.push({
-    id, sourceFile: `Certification · ${section}`, sourcePage: page,
-    type: 'multiple_choice_question', question, questionHtml, options, correctAnswers
-  });
-  let explanation = patch.explanation || sourceExplanation || '';
-  if (page === 36) explanation = 'OSPF uses Hello packets to discover and maintain neighbor relationships. OSPF is carried directly over IP protocol 89, not TCP or UDP.';
-  if (page === 23) explanation = 'Latency is the delay before data arrives; it does not change the link’s rated bandwidth. High latency can reduce measured throughput for some applications.';
-  if (page === 45) explanation = 'A firewall can filter or block traffic by rule. A firewall may also forward web traffic when a destination-NAT/port-forwarding rule is configured, but it does not stop an application from launching on a PC.';
-  if (page === 61) explanation = pageNotes[61];
-  if (page === 75) explanation = 'PC-A must use an unused address in 172.100.0.0/16, avoid the router at .1 and server at .254, use mask 255.255.0.0, and set the router’s LAN address 172.100.0.1 as its gateway.';
-  if (page === 81) explanation = pageNotes[81];
-  if (page === 85) explanation = pageNotes[85];
-  if (page === 87) explanation = pageNotes[87];
-  if (page === 88) explanation = pageNotes[88];
-  if (page === 89) explanation = pageNotes[89];
-  if (page === 90) explanation = pageNotes[90];
-  if (page === 91) explanation = pageNotes[91];
-  if (page === 92) explanation = 'nslookup asks DNS for records associated with a host name; the default query returns address records.';
-  if (page === 95) explanation = pageNotes[95];
-  const correction = pageNotes[page] || sourceNote;
-  if (correction && !explanation.includes(correction)) explanation = `${explanation}${explanation ? ' ' : ''}${correction}`;
-  explanations[String(id)] = explanation.trim();
-}
-function escapeHTML(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 for (const [category, question, options, answer, explanation] of supplemental) {
   const id = questions.length + 1;
   questions.push({ id, sourceFile: `Certification · ${category}`, sourcePage: null, type: 'multiple_choice_question', question, questionHtml: `<p>${escapeHTML(question)}</p>`, options, correctAnswers: [answer] });

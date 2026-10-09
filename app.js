@@ -59,7 +59,7 @@ function saveRankedRun() {
     used: g.used, activeShield: g.activeShield, elapsedMs: Math.max(0, now - g.startedAt),
     questionElapsedMs: Math.max(0, now - g.questionAt), remainingTime: g.remainingTime,
     freezeRemainingMs: Math.max(0, g.freezeUntil - now), events: g.events, history: g.history, ghost: g.ghost,
-    firstCorrect: g.firstCorrect, lastResult: g.lastResult || null,
+    firstCorrect: g.firstCorrect, lastResult: g.lastResult || null, dragMapping: g.dragMapping,
     draftAnswer: $('answerInput')?.value || '', stage: $('gameContent')?.querySelector('.wager-card') ? 'wager' : 'question'
   });
 }
@@ -94,7 +94,32 @@ function lifetimeRankedPoints() { return Math.max(0, Number(app.stats.rankedPoin
 function badgeForPoints(points) { return [...badgeTiers].reverse().find(tier => points >= tier.points) || badgeTiers[0]; }
 function leaderboardBadge(entry) { return badgeForPoints(Number(entry.lifetimePoints ?? entry.score) || 0); }
 function sourceName(q) { if (q.sourcePage) return `Reviewer p. ${q.sourcePage}`; const match = String(q.sourceFile || '').match(/pool\s+(\w+)/i); return match ? `Pool ${match[1].replace(/^./, c => c.toUpperCase())}` : 'Question pool'; }
-function typeName(q) { return q.type === 'true_false_question' ? 'True / false' : q.type === 'short_answer_question' ? 'Short answer' : q.correctAnswers.length > 1 ? 'Multiple answers' : 'Multiple choice'; }
+function typeName(q) { return q.type === 'matching_question' ? 'Drag to match' : q.type === 'true_false_question' ? 'True / false' : q.type === 'short_answer_question' ? 'Short answer' : q.correctAnswers.length > 1 ? 'Multiple answers' : 'Multiple choice'; }
+function isDragMatch(q) { return q?.type === 'matching_question' && (Array.isArray(q.dragPairs) ? q.dragPairs.length : q.dragItems?.length) > 1; }
+function dragItems(q) { return q.dragItems || (q.dragPairs || []).map(pair => pair.item); }
+function dragTargets(q) { return q.dragTargets || (q.dragPairs || []).map(pair => pair.target); }
+function dragAnswer(q, pairIndex, targetIndex) { return `${dragItems(q)[pairIndex]} → ${dragTargets(q)[targetIndex]}`; }
+function renderDragMatch(q, mapping, disabled = false, side = 'solo') {
+  const id = side === 'live' ? 'liveDrag' : side === 'practice' ? 'practiceDrag' : 'drag';
+  const items = dragItems(q), targetList = dragTargets(q), targets = shuffle(targetList.map((_, index) => index));
+  const targetFor = index => mapping?.[index] ?? '';
+  const left = items.map((item, index) => `<div class="drag-match-row"><div class="drag-match-prompt"><span class="drag-match-grip" aria-hidden="true">⠿</span><span>${escapeHTML(item)}</span></div><span class="drag-match-connector" aria-hidden="true">↔</span><div class="drag-match-drop" data-drag-left="${index}" aria-label="Drop a match for ${escapeHTML(item)}" ${disabled ? 'aria-disabled="true"' : ''}><select class="drag-match-target" data-drag-select="${index}" aria-label="Match ${escapeHTML(item)}" ${disabled ? 'disabled' : ''}><option value="">Choose a match…</option>${targets.map(targetIndex => `<option value="${targetIndex}" ${String(targetFor(index)) === String(targetIndex) ? 'selected' : ''}>${escapeHTML(targetList[targetIndex])}</option>`).join('')}</select></div></div>`).join('');
+  const right = targetList.map((target, index) => `<div class="drag-match-chip" draggable="${!disabled}" data-drag-right="${index}" aria-label="Drag ${escapeHTML(target)} to its match"><span aria-hidden="true">⠿</span>${escapeHTML(target)}</div>`).join('');
+  return `<div class="drag-match-board ${side === 'live' ? 'drag-match-live' : ''}" data-drag-board="${id}"><div class="drag-match-list">${left}</div><div class="drag-match-targets"><span class="drag-match-caption">DRAG A MATCH HERE · OR USE THE MENU</span>${right}</div></div>`;
+}
+function dragMappingFrom(board) { return [...board.querySelectorAll('[data-drag-select]')].map(select => select.value === '' ? -1 : Number(select.value)); }
+function dragPayload(q, mapping) { return mapping.map((target, index) => target < 0 ? '' : dragAnswer(q, index, target)); }
+function isCompleteDrag(mapping) { return mapping.length > 1 && mapping.every(index => index >= 0); }
+function gradeDrag(q, mapping) { const answers = dragPayload(q, mapping); const expected = new Set(q.correctAnswers.map(normalize)); return isCompleteDrag(mapping) && answers.length === expected.size && answers.every(answer => expected.has(normalize(answer))); }
+function attachDragInteraction(container, selector, disabled = false) {
+  if (disabled) return;
+  let dragged = null;
+  container.addEventListener('dragstart', event => { const chip = event.target.closest('[data-drag-right]'); if (!chip) return; dragged = Number(chip.dataset.dragRight); event.dataTransfer?.setData('text/plain', String(dragged)); });
+  container.addEventListener('dragend', () => { dragged = null; });
+  container.addEventListener('dragover', event => { if (event.target.closest('.drag-match-drop')) event.preventDefault(); });
+  container.addEventListener('drop', event => { const drop = event.target.closest('.drag-match-drop'); if (!drop) return; event.preventDefault(); const select = drop.querySelector('[data-drag-select]'); const index = Number(event.dataTransfer?.getData('text/plain') || dragged); select.value = String(index); select.dispatchEvent(new Event('change', { bubbles: true })); });
+  container.addEventListener('click', event => { const chip = event.target.closest('[data-drag-right]'); if (!chip) return; const target = Number(chip.dataset.dragRight); const open = [...container.querySelectorAll('[data-drag-select]')].find(select => !select.disabled && select.value === ''); const select = open || container.querySelector(`${selector} [data-drag-select]`); if (select) { select.value = String(target); select.dispatchEvent(new Event('change', { bubbles: true })); } });
+}
 function hasImage(q) { return /<img\b/i.test(q.questionHtml || ''); }
 function isCorrectOption(q, option) { return (q.correctAnswers || []).some(a => normalize(a) === normalize(option)); }
 function answerText(q) { return (q.correctAnswers || []).join(' · '); }
@@ -251,12 +276,13 @@ function renderBank() {
   }).join('') : `<div class="bank-empty"><strong>No questions found</strong>Try a different search or filter.</div>`;
 }
 
-const practice = { index: 0, entries: {}, selected: new Set(), shuffleChoices: false, choiceOrder: {} };
+const practice = { index: 0, entries: {}, selected: new Set(), shuffleChoices: false, choiceOrder: {}, dragMappings: {} };
 function restorePractice() {
   const saved = readJSON(deckStorageKey('pp_practice_v1'), null);
   if (!saved || saved.version !== 1 || saved.count !== app.questions.length) return;
   practice.index = Number.isInteger(saved.index) ? Math.max(0, Math.min(app.questions.length - 1, saved.index)) : 0;
   practice.shuffleChoices = saved.shuffleChoices === true;
+  if (saved.dragMappings && typeof saved.dragMappings === 'object') practice.dragMappings = saved.dragMappings;
   if (saved.choiceOrder && typeof saved.choiceOrder === 'object') {
     for (const q of app.questions) {
       const order = saved.choiceOrder[q.id];
@@ -272,7 +298,7 @@ function restorePractice() {
     practice.entries[q.id] = { status: entry.status, response };
   }
 }
-function savePractice() { writeJSON(deckStorageKey('pp_practice_v1'), { version: 1, count: app.questions.length, index: practice.index, entries: practice.entries, shuffleChoices: practice.shuffleChoices, choiceOrder: practice.choiceOrder }); }
+function savePractice() { writeJSON(deckStorageKey('pp_practice_v1'), { version: 1, count: app.questions.length, index: practice.index, entries: practice.entries, shuffleChoices: practice.shuffleChoices, choiceOrder: practice.choiceOrder, dragMappings: practice.dragMappings }); }
 function renderPracticeCard() {
   const label = $('practiceCardProgress');
   if (label) label.textContent = practice.index || Object.keys(practice.entries).length ? `Continue at #${practice.index + 1}` : 'Start at #1';
@@ -290,7 +316,7 @@ function practiceGoTo(index) {
 }
 function resetPractice() {
   if (!confirm('Erase all Practice path answers and start again at question 1?')) return;
-  practice.index = 0; practice.entries = {}; practice.selected = new Set(); practice.choiceOrder = {};
+  practice.index = 0; practice.entries = {}; practice.selected = new Set(); practice.choiceOrder = {}; practice.dragMappings = {};
   $('practiceJumpInput').value = '';
   savePractice(); renderPractice(); renderPracticeCard();
   scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
@@ -313,14 +339,17 @@ function renderPractice() {
   const q = app.questions[practice.index]; if (!q) return;
   const record = practiceRecord(q), answered = practiceAnswered(record);
   const typed = q.type === 'short_answer_question' || !q.options.length;
+  const drag = isDragMatch(q);
   const multi = !typed && q.correctAnswers.length > 1;
   const response = Array.isArray(record?.response) ? record.response : record?.response ? [record.response] : [];
   let answers;
   if (typed) answers = `<label class="sr-only" for="practiceAnswerInput">Type your answer</label><input id="practiceAnswerInput" class="answer-input" type="text" autocomplete="off" spellcheck="false" placeholder="Type your answer…" value="${escapeHTML(record?.response || '')}" ${answered ? 'disabled' : ''}><p class="input-helper">${q.type === 'short_answer_question' ? 'Follow the format in the question.' : 'Capitalization is ignored.'}</p>`;
+  else if (drag) { const savedMap = Array.isArray(record?.mapping) ? record.mapping : practice.dragMappings[q.id]; answers = renderDragMatch(q, savedMap, answered, 'practice'); }
   else answers = `<div class="game-choices" role="group" aria-label="Answer choices${practice.shuffleChoices ? ' in shuffled order' : ' in original order'}">${practiceOptionsOrder(q).map((originalIndex, displayIndex) => { const option = q.options[originalIndex]; const picked = response.some(item => normalize(item) === normalize(option)); const correct = isCorrectOption(q, option); const cls = answered ? correct ? 'is-correct' : picked ? 'is-wrong' : '' : practice.selected.has(originalIndex) ? 'is-selected' : ''; return `<button type="button" class="choice-button ${cls}" data-practice-choice="${originalIndex}" aria-pressed="${picked || practice.selected.has(originalIndex)}" ${answered ? 'disabled' : ''}><span class="choice-key">${displayIndex + 1}</span><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>`;
   const feedback = answered ? `<div class="feedback ${record.status === 'correct' ? 'is-correct' : 'is-wrong'}" role="status"><strong>${record.status === 'correct' ? 'You got it!' : record.status === 'revealed' ? 'Answer revealed' : 'Good one to review.'}</strong>${record.status === 'wrong' && response.length ? `<span class="practice-your-answer">Your answer: ${escapeHTML(response.join(' · '))}</span>` : ''}<span class="answer-line">Correct answer: ${escapeHTML(answerText(q))}</span><span class="feedback-explanation"><b>Why this answer works</b>${escapeHTML(explanationText(q))}</span><small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div>` : record?.status === 'skipped' ? '<p class="practice-skipped-note">You skipped this one. Try it whenever you’re ready.</p>' : '';
-  const action = answered ? '<button type="button" class="practice-retry" data-practice-action="retry">Try this question again</button>' : `<div class="practice-answer-actions">${typed || multi ? `<button type="button" class="question-submit" data-practice-action="check" ${typed || !practice.selected.size ? 'disabled' : ''}>Check answer</button>` : ''}<button type="button" class="practice-reveal" data-practice-action="reveal">Show answer</button></div>`;
+  const action = answered ? '<button type="button" class="practice-retry" data-practice-action="retry">Try this question again</button>' : `<div class="practice-answer-actions">${typed || multi || drag ? `<button type="button" class="question-submit" data-practice-action="check" ${typed || drag ? 'disabled' : !practice.selected.size ? 'disabled' : ''}>Check answer</button>` : ''}<button type="button" class="practice-reveal" data-practice-action="reveal">Show answer</button></div>`;
   $('practiceContent').innerHTML = `<article class="question-card practice-question-card"><div class="question-card-head"><span class="question-tag">QUESTION ${practice.index + 1} · ${escapeHTML(sourceName(q).toUpperCase())}</span><span class="practice-type-tag">${escapeHTML(typeName(q))}</span></div><div class="question-prompt">${safeQuestionHTML(q)}</div>${answers}${feedback}${action}</article>`;
+  if (drag) { const board = $('practiceContent').querySelector('[data-drag-board]'); attachDragInteraction(board, '#practiceContent'); const map = dragMappingFrom(board); const button = $('practiceContent').querySelector('[data-practice-action="check"]'); button.disabled = !isCompleteDrag(map); }
   const answeredCount = Object.values(practice.entries).filter(entry => entry.status === 'correct' || entry.status === 'wrong').length;
   const correctCount = Object.values(practice.entries).filter(entry => entry.status === 'correct').length;
   $('practiceProgressText').textContent = `${answeredCount} answered · ${correctCount} right`;
@@ -337,8 +366,10 @@ function practiceSubmit(response) {
   const q = app.questions[practice.index]; if (!q || practiceAnswered(practiceRecord(q))) return;
   const picks = Array.isArray(response) ? response : String(response || '').trim();
   if (!Array.isArray(picks) && !picks) return;
-  const correct = Array.isArray(picks) ? (() => { const expected = new Set(q.correctAnswers.map(normalize)); return picks.length === expected.size && picks.every(option => expected.has(normalize(option))); })() : checkTypedAnswer(q, picks);
-  practice.entries[q.id] = { status: correct ? 'correct' : 'wrong', response: picks };
+  const mapping = isDragMatch(q) && Array.isArray(picks) ? picks.map(value => { const match = String(value).match(/ → (.*)$/); return match ? q.dragPairs.findIndex(pair => normalize(pair.target) === normalize(match[1])) : -1; }) : null;
+  const correct = isDragMatch(q) ? gradeDrag(q, mapping) : Array.isArray(picks) ? (() => { const expected = new Set(q.correctAnswers.map(normalize)); return picks.length === expected.size && picks.every(option => expected.has(normalize(option))); })() : checkTypedAnswer(q, picks);
+  practice.entries[q.id] = { status: correct ? 'correct' : 'wrong', response: picks, ...(mapping ? { mapping } : {}) };
+  if (mapping) practice.dragMappings[q.id] = mapping;
   practice.selected = new Set(); savePractice(); renderPractice(); renderPracticeCard();
   playTone(correct ? 'good' : 'bad'); if (correct) burst();
   announce(correct ? 'Correct answer.' : `Try again later. Correct answer: ${answerText(q)}.`);
@@ -401,6 +432,7 @@ function startGame() {
   app.game = {
     mode, order, remaining: mode === 'adaptive' ? shuffle(questions) : [], total, completed: 0, current: null,
     score: 0, streak: 0, bestStreak: 0, correct: 0, attempts: 0, hearts: heartLimit === 'unlimited' ? Infinity : Number(heartLimit), heartLimit, missed: [], selected: new Set(),
+    dragMapping: null,
     answered: false, wager: 0, hiddenChoices: new Set(), hintStep: 0, coachOpen: false,
     used: { fifty: false, shield: false, freeze: false }, activeShield: false,
     startedAt: performance.now(), questionAt: performance.now(), timerLast: performance.now(), remainingTime: 0, freezeUntil: 0,
@@ -432,7 +464,7 @@ function resumeRankedRun(mode) {
     streak: Number(saved.streak) || 0, bestStreak: Number(saved.bestStreak) || 0,
     correct: Number(saved.correct) || 0, attempts: Number(saved.attempts) || 0,
     hearts: heartLimit === 'unlimited' ? Infinity : Math.max(0, Math.min(Number(heartLimit), Number(saved.hearts) || 0)), heartLimit,
-    missed: (saved.missed || []).map(id => byId.get(id)).filter(Boolean), selected: new Set(saved.selected || []),
+    missed: (saved.missed || []).map(id => byId.get(id)).filter(Boolean), selected: new Set(saved.selected || []), dragMapping: Array.isArray(saved.dragMapping) ? saved.dragMapping : null,
     answered: Boolean(saved.answered), wager: Number(saved.wager) || 0,
     hiddenChoices: new Set(saved.hiddenChoices || []), displayOptions: saved.displayOptions || null,
     hintStep: Math.max(0, Math.min(2, Number(saved.hintStep) || 0)), coachOpen: Boolean(saved.coachOpen),
@@ -481,7 +513,7 @@ function nextQuestion() {
   const preferHard = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100;
   g.current = g.mode === 'adaptive' ? selectAdaptiveQuestion(g, preferHard) : g.order[g.completed];
   if (!g.current) { if (g.training) finishTrainingPass(); else finishGame(); return; }
-  g.selected = new Set(); g.answered = false; g.wager = 0; g.hiddenChoices = new Set(); g.displayOptions = null; g.hintStep = 0; g.coachOpen = false; g.used = { fifty: false, shield: false, freeze: false }; g.activeShield = false; g.lastResult = null;
+  g.selected = new Set(); g.dragMapping = isDragMatch(g.current) ? g.current.dragPairs.map(() => -1) : null; g.answered = false; g.wager = 0; g.hiddenChoices = new Set(); g.displayOptions = null; g.hintStep = 0; g.coachOpen = false; g.used = { fifty: false, shield: false, freeze: false }; g.activeShield = false; g.lastResult = null;
   g.questionAt = performance.now();
   if (g.mode === 'blitz') { g.remainingTime = Math.max(5, 15 - Math.floor(g.completed * .7)); g.timerLast = performance.now(); }
   const wagerRound = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100 && difficulty(g.current) >= .55 && !['typing', 'training'].includes(g.mode);
@@ -514,6 +546,7 @@ function powerMarkup(g, q) {
 }
 function renderQuestion() {
   const g = app.game, q = g.current;
+  if (isDragMatch(q)) { renderDragQuestion(g, q); return; }
   g.displayOptions ||= optionOrder(q, g.firstCorrect);
   const isType = g.mode === 'typing' || q.type === 'short_answer_question' || !g.displayOptions.length;
   const isMulti = !isType && q.correctAnswers.length > 1;
@@ -524,6 +557,14 @@ function renderQuestion() {
   if (isType) $('answerInput').focus();
   g.questionAt = performance.now();
   announce(`Question ${g.completed + 1} of ${g.total}. ${q.question}`);
+}
+function renderDragQuestion(g, q) {
+  const mapping = Array.isArray(g.dragMapping) ? g.dragMapping : (g.dragMapping = q.dragPairs.map(() => -1));
+  const board = renderDragMatch(q, mapping, g.answered);
+  $('gameContent').innerHTML = `<article class="question-card"><div class="question-card-head"><span class="question-tag">DRAG & MATCH · ${escapeHTML(sourceName(q).toUpperCase())}</span><span class="difficulty-tag">${difficulty(q) > .72 ? 'HARD' : difficulty(q) > .38 ? 'MEDIUM' : 'WARM-UP'} · ${100 + Math.round(difficulty(q) * 75)} PTS</span></div><div class="question-prompt" id="currentQuestion">${safeQuestionHTML(q)}</div><p class="drag-match-instruction">Drag each card to its match, or choose a match from the menu.</p>${board}<div id="feedbackSlot"></div><div class="question-actions"><div class="question-actions-left">${powerMarkup(g, q)}<button type="button" class="hint-button" data-action="hint">💡 Hint bot</button></div><button type="button" id="answerAction" class="question-submit" data-action="submit" ${g.answered || !isCompleteDrag(mapping) ? 'disabled' : ''}>Check matches</button></div><div id="coachSlot"></div></article>`;
+  const el = $('gameContent').querySelector('[data-drag-board]'); attachDragInteraction(el, '#gameContent', g.answered);
+  if (!g.answered) el.addEventListener('change', () => { g.dragMapping = dragMappingFrom(el); $('answerAction').disabled = !isCompleteDrag(g.dragMapping); saveRankedRun(); });
+  g.questionAt = performance.now(); announce(`Question ${g.completed + 1} of ${g.total}. Match each item to its description.`);
 }
 function showCoach() {
   const g = app.game; if (!g || g.answered) return;
@@ -554,8 +595,10 @@ function checkTypedAnswer(q, typed) {
 }
 function checkAnswer() {
   const g = app.game, q = g?.current; if (!g || !q || g.answered) return;
+  if (isDragMatch(q)) { const board = $('gameContent').querySelector('[data-drag-board]'); g.dragMapping = dragMappingFrom(board); if (!isCompleteDrag(g.dragMapping)) return; resolveAnswer(gradeDrag(q, g.dragMapping), dragPayload(q, g.dragMapping).join(' · ')); return; }
   const typed = g.mode === 'typing' || q.type === 'short_answer_question' || !g.displayOptions.length;
   let correct = false, response = '';
+  if (isDragMatch(q)) { const board = $('practiceContent').querySelector('[data-drag-board]'); const mapping = dragMappingFrom(board); if (!isCompleteDrag(mapping)) return; practiceSubmit(dragPayload(q, mapping)); return; }
   if (typed) { response = $('answerInput')?.value || ''; if (!response.trim()) return; correct = checkTypedAnswer(q, response); }
   else { if (!g.selected.size) return; const picks = [...g.selected].map(index => g.displayOptions[index]); response = picks.join(' · '); const expected = new Set(q.correctAnswers.map(normalize)); correct = picks.length === expected.size && picks.every(option => expected.has(normalize(option))); }
   resolveAnswer(correct, response);
@@ -584,7 +627,7 @@ function resolveAnswer(correct, response = '') {
   }
   g.completed++;
   g.history ||= [];
-  g.history.push({ questionId: q.id, options: [...(g.displayOptions || [])], selected: [...g.selected], response, correct, points, pass: g.training?.pass || 1 });
+  g.history.push({ questionId: q.id, options: [...(g.displayOptions || [])], selected: [...g.selected], response, correct, points, pass: g.training?.pass || 1, ...(g.dragMapping ? { dragMapping: [...g.dragMapping] } : {}) });
   g.events.push({ t: Math.round(performance.now() - g.startedAt), score: g.score, completed: g.completed, correct, responseMs });
   updateHUD();
   const resultWord = correct ? ['Nice link!', 'You got it!', 'Great call!', 'That is the one!'][Math.floor(Math.random() * 4)] : 'Keep going — you are learning.';
@@ -598,6 +641,7 @@ function renderAnswerFeedback(g) {
   const q = g.current, { correct, response, points, resultWord } = g.lastResult;
   const slot = $('feedbackSlot');
   slot.innerHTML = `<div class="feedback ${correct ? 'is-correct' : 'is-wrong'}"><strong>${resultWord}</strong>${correct ? `+${formatNumber(points)} points${g.wager ? ` · ${formatNumber(g.wager)} wager won` : ''}` : `${response ? 'Your answer: ' + escapeHTML(response) + '. ' : ''}${g.wager ? `${formatNumber(g.wager)} points lost. ` : ''}<span class="answer-line">Correct answer: ${escapeHTML(answerText(q))}</span>`}<span class="feedback-explanation"><b>Why this answer works</b>${escapeHTML(explanationText(q))}</span><small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div>`;
+  if (isDragMatch(q)) { const board = $('gameContent').querySelector('[data-drag-board]'); if (board) board.outerHTML = renderDragMatch(q, g.dragMapping, true); }
   document.querySelectorAll('.choice-button').forEach(button => {
     const index = +button.dataset.choiceIndex, option = g.displayOptions[index];
     button.disabled = true;
@@ -873,6 +917,9 @@ function attachEvents() {
   $('practiceReset').addEventListener('click', resetPractice);
   $('practiceJumpForm').addEventListener('submit', event => { event.preventDefault(); const number = Number($('practiceJumpInput').value); practiceGoTo(number - 1); $('practiceJumpInput').value = ''; });
   $('practiceNumberGrid').addEventListener('click', event => { const number = Number(event.target.closest('[data-practice-number]')?.dataset.practiceNumber); if (number) practiceGoTo(number - 1); });
+  $('practiceContent').addEventListener('change', event => {
+    if (event.target.matches('[data-drag-select]')) { const q = app.questions[practice.index]; practice.dragMappings[q.id] = dragMappingFrom($('practiceContent').querySelector('[data-drag-board]')); const check = $('practiceContent').querySelector('[data-practice-action="check"]'); if (check) check.disabled = !isCompleteDrag(practice.dragMappings[q.id]); savePractice(); }
+  });
   $('practiceContent').addEventListener('click', event => {
     const q = app.questions[practice.index], record = practiceRecord(q);
     const choice = event.target.closest('[data-practice-choice]');
@@ -890,7 +937,8 @@ function attachEvents() {
     if (action === 'retry') { delete practice.entries[q.id]; practice.selected = new Set(); savePractice(); renderPractice(); }
     else if (action === 'reveal') { practice.entries[q.id] = { status: 'revealed', response: '' }; practice.selected = new Set(); savePractice(); renderPractice(); }
     else if (action === 'check') {
-      if (q.type === 'short_answer_question' || !q.options.length) practiceSubmit($('practiceAnswerInput')?.value || '');
+      if (isDragMatch(q)) practiceSubmit(dragPayload(q, dragMappingFrom($('practiceContent').querySelector('[data-drag-board]'))));
+      else if (q.type === 'short_answer_question' || !q.options.length) practiceSubmit($('practiceAnswerInput')?.value || '');
       else if (practice.selected.size) practiceSubmit([...practice.selected].map(index => q.options[index]));
     }
   });
@@ -982,7 +1030,7 @@ const live = {
   code: null, token: null, playerId: null, room: null, name: '', serverOffset: 0,
   pollTimer: null, clockTimer: null, fetching: false, lastPollAt: 0, pendingActions: new Set(),
   requestSeq: 0, appliedSeq: 0, stageSignature: '', playersSignature: '', messagesSignature: '',
-  roundKey: '', submitted: false, pendingAnswer: null, selected: new Set(), hintStep: 0, seenReactions: new Set(),
+  roundKey: '', submitted: false, pendingAnswer: null, selected: new Set(), dragMapping: [], savedDragMapping: [], hintStep: 0, seenReactions: new Set(),
   sawReactions: false, revealKey: '', lastQuestion: null
 };
 
@@ -1031,7 +1079,7 @@ function liveClearSession() {
   live.lastPollAt = 0;
   live.pendingActions = new Set();
   live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
-  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear(); live.hintStep = 0;
+  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear(); live.dragMapping = []; live.savedDragMapping = []; live.hintStep = 0;
   live.seenReactions.clear(); live.sawReactions = false; live.revealKey = ''; live.lastQuestion = null;
   try { localStorage.removeItem(deckStorageKey('pp_live_session')); } catch { /* Storage is optional. */ }
   const url = new URL(location.href);
@@ -1056,7 +1104,7 @@ function liveEnter(data, name) {
   live.pendingActions = new Set();
   live.appliedSeq = 0; live.requestSeq = 0; live.room = null;
   live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
-  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear(); live.hintStep = 0;
+  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear(); live.dragMapping = []; live.savedDragMapping = []; live.hintStep = 0;
   live.seenReactions.clear(); live.sawReactions = false; live.revealKey = ''; live.lastQuestion = null;
   if (Number.isFinite(data.serverTime)) live.serverOffset = data.serverTime - Date.now();
   liveSaveSession();
@@ -1135,6 +1183,12 @@ function liveRender() {
   const roundKey = liveRoundKey(room);
   if (room.phase === 'question' && roundKey !== live.roundKey) {
     live.roundKey = roundKey; live.selected.clear(); live.submitted = false; live.pendingAnswer = null; live.hintStep = 0;
+    const cq = room.currentQuestion;
+    if (cq?.matching && cq.dragItems && cq.dragTargets) {
+      const answerPairs = Array.isArray(room.myAnswer) ? room.myAnswer : [];
+      live.dragMapping = cq.dragItems.map(item => { const saved = answerPairs.find(answer => String(answer).startsWith(`${item} → `)); if (!saved) return -1; const target = String(saved).slice(`${item} → `.length); return cq.dragTargets.findIndex(candidate => normalize(candidate) === normalize(target)); });
+      live.savedDragMapping = [...live.dragMapping];
+    } else { live.dragMapping = []; live.savedDragMapping = []; }
     if (room.currentQuestion?.multiple && room.myAnswer != null) {
       const saved = Array.isArray(room.myAnswer) ? room.myAnswer : [room.myAnswer];
       room.currentQuestion.options.forEach((option, index) => { if (saved.some(item => normalize(item) === normalize(option))) live.selected.add(index); });
@@ -1192,6 +1246,7 @@ function liveRenderStage() {
   const mine = room.result?.players?.find(p => p.id === live.playerId);
   const options = Array.isArray(q.options) ? q.options : [];
   const typed = q.type === 'short_answer_question' || !options.length;
+  const drag = q.matching && Array.isArray(q.dragItems) && q.dragItems.length > 1 && Array.isArray(q.dragTargets);
   const savedAnswer = room.myAnswer;
   const hasSavedAnswer = savedAnswer != null;
   const displayedAnswer = live.pendingAnswer ?? savedAnswer;
@@ -1199,13 +1254,19 @@ function liveRenderStage() {
   const savedValues = Array.isArray(savedAnswer) ? savedAnswer : [savedAnswer];
   const savedIndexes = options.map((option, index) => savedValues.some(value => value != null && normalize(value) === normalize(option)) ? index : -1).filter(index => index >= 0);
   const savedEliminated = savedIndexes.some(index => (room.myPowers?.fifty || []).includes(index));
-  const draftChanged = q.multiple && (live.selected.size !== savedIndexes.length || [...live.selected].some(index => !savedIndexes.includes(index)));
-  const answerMarkup = typed
+  const draftChanged = drag ? JSON.stringify(live.dragMapping || []) !== JSON.stringify(live.savedDragMapping || []) : q.multiple && (live.selected.size !== savedIndexes.length || [...live.selected].some(index => !savedIndexes.includes(index)));
+  const answerMarkup = drag
+    ? `${!isReveal ? '<p class="drag-match-instruction">Drag each item to its match, or choose from the menus.</p>' : ''}${renderDragMatch(q, live.dragMapping, isReveal || live.submitted, 'live')}${!isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-drag" ${live.submitted || !isCompleteDrag(live.dragMapping || []) || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update matches' : 'Lock in matches'} ↗</button></div>` : ''}`
+    : typed
     ? isReveal ? '' : `<form id="liveAnswerForm" class="live-answer-form"><label class="sr-only" for="liveAnswerInput">Your answer</label><input id="liveAnswerInput" class="live-input" maxlength="200" placeholder="Type your answer…" value="${escapeHTML(typeof displayedAnswer === 'string' ? displayedAnswer : '')}" ${live.submitted ? 'disabled' : ''} required><button type="submit" class="button button-primary" ${live.submitted ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Send'} ↗</button></form>`
     : `<div class="live-answer-grid">${options.map((option, index) => { const correct = answers.some(a => normalize(a) === normalize(option)); const chosen = isReveal || !q.multiple ? displayedValues.some(value => value != null && normalize(value) === normalize(option)) : live.selected.has(index); const eliminated = !isReveal && (room.myPowers?.fifty || []).includes(index); const cls = isReveal ? correct ? 'is-correct' : chosen ? 'is-wrong' : '' : eliminated ? 'is-eliminated' : chosen ? 'is-selected' : ''; return `<button type="button" class="live-answer-option ${cls}" data-live-choice="${index}" ${isReveal || live.submitted || eliminated ? 'disabled' : ''} aria-pressed="${chosen}"><i>${index + 1}</i><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>${q.multiple && !isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-multi" ${live.submitted || !live.selected.size || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Lock in answers'} ↗</button></div>` : ''}`;
-  const answerNote = isReveal ? '' : live.submitted ? 'Saving your answer…' : hasSavedAnswer && draftChanged ? 'Your changes are not saved yet. Press Update answer.' : savedEliminated ? 'Your saved choice was eliminated. Pick another before the question closes.' : hasSavedAnswer ? '✓ Answer saved. You can change it until the question closes.' : q.multiple && live.selected.size ? 'Press Lock in answers to save your selection.' : '';
+  const answerNote = isReveal ? '' : live.submitted ? 'Saving your answer…' : hasSavedAnswer && draftChanged ? `Your changes are not saved yet. Press ${drag ? 'Update matches' : 'Update answer'}.` : savedEliminated ? 'Your saved choice was eliminated. Pick another before the question closes.' : hasSavedAnswer ? '✓ Answer saved. You can change it until the question closes.' : q.multiple && live.selected.size ? 'Press Lock in answers to save your selection.' : '';
   const hint = !isReveal && live.hintStep ? `<div class="coach-panel live-hint-panel"><div class="coach-title">💡 STUDY HINT ${live.hintStep}/3</div><p class="coach-chat">${escapeHTML(hintMessages(q)[live.hintStep - 1])}</p></div>` : '';
   stage.innerHTML = `<div class="live-quiz-meta"><span class="live-stage-kicker">${isReveal ? 'ANSWER REVEAL' : 'LIVE ROUND'} · QUESTION ${(room.questionIndex ?? 0) + 1} / ${room.total || 10}</span><span id="liveTimer" class="live-timer">◷ <span>—</span></span></div><div class="live-clock-track" aria-hidden="true"><div id="liveClockFill" class="live-clock-fill"></div></div><div class="live-question-text">${safeQuestionHTML(q)}</div>${answerMarkup}${answerNote ? `<div class="live-answer-note">${answerNote}</div>` : ''}${!isReveal ? livePowerMarkup(room, q, options) : ''}${hint}${isReveal ? `<div class="live-reveal ${mine?.correct ? '' : 'is-wrong'}"><strong>${mine?.correct ? room.mode === 'coop' ? 'You helped the team!' : `Nice hit! +${formatNumber(mine.points || 0)} points` : mine?.shielded ? 'Shield saved your streak' : 'Round complete'}</strong><span>Correct answer${answers.length > 1 ? 's' : ''}: ${escapeHTML(answers.join(' · '))}</span>${!mine?.correct && mine?.answer != null ? `<span>Your answer: ${escapeHTML(Array.isArray(mine.answer) ? mine.answer.join(' · ') : mine.answer)}</span>` : ''}<span class="feedback-explanation"><b>Why this answer works</b>${escapeHTML(explanationText(q))}</span><small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div><p class="live-lobby-note">${room.mode === 'coop' ? 'Take a moment to discuss the explanation.' : `Items: −${room.myPowers?.spent || 0} pts${room.myPowers?.penalty ? ` · Zapped: −${room.myPowers.penalty} pts` : ''}${room.myPowers?.blocked ? ' · Ward blocked an attack' : ''}. Next question starts automatically.`}</p>` : ''}`;
+  if (drag && !isReveal) {
+    const board = stage.querySelector('[data-drag-board]'); attachDragInteraction(board, '#liveStage', live.submitted);
+    board.addEventListener('change', () => { live.dragMapping = dragMappingFrom(board); const button = stage.querySelector('[data-live-action="submit-drag"]'); if (button) button.disabled = live.submitted || !isCompleteDrag(live.dragMapping) || JSON.stringify(live.dragMapping) === JSON.stringify(live.savedDragMapping); const note = stage.querySelector('.live-answer-note'); if (note) note.textContent = hasSavedAnswer ? 'Your changes are not saved yet. Press Update matches.' : 'Complete the pairs, then lock in your matches.'; });
+  }
   if (room.mode === 'coop') {
     const team=document.createElement('div');team.className='coop-progress';team.innerHTML='<strong>Team progress · '+room.team.mastered+' / '+room.total+' solved</strong><progress value="'+room.team.mastered+'" max="'+room.total+'" aria-label="Questions solved together"></progress><small>Discuss in room chat. Everyone can keep changing their answer until reveal.</small>';stage.prepend(team);
     const note=stage.querySelector('.live-lobby-note');if(note)note.textContent='Take a moment to explain the answer to each other.';
@@ -1314,7 +1375,12 @@ function attachLiveEvents() {
     else if (action === 'submit-multi') {
       const q = live.room?.currentQuestion;
       if (q && live.selected.size) liveSubmitAnswer([...live.selected].map(index => q.options[index]));
+    } else if (action === 'submit-drag') {
+      const q = live.room?.currentQuestion; if (q?.matching && isCompleteDrag(live.dragMapping)) liveSubmitAnswer(dragPayload(q, live.dragMapping));
     } else if (action === 'new') liveLeaveRoom();
+  });
+  $('liveStage').addEventListener('change', event => {
+    if (event.target.matches('[data-drag-select]') && live.room?.phase === 'question' && !live.submitted) { const board = $('liveStage').querySelector('[data-drag-board]'); live.dragMapping = dragMappingFrom(board); const button = $('liveStage').querySelector('[data-live-action="submit-drag"]'); if (button) button.disabled = !isCompleteDrag(live.dragMapping) || JSON.stringify(live.dragMapping) === JSON.stringify(live.savedDragMapping); }
   });
   $('liveStage').addEventListener('submit', event => {
     if (event.target.id !== 'liveAnswerForm') return;
