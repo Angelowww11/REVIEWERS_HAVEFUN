@@ -49,17 +49,32 @@
     return { ctx, width: rect.width, height: rect.height };
   }
   function jar(ctx, width, height) {
-    const left = width * .16, right = width * .84, top = height * .07, bottom = height * .94;
-    ctx.save(); ctx.beginPath(); ctx.moveTo(left + width * .05, top + height * .04); ctx.lineTo(right - width * .05, top + height * .04);
-    ctx.lineTo(right - width * .02, top + height * .17); ctx.quadraticCurveTo(right + width * .06, top + height * .23, right + width * .04, top + height * .32);
-    ctx.lineTo(right, bottom - height * .1); ctx.quadraticCurveTo(right, bottom, right - width * .12, bottom); ctx.lineTo(left + width * .12, bottom);
-    ctx.quadraticCurveTo(left, bottom, left, bottom - height * .1); ctx.lineTo(left - width * .04, top + height * .32); ctx.quadraticCurveTo(left - width * .06, top + height * .23, left + width * .02, top + height * .17); ctx.closePath();
-    const fill = ctx.createLinearGradient(left, top, right, bottom); fill.addColorStop(0, 'rgba(167,242,237,.10)'); fill.addColorStop(.48, 'rgba(255,255,255,.015)'); fill.addColorStop(1, 'rgba(173,167,255,.09)');
-    ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#a7f2ed'; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = Math.min(12, width * .08); ctx.globalAlpha = .84; ctx.lineWidth = Math.max(1.5, width * .012); ctx.stroke(); ctx.shadowBlur = 0; ctx.globalAlpha = 1;
-    ctx.beginPath(); ctx.moveTo(left + width * .105, top + height * .34); ctx.quadraticCurveTo(left + width * .025, height * .68, left + width * .17, bottom - height * .08); ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = Math.max(1, width * .014); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(width * .5, bottom - height * .018, width * .25, height * .018, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.13)'; ctx.fill();
-    ctx.beginPath(); ctx.roundRect(left + width * .075, top, width * .70, height * .075, height * .025); ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.38)'; ctx.lineWidth = Math.max(1, width * .008); ctx.stroke(); ctx.restore();
-    return { left: left + width * .035, right: right - width * .035, top: top + height * .16, bottom: bottom - height * .035 };
+    const left = width * .13, right = width * .87, neckLeft = width * .36, neckRight = width * .64;
+    const neckY = height * .14, shoulderY = height * .27, bottom = height * .91;
+    ctx.save();
+    ctx.beginPath(); ctx.moveTo(neckLeft, neckY); ctx.lineTo(neckRight, neckY);
+    ctx.bezierCurveTo(width * .69, neckY, width * .82, height * .16, width * .84, height * .23);
+    ctx.bezierCurveTo(width * .865, height * .26, right, height * .28, right, height * .34);
+    ctx.lineTo(right - width * .055, height * .82);
+    ctx.bezierCurveTo(right - width * .055, height * .88, right - width * .075, bottom, right - width * .085, bottom);
+    ctx.lineTo(left + width * .085, bottom);
+    ctx.bezierCurveTo(left + width * .075, bottom, left + width * .055, height * .88, left + width * .055, height * .82);
+    ctx.lineTo(left, height * .34);
+    ctx.bezierCurveTo(left, height * .28, width * .135, height * .26, width * .16, height * .23);
+    ctx.bezierCurveTo(width * .18, height * .16, width * .31, neckY, neckLeft, neckY);
+    ctx.closePath();
+    const fill = ctx.createLinearGradient(0, neckY, 0, bottom);
+    fill.addColorStop(0, 'rgba(167,242,237,.13)'); fill.addColorStop(.54, 'rgba(255,255,255,.025)'); fill.addColorStop(1, 'rgba(173,167,255,.11)');
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#a7f2ed';
+    ctx.globalAlpha = .56; ctx.lineWidth = Math.max(1.5, width * .007); ctx.stroke(); ctx.globalAlpha = 1;
+    const lidX = width * .30, lidY = height * .105, lidWidth = width * .40, lidHeight = height * .047;
+    ctx.beginPath(); ctx.roundRect(lidX, lidY, lidWidth, lidHeight, lidHeight * .38);
+    ctx.fillStyle = 'rgba(209,225,255,.17)'; ctx.fill(); ctx.strokeStyle = 'rgba(226,237,255,.5)'; ctx.lineWidth = Math.max(1, width * .007); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(lidX + width * .035, lidY + lidHeight * .28); ctx.lineTo(lidX + lidWidth - width * .035, lidY + lidHeight * .28);
+    ctx.strokeStyle = 'rgba(255,255,255,.24)'; ctx.lineWidth = Math.max(1, width * .004); ctx.stroke();
+    ctx.restore();
+    return { left: left + width * .06, right: right - width * .06, top: height * .22, bottom: bottom - height * .025 };
   }
   const radiusN = .085;
   function syncBodies() {
@@ -89,8 +104,11 @@
     const { ctx, width, height } = surface, bounds = jar(ctx, width, height); syncBodies();
     const jarWidth = bounds.right - bounds.left, jarHeight = bounds.bottom - bounds.top, radius = Math.min(17, Math.max(7, jarWidth * radiusN));
     if (!bodies.length) {
-      ctx.save(); ctx.globalAlpha = .82; ctx.font = `${Math.max(13, Math.min(20, jarWidth * .27))}px system-ui, "Apple Color Emoji", "Segoe UI Emoji"`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('🌱', bounds.left + jarWidth * .5, bounds.top + jarHeight * .78); ctx.restore();
+      const glow = ctx.createRadialGradient(bounds.left + jarWidth * .5, bounds.top + jarHeight * .77, 1, bounds.left + jarWidth * .5, bounds.top + jarHeight * .77, jarWidth * .31);
+      glow.addColorStop(0, 'rgba(117,223,176,.16)'); glow.addColorStop(1, 'rgba(117,223,176,0)');
+      ctx.fillStyle = glow; ctx.fillRect(bounds.left + jarWidth * .17, bounds.top + jarHeight * .45, jarWidth * .66, jarHeight * .48);
+      ctx.save(); ctx.font = `${Math.max(22, Math.min(42, jarWidth * .32))}px system-ui, "Apple Color Emoji", "Segoe UI Emoji"`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('🌱', bounds.left + jarWidth * .5, bounds.top + jarHeight * .79); ctx.restore();
     }
     for (const body of bodies) {
       const x = bounds.left + body.x * jarWidth, y = bounds.top + body.y * jarHeight;
@@ -127,7 +145,7 @@
   }
   function bounce(event) {
     const canvas = event.currentTarget, rect = canvas.getBoundingClientRect(), x = event.clientX - rect.left, y = event.clientY - rect.top;
-    const bounds = { left: rect.width * .18, right: rect.width * .82, top: rect.height * .23, bottom: rect.height * .93 };
+    const bounds = { left: rect.width * .19, right: rect.width * .81, top: rect.height * .22, bottom: rect.height * .885 };
     const nx = Math.max(0, Math.min(1, (x - bounds.left) / (bounds.right - bounds.left))), ny = Math.max(0, Math.min(1, (y - bounds.top) / (bounds.bottom - bounds.top)));
     let closest = null, score = Infinity;
     for (const body of bodies) { const d = Math.hypot((body.x - nx) * .82, body.y - ny); if (d < score) { closest = body; score = d; } }
