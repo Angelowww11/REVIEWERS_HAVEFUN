@@ -188,10 +188,11 @@ function currentQuestion(state, index, viewer = null) {
     question: question.question,
     questionHtml: question.questionHtml,
     type: question.type,
+    statements: question.statements,
     matching: question.type === 'matching_question',
     dragItems: question.type === 'matching_question' ? itemOrder.map(itemIndex => question.dragPairs[itemIndex].item) : undefined,
     dragTargets: question.type === 'matching_question' ? targetOrder.map(targetIndex => question.dragPairs[targetIndex].target) : undefined,
-    multiple: question.correctAnswers.length > 1,
+    multiple: question.type === 'true_false_group' || question.correctAnswers.length > 1,
     scrambled: Boolean(round.scrambled || playerPowers.scrambled),
     scrambledBy: round.scrambledBy || playerPowers.attackedBy || null,
     scrambledById: round.scrambledById || null,
@@ -447,15 +448,18 @@ function handleAnswer(room, player, now, body) {
   if (!question) throw new ApiError(503, 'Question unavailable.');
   const answer = normalizeSubmittedAnswer(body.answer);
   const selected = Array.isArray(answer) ? answer : [answer];
-  if (question.type === 'matching_question') {
+  if (question.type === 'true_false_group') {
+    if (!Array.isArray(answer) || answer.length !== question.statements.length || answer.some(item => !question.options.some(option => normalizeAnswer(option) === normalizeAnswer(item)))) throw new ApiError(400, 'Choose True or False for every statement.');
+  } else if (question.type === 'matching_question') {
     if (!Array.isArray(answer) || answer.length !== question.dragPairs.length || answer.some(item => !question.correctAnswers.some(correct => normalizeAnswer(correct) === normalizeAnswer(item)))) throw new ApiError(400, 'Complete each matching pair.');
   } else if (question.type !== 'short_answer_question' && selected.some(item => !question.options.some(option => normalizeAnswer(option) === normalizeAnswer(item)))) {
     throw new ApiError(400, 'Choose one of the displayed answers.');
   }
   const previous = player.answers[time.index];
   if (previous && JSON.stringify(previous.answer) === JSON.stringify(answer)) return;
-  const right = question.correctAnswers.map(normalizeAnswer).sort();
-  const given = selected.map(normalizeAnswer).sort();
+  const right = question.correctAnswers.map(normalizeAnswer);
+  const given = selected.map(normalizeAnswer);
+  if (question.type !== 'true_false_group') { right.sort(); given.sort(); }
   const correct = right.length === given.length && right.every((value, index) => value === given[index]);
   const streak = correct ? visibleTotals(player, time.index - 1).streak + 1 : 0;
   const secondsLeft = Math.max(0, time.endsAt - now);

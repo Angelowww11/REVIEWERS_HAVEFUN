@@ -106,12 +106,11 @@ for (const [section, cards] of sections) for (const card of cards) {
       fs.writeFileSync(path.join(exhibitDir, filename), Buffer.from(imageData.split(',')[1], 'base64'));
       imageMarkup = `<p><img src="exhibits/${filename}" alt="Reviewer exhibit for slide ${page}"></p>`;
     }
-    for (const [statement, answer, explanation] of trueFalse) {
-      const question = `True or False: ${statement}`;
-      const id = questions.length + 1;
-      questions.push({ id, sourceFile: `Certification · ${section}`, sourcePage: page, type: 'true_false_question', question, questionHtml: `${imageMarkup}<p>${escapeHTML(question)}</p>`, options: ['True', 'False'], correctAnswers: [answer] });
-      explanations[String(id)] = explanation;
-    }
+    const question = 'For each statement, choose True or False.';
+    const id = questions.length + 1;
+    questions.push({ id, sourceFile: `Certification · ${section}`, sourcePage: page, type: 'true_false_group', question, questionHtml: `${imageMarkup}<p>${escapeHTML(question)}</p>`, statements: trueFalse.map(([text]) => text), options: ['True', 'False'], correctAnswers: trueFalse.map(([, answer]) => answer) });
+    explanations[String(id)] = trueFalse.map(([text, answer, explanation], index) => `${index + 1}. ${answer} — ${explanation}`).join('\n');
+    questions[questions.length - 1].statementExplanations = trueFalse.map(([, , explanation]) => explanation);
     continue;
   }
   const patch = replacements[page] || {};
@@ -148,12 +147,16 @@ const supplemental = [
   ['Endpoints & Media','Compared with 5 GHz Wi-Fi, 2.4 GHz Wi-Fi generally offers which tradeoff?',['Shorter range and less interference','Longer range but often more interference','No radio interference','Wired-level latency'],'Longer range but often more interference','2.4 GHz often reaches farther and penetrates walls better, but it has fewer channels and more sources of interference.'],
   ['Infrastructure','How does a Layer 2 switch learn which port leads to a device?',['It records the source MAC address of an arriving frame','It reads the destination IP address in DNS','It sends every frame to the router first','It learns only from DHCP offers'],'It records the source MAC address of an arriving frame','The switch associates a frame’s source MAC address and VLAN with the ingress port in its MAC table.'],
   ['Infrastructure','What does a router primarily use to choose where to forward an IP packet?',['The destination IP address and its routing table','The source application name only','The Ethernet cable color','A DNS MX record'],'The destination IP address and its routing table','A router compares the destination IP to routes and forwards toward the best matching route.'],
+  ['Infrastructure','What does full-duplex Ethernet allow a device to do?',['Send and receive at the same time','Send only after receiving a frame','Use two IP addresses on one port','Forward broadcasts between VLANs'],'Send and receive at the same time','Full duplex supports simultaneous transmission and reception on a link.'],
+  ['Addressing','Which IPv4 range is reserved for private networks?',['10.0.0.0/8','11.0.0.0/8','100.0.0.0/8','200.0.0.0/8'],'10.0.0.0/8','The RFC 1918 private IPv4 blocks are 10/8, 172.16/12, and 192.168/16.'],
   ['Diagnosing Problems','What does tracert/traceroute show as it probes toward a destination?',['The sequence of Layer 3 hops that respond','The switch MAC table on the PC','The DNS zone file','The Wi-Fi password'],'The sequence of Layer 3 hops that respond','Traceroute varies the packet TTL/hop limit to reveal intermediate routers that return responses. Some hops may not answer.'],
   ['Diagnosing Problems','On Windows, which command displays detailed local IP, gateway, and DNS configuration?',['ipconfig /all','show ip route','nslookup /all','tracert /config'],'ipconfig /all','ipconfig /all lists detailed configuration for Windows network adapters.'],
   ['Diagnosing Problems','Which command displays the local routing table on Windows?',['route print','ping','hostname','net use'],'route print','route print shows the routes installed on the local Windows host.'],
   ['Diagnosing Problems','On a Cisco switch, which command gives a brief list of interface IP addresses and status?',['show ip interface brief','show cdp neighbors','show startup-config','show vlan password'],'show ip interface brief','This command summarizes interface addresses and their line/protocol status.'],
+  ['Diagnosing Problems','What is the purpose of a DHCP relay agent?',['Forward client DHCP messages across subnets','Translate private addresses to public addresses','Encrypt DNS lookups','Assign MAC addresses to switch ports'],'Forward client DHCP messages across subnets','A relay forwards DHCP broadcasts between a client subnet and a remote DHCP server.'],
   ['Security','In AAA, which function records resource use and user activity?',['Authentication','Authorization','Accounting','Encryption'],'Accounting','Accounting logs activity and resource use; authentication checks identity and authorization decides access.'],
-  ['Security','Which Wi-Fi security deployment typically uses individual usernames and a RADIUS/802.1X server rather than one shared home passphrase?',['WPA2-Personal','WPA2-Enterprise','Open Wi-Fi','WEP only'],'WPA2-Enterprise','Enterprise mode uses 802.1X/EAP with an authentication server; Personal mode commonly uses a shared pre-shared key.']
+  ['Security','Which Wi-Fi security deployment typically uses individual usernames and a RADIUS/802.1X server rather than one shared home passphrase?',['WPA2-Personal','WPA2-Enterprise','Open Wi-Fi','WEP only'],'WPA2-Enterprise','Enterprise mode uses 802.1X/EAP with an authentication server; Personal mode commonly uses a shared pre-shared key.'],
+  ['Security','Which security practice most directly reduces the risk of unauthorized account access after a password is stolen?',['Enable multifactor authentication','Hide the computer name','Disable DHCP','Change the Ethernet cable'],'Enable multifactor authentication','A second factor makes a stolen password alone insufficient to authenticate.']
 ];
 
 for (const [category, question, options, answer, explanation] of supplemental) {

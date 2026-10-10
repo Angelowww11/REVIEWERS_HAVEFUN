@@ -21,7 +21,8 @@ const badgeTiers = [
   { name: 'Packet Hacker', points: 40000, icon: '⚡' },
   { name: 'Packet Gods', points: 100000, icon: '♛' }
 ];
-const savedRunVersion = 1;
+const savedRunVersion = deckId === 'ccst-notebook' ? 2 : 1;
+const practiceStateVersion = deckId === 'ccst-notebook' ? 2 : 1;
 const powerCosts = { fifty: 70, shield: 45, freeze: 60 };
 const quotes = [
   'One packet at a time', 'Small wins add up', 'Your next answer is a fresh start',
@@ -54,7 +55,7 @@ function saveRankedRun(stageOverride = null) {
   const now = g.pausedAt || performance.now();
   writeJSON(savedRunKey(g.mode), {
     version: savedRunVersion, mode: g.mode, order: g.order.map(q => q.id), remaining: g.remaining.map(q => q.id), total: g.total,
-    completed: g.completed, currentId: g.current.id, score: g.score, streak: g.streak, bestStreak: g.bestStreak,
+    completed: g.completed, currentId: g.current.id, score: g.score, streak: g.streak, bestStreak: g.bestStreak, groupDraft: g.groupDraft || [], groupChoiceOrders: g.groupChoiceOrders || null,
     correct: g.correct, attempts: g.attempts, hearts: g.heartLimit === 'unlimited' ? 'unlimited' : g.hearts, heartLimit: g.heartLimit,
     missed: g.missed.map(q => q.id), selected: [...g.selected], answered: g.answered, wager: g.wager,
     hiddenChoices: [...g.hiddenChoices], displayOptions: g.displayOptions, hintStep: g.hintStep, coachOpen: g.coachOpen,
@@ -98,8 +99,20 @@ function lifetimeRankedPoints() { return Math.max(0, Number(app.stats.rankedPoin
 function badgeForPoints(points) { return [...badgeTiers].reverse().find(tier => points >= tier.points) || badgeTiers[0]; }
 function leaderboardBadge(entry) { return badgeForPoints(Number(entry.lifetimePoints ?? entry.score) || 0); }
 function sourceName(q) { if (q.sourcePage) return `Reviewer p. ${q.sourcePage}`; const match = String(q.sourceFile || '').match(/pool\s+(\w+)/i); return match ? `Pool ${match[1].replace(/^./, c => c.toUpperCase())}` : 'Question pool'; }
-function typeName(q) { return q.type === 'matching_question' ? 'Drag to match' : q.type === 'true_false_question' ? 'True / false' : q.type === 'short_answer_question' ? 'Short answer' : q.correctAnswers.length > 1 ? 'Multiple answers' : 'Multiple choice'; }
+function typeName(q) { return q.type === 'matching_question' ? 'Drag to match' : q.type === 'true_false_group' ? '3 × True / False' : q.type === 'true_false_question' ? 'True / false' : q.type === 'short_answer_question' ? 'Short answer' : q.correctAnswers.length > 1 ? 'Multiple answers' : 'Multiple choice'; }
 function isDragMatch(q) { return q?.type === 'matching_question' && (Array.isArray(q.dragPairs) ? q.dragPairs.length : q.dragItems?.length) > 1; }
+function isTrueFalseGroup(q) { return q?.type === 'true_false_group' && Array.isArray(q.statements) && q.statements.length > 0; }
+function renderTrueFalseGroup(q, responses = [], disabled = false, reveal = false, choiceOrders = null) {
+  return `<div class="tf-group" role="group" aria-label="Choose True or False for each statement">${q.statements.map((statement, index) => {
+    const picked = responses[index]; const expected = q.correctAnswers?.[index];
+    const choices = choiceOrders?.[index] || q.options;
+    return `<section class="tf-statement"><span class="tf-number">${index + 1}</span><p>${escapeHTML(statement)}</p><div class="tf-controls" role="group" aria-label="Statement ${index + 1} answer">${choices.map(answer => {
+      const selected = picked === answer; const correct = reveal && expected === answer;
+      const wrong = reveal && selected && picked !== expected;
+      return `<button type="button" class="tf-choice ${selected && !reveal ? 'is-selected' : ''} ${correct ? 'is-correct' : ''} ${wrong ? 'is-wrong' : ''}" data-tf-index="${index}" data-tf-answer="${answer}" aria-pressed="${selected}" ${disabled ? 'disabled' : ''}>${answer}</button>`;
+    }).join('')}</div></section>`;
+  }).join('')}</div>`;
+}
 function dragItems(q) { return q.dragItems || (q.dragPairs || []).map(pair => pair.item); }
 function dragTargets(q) { return q.dragTargets || (q.dragPairs || []).map(pair => pair.target); }
 function dragAnswer(q, pairIndex, targetIndex) { return `${dragItems(q)[pairIndex]} → ${dragTargets(q)[targetIndex]}`; }
@@ -162,7 +175,8 @@ function attachDragInteraction(container, selector, disabled = false) {
 }
 function hasImage(q) { return /<img\b/i.test(q.questionHtml || ''); }
 function isCorrectOption(q, option) { return (q.correctAnswers || []).some(a => normalize(a) === normalize(option)); }
-function answerText(q) { return (q.correctAnswers || []).join(' · '); }
+function formatGroupAnswers(answers) { return answers.map((answer, index) => `${index + 1}. ${answer}`).join(' · '); }
+function answerText(q) { return isTrueFalseGroup(q) ? formatGroupAnswers(q.correctAnswers) : (q.correctAnswers || []).join(' · '); }
 function explanationText(q) { return app.explanations[q.id] || 'Compare the key term in the question with the correct answer, then try this card again later.'; }
 function explanationHtml(q) {
   const blocks = []; let active = null;
@@ -342,7 +356,7 @@ function filteredBank() {
     if (type === 'favorites' && !app.favorites.has(q.id)) return false;
     if (type !== 'all' && type !== 'favorites' && q.type !== type) return false;
     if (!query) return true;
-    return [q.question, ...(q.options || []), ...(q.correctAnswers || [])].some(value => String(value).toLocaleLowerCase().includes(query));
+    return [q.question, ...(q.statements || []), ...(q.options || []), ...(q.correctAnswers || [])].some(value => String(value).toLocaleLowerCase().includes(query));
   });
 }
 function renderBank() {
@@ -355,18 +369,21 @@ function renderBank() {
   $('revealAllButton').setAttribute('aria-pressed', String(app.bankRevealAll));
   $('bankList').innerHTML = visible.length ? visible.map(q => {
     const revealed = app.bankRevealAll || app.bankRevealed.has(q.id);
-    const options = q.type === 'short_answer_question' ? [] : q.options || [];
-    return `<article class="bank-question" data-id="${q.id}"><div class="bank-q-top"><span class="bank-number">#${q.id}</span><span class="chip chip-source">${escapeHTML(sourceName(q))}</span><span class="chip">${escapeHTML(typeName(q))}</span><button type="button" class="star-button ${app.favorites.has(q.id) ? 'is-starred' : ''}" data-bank-action="star" aria-label="${app.favorites.has(q.id) ? 'Remove star from' : 'Star'} question ${q.id}" aria-pressed="${app.favorites.has(q.id)}">★</button></div><div class="bank-prompt">${safeQuestionHTML(q)}</div>${options.length ? `<div class="bank-choices">${options.map((option, index) => `<div class="bank-choice ${revealed && isCorrectOption(q, option) ? 'is-answer' : ''}"><i>${String.fromCharCode(65 + index)}</i><span>${escapeHTML(option)}</span></div>`).join('')}</div>` : ''}<div class="bank-actions"><button type="button" class="bank-reveal" data-bank-action="reveal">${revealed ? 'Hide answer' : 'Reveal answer'}</button>${revealed ? `<span class="bank-answer-note">✓ ${escapeHTML(answerText(q))}</span>` : ''}</div>${revealed ? `<p class="bank-explanation">${escapeHTML(explanationText(q))}</p>` : ''}</article>`;
+    const options = q.type === 'short_answer_question' || isTrueFalseGroup(q) ? [] : q.options || [];
+    const statements = isTrueFalseGroup(q) ? `<ol class="tf-bank-list">${q.statements.map((statement, index) => `<li>${escapeHTML(statement)}${revealed ? `<strong>${escapeHTML(q.correctAnswers[index])}</strong>` : '<span>True / False</span>'}</li>`).join('')}</ol>` : '';
+    return `<article class="bank-question" data-id="${q.id}"><div class="bank-q-top"><span class="bank-number">#${q.id}</span><span class="chip chip-source">${escapeHTML(sourceName(q))}</span><span class="chip">${escapeHTML(typeName(q))}</span><button type="button" class="star-button ${app.favorites.has(q.id) ? 'is-starred' : ''}" data-bank-action="star" aria-label="${app.favorites.has(q.id) ? 'Remove star from' : 'Star'} question ${q.id}" aria-pressed="${app.favorites.has(q.id)}">★</button></div><div class="bank-prompt">${safeQuestionHTML(q)}</div>${statements}${options.length ? `<div class="bank-choices">${options.map((option, index) => `<div class="bank-choice ${revealed && isCorrectOption(q, option) ? 'is-answer' : ''}"><i>${String.fromCharCode(65 + index)}</i><span>${escapeHTML(option)}</span></div>`).join('')}</div>` : ''}<div class="bank-actions"><button type="button" class="bank-reveal" data-bank-action="reveal">${revealed ? 'Hide answer' : 'Reveal answer'}</button>${revealed && !isTrueFalseGroup(q) ? `<span class="bank-answer-note">✓ ${escapeHTML(answerText(q))}</span>` : ''}</div>${revealed ? `<p class="bank-explanation">${escapeHTML(explanationText(q))}</p>` : ''}</article>`;
   }).join('') : `<div class="bank-empty"><strong>No questions found</strong>Try a different search or filter.</div>`;
 }
 
-const practice = { index: 0, entries: {}, selected: new Set(), shuffleChoices: false, correctFirst: false, choiceOrder: {}, dragMappings: {}, dragItemOrders: {}, dragTargetOrders: {} };
+const practice = { index: 0, entries: {}, selected: new Set(), groupDrafts: {}, groupChoiceOrders: {}, shuffleChoices: false, correctFirst: false, choiceOrder: {}, dragMappings: {}, dragItemOrders: {}, dragTargetOrders: {} };
 function restorePractice() {
   const saved = readJSON(deckStorageKey('pp_practice_v1'), null);
-  if (!saved || saved.version !== 1 || saved.count !== app.questions.length) return;
+  if (!saved || saved.version !== practiceStateVersion || saved.count !== app.questions.length) return;
   practice.index = Number.isInteger(saved.index) ? Math.max(0, Math.min(app.questions.length - 1, saved.index)) : 0;
   practice.shuffleChoices = saved.shuffleChoices === true;
   practice.correctFirst = saved.correctFirst === true;
+  if (saved.groupDrafts && typeof saved.groupDrafts === 'object') practice.groupDrafts = saved.groupDrafts;
+  if (saved.groupChoiceOrders && typeof saved.groupChoiceOrders === 'object') practice.groupChoiceOrders = saved.groupChoiceOrders;
   if (saved.dragMappings && typeof saved.dragMappings === 'object') practice.dragMappings = saved.dragMappings;
   if (saved.dragItemOrders && typeof saved.dragItemOrders === 'object') practice.dragItemOrders = saved.dragItemOrders;
   if (saved.dragTargetOrders && typeof saved.dragTargetOrders === 'object') practice.dragTargetOrders = saved.dragTargetOrders;
@@ -385,7 +402,15 @@ function restorePractice() {
     practice.entries[q.id] = { status: entry.status, response };
   }
 }
-function savePractice() { writeJSON(deckStorageKey('pp_practice_v1'), { version: 1, count: app.questions.length, index: practice.index, entries: practice.entries, shuffleChoices: practice.shuffleChoices, correctFirst: practice.correctFirst, choiceOrder: practice.choiceOrder, dragMappings: practice.dragMappings, dragItemOrders: practice.dragItemOrders, dragTargetOrders: practice.dragTargetOrders }); }
+function savePractice() { writeJSON(deckStorageKey('pp_practice_v1'), { version: practiceStateVersion, count: app.questions.length, index: practice.index, entries: practice.entries, groupDrafts: practice.groupDrafts, groupChoiceOrders: practice.groupChoiceOrders, shuffleChoices: practice.shuffleChoices, correctFirst: practice.correctFirst, choiceOrder: practice.choiceOrder, dragMappings: practice.dragMappings, dragItemOrders: practice.dragItemOrders, dragTargetOrders: practice.dragTargetOrders }); }
+function practiceGroupChoiceOrder(q) {
+  if (practice.correctFirst) return q.statements.map((_, index) => [q.correctAnswers[index], ...q.options.filter(answer => answer !== q.correctAnswers[index])]);
+  if (!practice.shuffleChoices) return null;
+  const saved = practice.groupChoiceOrders[q.id];
+  if (Array.isArray(saved) && saved.length === q.statements.length && saved.every(order => Array.isArray(order) && order.length === q.options.length && new Set(order).size === q.options.length && order.every(answer => q.options.includes(answer)))) return saved;
+  const orders = q.statements.map(() => shuffle(q.options));
+  practice.groupChoiceOrders[q.id] = orders; savePractice(); return orders;
+}
 function renderPracticeCard() {
   const label = $('practiceCardProgress');
   if (label) label.textContent = practice.index || Object.keys(practice.entries).length ? `Continue at #${practice.index + 1}` : 'Start at #1';
@@ -403,7 +428,7 @@ function practiceGoTo(index) {
 }
 function resetPractice() {
   if (!confirm('Erase all Practice path answers and start again at question 1?')) return;
-  practice.index = 0; practice.entries = {}; practice.selected = new Set(); practice.choiceOrder = {}; practice.dragMappings = {}; practice.dragItemOrders = {}; practice.dragTargetOrders = {};
+  practice.index = 0; practice.entries = {}; practice.selected = new Set(); practice.groupDrafts = {}; practice.groupChoiceOrders = {}; practice.choiceOrder = {}; practice.dragMappings = {}; practice.dragItemOrders = {}; practice.dragTargetOrders = {};
   $('practiceJumpInput').value = '';
   savePractice(); renderPractice(); renderPracticeCard();
   scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
@@ -437,15 +462,18 @@ function renderPractice() {
   const record = practiceRecord(q), answered = practiceAnswered(record);
   const typed = q.type === 'short_answer_question' || !q.options.length;
   const drag = isDragMatch(q);
-  const multi = !typed && q.correctAnswers.length > 1;
+  const group = isTrueFalseGroup(q);
+  const multi = !typed && (group || q.correctAnswers.length > 1);
   const response = Array.isArray(record?.response) ? record.response : record?.response ? [record.response] : [];
   let answers;
   if (typed) answers = `<label class="sr-only" for="practiceAnswerInput">Type your answer</label><input id="practiceAnswerInput" class="answer-input" type="text" autocomplete="off" spellcheck="false" placeholder="Type your answer…" value="${escapeHTML(record?.response || '')}" ${answered ? 'disabled' : ''}><p class="input-helper">${q.type === 'short_answer_question' ? 'Follow the format in the question.' : 'Capitalization is ignored.'}</p>`;
+  else if (group) answers = renderTrueFalseGroup(q, answered ? response : practice.groupDrafts[q.id] || [], answered, answered, practiceGroupChoiceOrder(q));
   else if (drag) { const savedMap = Array.isArray(record?.mapping) ? record.mapping : practice.dragMappings[q.id]; const order = practiceDragOrders(q); answers = renderDragMatch(q, savedMap, answered, 'practice', order.items, order.targets, practice.correctFirst); }
   else answers = `<div class="game-choices" role="group" aria-label="Answer choices${practice.shuffleChoices ? ' in shuffled order' : ' in original order'}">${practiceOptionsOrder(q).map((originalIndex, displayIndex) => { const option = q.options[originalIndex]; const picked = response.some(item => normalize(item) === normalize(option)); const correct = isCorrectOption(q, option); const cls = answered ? correct ? 'is-correct' : picked ? 'is-wrong' : '' : practice.selected.has(originalIndex) ? 'is-selected' : ''; return `<button type="button" class="choice-button ${cls}" data-practice-choice="${originalIndex}" aria-pressed="${picked || practice.selected.has(originalIndex)}" ${answered ? 'disabled' : ''}><span class="choice-key">${displayIndex + 1}</span><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>`;
-  const feedback = answered ? `<div class="feedback ${record.status === 'correct' ? 'is-correct' : 'is-wrong'}" role="status"><strong>${record.status === 'correct' ? 'You got it!' : record.status === 'revealed' ? 'Answer revealed' : 'Good one to review.'}</strong>${answerComparison(q, record.status === 'wrong' && response.length ? response.join(' · ') : '')}${explanationHtml(q)}<small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div>` : record?.status === 'skipped' ? '<p class="practice-skipped-note">You skipped this one. Try it whenever you’re ready.</p>' : '';
-  const action = answered ? '<button type="button" class="practice-retry" data-practice-action="retry">Try this question again</button>' : `<div class="practice-answer-actions">${typed || multi || drag ? `<button type="button" class="question-submit" data-practice-action="check" ${typed || drag ? 'disabled' : !practice.selected.size ? 'disabled' : ''}>Check answer</button>` : ''}<button type="button" class="practice-reveal" data-practice-action="reveal">Show answer</button></div>`;
+  const feedback = answered ? `<div class="feedback ${record.status === 'correct' ? 'is-correct' : 'is-wrong'}" role="status"><strong>${record.status === 'correct' ? 'You got it!' : record.status === 'revealed' ? 'Answer revealed' : 'Good one to review.'}</strong>${answerComparison(q, record.status === 'wrong' && response.length ? isTrueFalseGroup(q) ? formatGroupAnswers(response) : response.join(' · ') : '')}${explanationHtml(q)}<small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div>` : record?.status === 'skipped' ? '<p class="practice-skipped-note">You skipped this one. Try it whenever you’re ready.</p>' : '';
+  const action = answered ? '<button type="button" class="practice-retry" data-practice-action="retry">Try this question again</button>' : `<div class="practice-answer-actions">${typed || multi || drag ? `<button type="button" class="question-submit" data-practice-action="check" ${typed || drag || group ? 'disabled' : !practice.selected.size ? 'disabled' : ''}>Check answer</button>` : ''}<button type="button" class="practice-reveal" data-practice-action="reveal">Show answer</button></div>`;
   $('practiceContent').innerHTML = `<article class="question-card practice-question-card"><div class="question-card-head"><span class="question-tag">QUESTION ${practice.index + 1} · ${escapeHTML(sourceName(q).toUpperCase())}</span><span class="practice-type-tag">${escapeHTML(typeName(q))}</span></div><div class="question-prompt">${safeQuestionHTML(q)}</div>${answers}${feedback}${action}</article>`;
+  if (group && !answered) { const draft = practice.groupDrafts[q.id] || []; const check = $('practiceContent').querySelector('[data-practice-action="check"]'); if (check) check.disabled = draft.length !== q.statements.length || draft.some(answer => !answer); }
   if (drag) { const board = $('practiceContent').querySelector('[data-drag-board]'); attachDragInteraction(board, '#practiceContent'); const map = dragMappingFrom(board); const button = $('practiceContent').querySelector('[data-practice-action="check"]'); button.disabled = !isCompleteDrag(map); }
   const answeredCount = Object.values(practice.entries).filter(entry => entry.status === 'correct' || entry.status === 'wrong').length;
   const correctCount = Object.values(practice.entries).filter(entry => entry.status === 'correct').length;
@@ -465,7 +493,7 @@ function practiceSubmit(response) {
   const picks = Array.isArray(response) ? response : String(response || '').trim();
   if (!Array.isArray(picks) && !picks) return;
   const mapping = isDragMatch(q) && Array.isArray(picks) ? picks.map(value => { const match = String(value).match(/ → (.*)$/); return match ? q.dragPairs.findIndex(pair => normalize(pair.target) === normalize(match[1])) : -1; }) : null;
-  const correct = isDragMatch(q) ? gradeDrag(q, mapping) : Array.isArray(picks) ? (() => { const expected = new Set(q.correctAnswers.map(normalize)); return picks.length === expected.size && picks.every(option => expected.has(normalize(option))); })() : checkTypedAnswer(q, picks);
+  const correct = isTrueFalseGroup(q) ? picks.length === q.statements.length && picks.every((answer, index) => normalize(answer) === normalize(q.correctAnswers[index])) : isDragMatch(q) ? gradeDrag(q, mapping) : Array.isArray(picks) ? (() => { const expected = new Set(q.correctAnswers.map(normalize)); return picks.length === expected.size && picks.every(option => expected.has(normalize(option))); })() : checkTypedAnswer(q, picks);
   practice.entries[q.id] = { status: correct ? 'correct' : 'wrong', response: picks, ...(mapping ? { mapping, itemOrder: practice.dragItemOrders[q.id], targetOrder: practice.dragTargetOrders[q.id] } : {}) };
   if (mapping) practice.dragMappings[q.id] = mapping;
   practice.selected = new Set(); savePractice(); renderPractice(); renderPracticeCard();
@@ -512,7 +540,7 @@ function prepareDifficulty() {
   const sorted = [...app.questions].sort((a, b) => complexity(a) - complexity(b));
   sorted.forEach((q, index) => { q._difficulty = sorted.length > 1 ? index / (sorted.length - 1) : .5; });
 }
-function complexity(q) { return String(q.question || '').length + (q.options || []).reduce((sum, option) => sum + String(option).length * .2, 0) + (hasImage(q) ? 55 : 0); }
+function complexity(q) { return String(q.question || '').length + (q.statements || []).reduce((sum, statement) => sum + String(statement).length, 0) + (q.options || []).reduce((sum, option) => sum + String(option).length * .2, 0) + (hasImage(q) ? 55 : 0); }
 function startGame() {
   const mode = app.mode;
   const heartLimit = mode === 'training' ? 'unlimited' : ['1', '3', '5', 'unlimited'].includes($('heartLimitSelect').value) ? $('heartLimitSelect').value : '3';
@@ -532,7 +560,7 @@ function startGame() {
   }
   app.game = {
     mode, order, remaining: mode === 'adaptive' ? shuffle(questions) : [], total, completed: 0, current: null,
-    score: 0, streak: 0, bestStreak: 0, correct: 0, attempts: 0, hearts: heartLimit === 'unlimited' ? Infinity : Number(heartLimit), heartLimit, missed: [], selected: new Set(),
+    score: 0, streak: 0, bestStreak: 0, correct: 0, attempts: 0, hearts: heartLimit === 'unlimited' ? Infinity : Number(heartLimit), heartLimit, missed: [], selected: new Set(), groupDraft: [], groupChoiceOrders: null,
     dragMapping: null, dragItemOrder: null, dragTargetOrder: null,
     answered: false, wager: 0, hiddenChoices: new Set(), hintStep: 0, coachOpen: false,
     used: { fifty: false, shield: false, freeze: false }, activeShield: false,
@@ -561,7 +589,7 @@ function resumeRankedRun(mode) {
   const now = performance.now();
   const heartLimit = ['1', '3', '5', 'unlimited'].includes(saved.heartLimit) ? saved.heartLimit : '3';
   const g = {
-    mode, order: saved.order.map(id => byId.get(id)), remaining: (saved.remaining || []).map(id => byId.get(id)),
+    mode, order: saved.order.map(id => byId.get(id)), remaining: (saved.remaining || []).map(id => byId.get(id)), groupDraft: Array.isArray(saved.groupDraft) ? saved.groupDraft : [], groupChoiceOrders: Array.isArray(saved.groupChoiceOrders) ? saved.groupChoiceOrders : null,
     total: saved.total, completed: saved.completed, current, score: saved.score,
     streak: Number(saved.streak) || 0, bestStreak: Number(saved.bestStreak) || 0,
     correct: Number(saved.correct) || 0, attempts: Number(saved.attempts) || 0,
@@ -624,9 +652,10 @@ function nextQuestion() {
   g.current = g.mode === 'adaptive' ? selectAdaptiveQuestion(g, preferHard) : g.order[g.completed];
   if (!g.current) { if (g.training) finishTrainingPass(); else finishGame(); return; }
   g.selected = new Set(); g.dragMapping = isDragMatch(g.current) ? g.current.dragPairs.map(() => -1) : null;
+  g.groupChoiceOrders = isTrueFalseGroup(g.current) ? g.current.statements.map((_, index) => g.firstCorrect ? [g.current.correctAnswers[index], ...g.current.options.filter(answer => answer !== g.current.correctAnswers[index])] : shuffle(g.current.options)) : null;
   g.dragItemOrder = isDragMatch(g.current) ? g.firstCorrect ? dragItems(g.current).map((_, index) => index) : displayOrder(dragItems(g.current).length) : null;
   g.dragTargetOrder = isDragMatch(g.current) ? g.firstCorrect ? dragTargets(g.current).map((_, index) => index) : displayOrder(dragTargets(g.current).length) : null;
-  g.answered = false; g.wager = 0; g.hiddenChoices = new Set(); g.displayOptions = null; g.hintStep = 0; g.coachOpen = false; g.used = { fifty: false, shield: false, freeze: false }; g.activeShield = false; g.lastResult = null;
+  g.answered = false; g.wager = 0; g.hiddenChoices = new Set(); g.displayOptions = null; g.groupDraft = []; g.hintStep = 0; g.coachOpen = false; g.used = { fifty: false, shield: false, freeze: false }; g.activeShield = false; g.lastResult = null;
   g.questionAt = performance.now();
   if (g.mode === 'blitz') { g.remainingTime = Math.max(5, 15 - Math.floor(g.completed * .7)); g.timerLast = performance.now(); }
   const wagerRound = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100 && difficulty(g.current) >= .55 && !['typing', 'training'].includes(g.mode);
@@ -660,13 +689,16 @@ function powerMarkup(g, q) {
 function renderQuestion() {
   const g = app.game, q = g.current;
   if (isDragMatch(q)) { renderDragQuestion(g, q); return; }
-  g.displayOptions ||= optionOrder(q, g.firstCorrect);
-  const isType = g.mode === 'typing' || q.type === 'short_answer_question' || !g.displayOptions.length;
-  const isMulti = !isType && q.correctAnswers.length > 1;
+  const group = isTrueFalseGroup(q);
+  g.displayOptions ||= group ? q.options : optionOrder(q, g.firstCorrect);
+  const isType = !group && (g.mode === 'typing' || q.type === 'short_answer_question' || !g.displayOptions.length);
+  const isMulti = group || !isType && q.correctAnswers.length > 1;
   let answers;
   if (isType) answers = `<label class="sr-only" for="answerInput">Type your answer</label><input id="answerInput" class="answer-input" type="text" autocomplete="off" spellcheck="false" placeholder="Type your answer…"><p class="input-helper">${q.type === 'short_answer_question' ? 'Follow the format in the question.' : 'Use the same answer wording. Capitalization is ignored.'}</p>`;
+  else if (group) answers = renderTrueFalseGroup(q, g.groupDraft || [], false, false, g.groupChoiceOrders);
   else answers = `<div class="game-choices" role="group" aria-label="Answer choices">${g.displayOptions.map((option, index) => `<button type="button" class="choice-button ${g.hiddenChoices.has(index) ? 'is-eliminated' : ''}" data-choice-index="${index}" aria-pressed="false" ${g.hiddenChoices.has(index) ? `disabled aria-label="Choice ${index + 1} eliminated"` : ''}><span class="choice-key">${index + 1}</span><span>${escapeHTML(option)}</span></button>`).join('')}</div>`;
   $('gameContent').innerHTML = `<article class="question-card"><div class="question-card-head"><span class="question-tag">${escapeHTML(typeName(q).toUpperCase())} · ${escapeHTML(sourceName(q).toUpperCase())}</span><span class="difficulty-tag">${difficulty(q) > .72 ? 'HARD' : difficulty(q) > .38 ? 'MEDIUM' : 'WARM-UP'} · ${100 + Math.round(difficulty(q) * 75)} PTS</span></div><div class="question-prompt" id="currentQuestion">${safeQuestionHTML(q)}</div>${answers}<div id="feedbackSlot"></div><div class="question-actions"><div class="question-actions-left">${powerMarkup(g, q)}<button type="button" class="hint-button" data-action="hint">💡 Hint bot</button></div><button type="button" id="answerAction" class="question-submit" data-action="${isType || isMulti ? 'submit' : 'skip'}" ${isType || isMulti ? 'disabled' : ''}>${isType || isMulti ? 'Check answer' : 'Skip question'}</button></div><div id="coachSlot"></div></article>`;
+  if (group) $('answerAction').disabled = (g.groupDraft || []).length !== q.statements.length || g.groupDraft.some(answer => !answer);
   if (isType) $('answerInput').focus();
   g.questionAt = performance.now();
   announce(`Question ${g.completed + 1} of ${g.total}. ${q.question}`);
@@ -709,6 +741,7 @@ function checkTypedAnswer(q, typed) {
 function checkAnswer() {
   const g = app.game, q = g?.current; if (!g || !q || g.answered) return;
   if (isDragMatch(q)) { const board = $('gameContent').querySelector('[data-drag-board]'); g.dragMapping = dragMappingFrom(board); if (!isCompleteDrag(g.dragMapping)) return; resolveAnswer(gradeDrag(q, g.dragMapping), dragPayload(q, g.dragMapping).join(' · ')); return; }
+  if (isTrueFalseGroup(q)) { const picks = [...(g.groupDraft || [])]; if (picks.length !== q.statements.length || picks.some(answer => !answer)) return; resolveAnswer(picks.every((answer, index) => normalize(answer) === normalize(q.correctAnswers[index])), picks.map((answer, index) => `${index + 1}. ${answer}`).join(' · ')); return; }
   const typed = g.mode === 'typing' || q.type === 'short_answer_question' || !g.displayOptions.length;
   let correct = false, response = '';
   if (isDragMatch(q)) { const board = $('practiceContent').querySelector('[data-drag-board]'); const mapping = dragMappingFrom(board); if (!isCompleteDrag(mapping)) return; practiceSubmit(dragPayload(q, mapping)); return; }
@@ -754,6 +787,7 @@ function renderAnswerFeedback(g) {
   const q = g.current, { correct, response, points, resultWord } = g.lastResult;
   const slot = $('feedbackSlot');
   slot.innerHTML = `<div class="feedback ${correct ? 'is-correct' : 'is-wrong'}"><div class="feedback-result"><strong>${resultWord}</strong><span>${correct ? `+${formatNumber(points)} points${g.wager ? ` · ${formatNumber(g.wager)} wager won` : ''}` : `${g.wager ? `${formatNumber(g.wager)} points lost` : 'Answer saved for review'}`}</span></div>${answerComparison(q, correct ? '' : response)}${explanationHtml(q)}<small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div>`;
+  if (isTrueFalseGroup(q)) { const old = $('gameContent').querySelector('.tf-group'); if (old) old.outerHTML = renderTrueFalseGroup(q, g.groupDraft, true, true); }
   if (isDragMatch(q)) { const board = $('gameContent').querySelector('[data-drag-board]'); if (board) board.outerHTML = renderDragMatch(q, g.dragMapping, true, 'solo', g.dragItemOrder, g.dragTargetOrder, g.firstCorrect); }
   document.querySelectorAll('.choice-button').forEach(button => {
     const index = +button.dataset.choiceIndex, option = g.displayOptions[index];
@@ -1024,8 +1058,8 @@ function attachEvents() {
   $('savedRuns').addEventListener('click', event => { const mode = event.target.closest('[data-resume-mode]')?.dataset.resumeMode; if (mode) resumeRankedRun(mode); });
   document.querySelectorAll('.mode-card').forEach(button => button.addEventListener('click', () => button.dataset.mode === 'practice' ? openPractice() : openSetup(button.dataset.mode)));
   $('leavePractice').addEventListener('click', () => setView('home'));
-  $('practiceShuffleChoices').addEventListener('change', event => { practice.shuffleChoices = event.target.checked; practice.choiceOrder = {}; practice.dragItemOrders = {}; practice.dragTargetOrders = {}; savePractice(); renderPractice(); });
-  $('practiceCorrectFirst').addEventListener('change', event => { practice.correctFirst = event.target.checked; practice.choiceOrder = {}; practice.dragItemOrders = {}; practice.dragTargetOrders = {}; savePractice(); renderPractice(); });
+  $('practiceShuffleChoices').addEventListener('change', event => { practice.shuffleChoices = event.target.checked; practice.choiceOrder = {}; practice.groupChoiceOrders = {}; practice.dragItemOrders = {}; practice.dragTargetOrders = {}; savePractice(); renderPractice(); });
+  $('practiceCorrectFirst').addEventListener('change', event => { practice.correctFirst = event.target.checked; practice.choiceOrder = {}; practice.groupChoiceOrders = {}; practice.dragItemOrders = {}; practice.dragTargetOrders = {}; savePractice(); renderPractice(); });
   $('practicePrevious').addEventListener('click', () => practiceGoTo(practice.index - 1));
   $('practiceNext').addEventListener('click', () => practiceGoTo(practice.index + 1));
   $('practiceSkip').addEventListener('click', () => { const q = app.questions[practice.index]; if (!practiceAnswered(practiceRecord(q))) practice.entries[q.id] = { status: 'skipped', response: '' }; practiceGoTo(practice.index + 1); });
@@ -1038,6 +1072,11 @@ function attachEvents() {
   });
   $('practiceContent').addEventListener('click', event => {
     const q = app.questions[practice.index], record = practiceRecord(q);
+    const tfChoice = event.target.closest('[data-tf-index]');
+    if (tfChoice && isTrueFalseGroup(q) && !practiceAnswered(record)) {
+      const current = practice.groupDrafts[q.id]; const draft = Array.isArray(current) && current.length === q.statements.length ? [...current] : Array(q.statements.length).fill(null); draft[Number(tfChoice.dataset.tfIndex)] = tfChoice.dataset.tfAnswer;
+      practice.groupDrafts[q.id] = draft; savePractice(); renderPractice(); return;
+    }
     const choice = event.target.closest('[data-practice-choice]');
     if (choice && !practiceAnswered(record)) {
       const index = Number(choice.dataset.practiceChoice);
@@ -1050,10 +1089,11 @@ function attachEvents() {
       return;
     }
     const action = event.target.closest('[data-practice-action]')?.dataset.practiceAction;
-    if (action === 'retry') { delete practice.entries[q.id]; delete practice.dragMappings[q.id]; if (isDragMatch(q)) practiceDragOrders(q, true); practice.selected = new Set(); savePractice(); renderPractice(); }
+    if (action === 'retry') { delete practice.entries[q.id]; delete practice.dragMappings[q.id]; delete practice.groupDrafts[q.id]; if (isDragMatch(q)) practiceDragOrders(q, true); practice.selected = new Set(); savePractice(); renderPractice(); }
     else if (action === 'reveal') { practice.entries[q.id] = { status: 'revealed', response: '' }; practice.selected = new Set(); savePractice(); renderPractice(); }
     else if (action === 'check') {
-      if (isDragMatch(q)) practiceSubmit(dragPayload(q, dragMappingFrom($('practiceContent').querySelector('[data-drag-board]'))));
+      if (isTrueFalseGroup(q)) { const draft = practice.groupDrafts[q.id] || []; if (draft.length === q.statements.length && draft.every(Boolean)) practiceSubmit(draft); }
+      else if (isDragMatch(q)) practiceSubmit(dragPayload(q, dragMappingFrom($('practiceContent').querySelector('[data-drag-board]'))));
       else if (q.type === 'short_answer_question' || !q.options.length) practiceSubmit($('practiceAnswerInput')?.value || '');
       else if (practice.selected.size) practiceSubmit([...practice.selected].map(index => q.options[index]));
     }
@@ -1104,6 +1144,12 @@ function attachEvents() {
     const wager = event.target.closest('[data-wager]'); if (wager) { const g = app.game; g.wager = Math.floor(g.score * (+wager.dataset.wager / 100)); playTone('click'); renderQuestion(); saveRankedRun(); return; }
     const match = event.target.closest('[data-match-side]'); if (match) { handleMatchClick(match); return; }
     const power = event.target.closest('[data-power]'); if (power) { usePower(power.dataset.power); return; }
+    const tfChoice = event.target.closest('[data-tf-index]');
+    if (tfChoice && app.game && !app.game.answered && isTrueFalseGroup(app.game.current)) {
+      const g = app.game, q = g.current; const current = g.groupDraft; const draft = Array.isArray(current) && current.length === q.statements.length ? [...current] : Array(q.statements.length).fill(null); draft[Number(tfChoice.dataset.tfIndex)] = tfChoice.dataset.tfAnswer; g.groupDraft = draft;
+      $('gameContent').querySelectorAll('[data-tf-index]').forEach(button => { const selected = draft[Number(button.dataset.tfIndex)] === button.dataset.tfAnswer; button.classList.toggle('is-selected', selected); button.setAttribute('aria-pressed', String(selected)); });
+      $('answerAction').disabled = draft.some(answer => !answer); saveRankedRun(); return;
+    }
     const choice = event.target.closest('[data-choice-index]');
     if (choice && app.game && !app.game.answered) {
       const index = +choice.dataset.choiceIndex, g = app.game, multi = g.current.correctAnswers.length > 1;
@@ -1127,6 +1173,16 @@ function attachEvents() {
     if (event.key === 'Backspace' && app.view === 'game') { event.preventDefault(); if ($('answerHistoryDialog').open) moveAnswerHistory(-1); else openAnswerHistory(); return; }
     if ($('answerHistoryDialog').open) return;
     if (app.view === 'game' && app.game?.answered && event.key === 'Enter') { $('answerAction')?.click(); return; }
+    if (/^[12]$/.test(event.key)) {
+      const q = app.view === 'game' ? app.game?.current : app.view === 'practice' ? app.questions[practice.index] : app.view === 'live' && live.room?.phase === 'question' ? live.room.currentQuestion : null;
+      const root = app.view === 'game' ? $('gameContent') : app.view === 'practice' ? $('practiceContent') : app.view === 'live' ? $('liveStage') : null;
+      if (isTrueFalseGroup(q) && root) {
+        const focusedRow = event.target.closest?.('.tf-statement');
+        const nextRow = focusedRow || [...root.querySelectorAll('.tf-statement')].find(row => !row.querySelector('.tf-choice.is-selected'));
+        const choice = nextRow?.querySelectorAll('.tf-choice')[Number(event.key) - 1];
+        if (choice && !choice.disabled) { event.preventDefault(); choice.click(); return; }
+      }
+    }
     if (!/^[1-9]$/.test(event.key)) return;
     const index = Number(event.key) - 1;
     let choice;
@@ -1146,7 +1202,7 @@ const live = {
   code: null, token: null, playerId: null, room: null, name: '', serverOffset: 0,
   pollTimer: null, clockTimer: null, fetching: false, lastPollAt: 0, pendingActions: new Set(),
   requestSeq: 0, appliedSeq: 0, stageSignature: '', playersSignature: '', messagesSignature: '',
-  roundKey: '', submitted: false, pendingAnswer: null, selected: new Set(), dragMapping: [], savedDragMapping: [], hintStep: 0, seenReactions: new Set(),
+  roundKey: '', submitted: false, pendingAnswer: null, selected: new Set(), groupDraft: [], dragMapping: [], savedDragMapping: [], hintStep: 0, seenReactions: new Set(),
   sawReactions: false, revealKey: '', lastQuestion: null, effectSignature: '', scrambleSignature: ''
 };
 
@@ -1195,7 +1251,7 @@ function liveClearSession() {
   live.lastPollAt = 0;
   live.pendingActions = new Set();
   live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
-  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear(); live.dragMapping = []; live.savedDragMapping = []; live.hintStep = 0;
+  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear(); live.groupDraft = []; live.dragMapping = []; live.savedDragMapping = []; live.hintStep = 0;
   live.seenReactions.clear(); live.sawReactions = false; live.revealKey = ''; live.lastQuestion = null; live.effectSignature = ''; live.scrambleSignature = '';
   try { localStorage.removeItem(deckStorageKey('pp_live_session')); } catch { /* Storage is optional. */ }
   const url = new URL(location.href);
@@ -1239,7 +1295,7 @@ function liveEnter(data, name) {
   live.appliedSeq = 0; live.requestSeq = 0; live.room = null;
   live.stageSignature = ''; live.playersSignature = ''; live.messagesSignature = '';
   live.effectSignature = ''; live.scrambleSignature = '';
-  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear(); live.dragMapping = []; live.savedDragMapping = []; live.hintStep = 0;
+  live.roundKey = ''; live.submitted = false; live.pendingAnswer = null; live.selected.clear(); live.groupDraft = []; live.dragMapping = []; live.savedDragMapping = []; live.hintStep = 0;
   live.seenReactions.clear(); live.sawReactions = false; live.revealKey = ''; live.lastQuestion = null;
   if (Number.isFinite(data.serverTime)) live.serverOffset = data.serverTime - Date.now();
   liveSaveSession();
@@ -1324,9 +1380,10 @@ function liveRender() {
   if (room.currentQuestion) live.lastQuestion = room.currentQuestion;
   const roundKey = liveRoundKey(room);
   if (room.phase === 'question' && roundKey !== live.roundKey) {
-    live.roundKey = roundKey; live.selected.clear(); live.submitted = false; live.pendingAnswer = null; live.hintStep = 0;
+    live.roundKey = roundKey; live.selected.clear(); live.submitted = false; live.pendingAnswer = null; live.groupDraft = []; live.hintStep = 0;
     const cq = room.currentQuestion;
-    if (cq?.matching && cq.dragItems && cq.dragTargets) {
+    if (cq?.type === 'true_false_group') live.groupDraft = Array.isArray(room.myAnswer) ? [...room.myAnswer] : Array(cq.statements?.length || 0).fill(null);
+    else if (cq?.matching && cq.dragItems && cq.dragTargets) {
       const answerPairs = Array.isArray(room.myAnswer) ? room.myAnswer : [];
       live.dragMapping = cq.dragItems.map(item => { const saved = answerPairs.find(answer => String(answer).startsWith(`${item} → `)); if (!saved) return -1; const target = String(saved).slice(`${item} → `.length); return cq.dragTargets.findIndex(candidate => normalize(candidate) === normalize(target)); });
       live.savedDragMapping = [...live.dragMapping];
@@ -1410,22 +1467,25 @@ function liveRenderStage() {
   const answers = room.result?.correctAnswers || [];
   const mine = room.result?.players?.find(p => p.id === live.playerId);
   const options = Array.isArray(q.options) ? q.options : [];
+  const group = q.type === 'true_false_group';
   const typed = q.type === 'short_answer_question' || !options.length;
   const drag = q.matching && Array.isArray(q.dragItems) && q.dragItems.length > 1 && Array.isArray(q.dragTargets);
   const savedAnswer = room.myAnswer;
   const hasSavedAnswer = savedAnswer != null;
-  const displayedAnswer = live.pendingAnswer ?? savedAnswer;
+  const displayedAnswer = live.pendingAnswer ?? (group ? live.groupDraft.length ? live.groupDraft : savedAnswer : savedAnswer);
   const displayedValues = Array.isArray(displayedAnswer) ? displayedAnswer : [displayedAnswer];
   const savedValues = Array.isArray(savedAnswer) ? savedAnswer : [savedAnswer];
   const savedIndexes = options.map((option, index) => savedValues.some(value => value != null && normalize(value) === normalize(option)) ? index : -1).filter(index => index >= 0);
   const savedEliminated = savedIndexes.some(index => (room.myPowers?.fifty || []).includes(index));
-  const draftChanged = drag ? JSON.stringify(live.dragMapping || []) !== JSON.stringify(live.savedDragMapping || []) : q.multiple && (live.selected.size !== savedIndexes.length || [...live.selected].some(index => !savedIndexes.includes(index)));
-  const answerMarkup = drag
+  const draftChanged = group ? JSON.stringify(live.groupDraft || []) !== JSON.stringify(savedAnswer || []) : drag ? JSON.stringify(live.dragMapping || []) !== JSON.stringify(live.savedDragMapping || []) : q.multiple && (live.selected.size !== savedIndexes.length || [...live.selected].some(index => !savedIndexes.includes(index)));
+  const answerMarkup = group
+    ? `${renderTrueFalseGroup({ ...q, correctAnswers: answers }, displayedValues, isReveal || live.submitted, isReveal)}${!isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-group" ${live.submitted || live.groupDraft.length !== q.statements.length || live.groupDraft.some(answer => !answer) || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answers' : 'Lock in answers'} ↗</button></div>` : ''}`
+    : drag
     ? `${!isReveal ? '<p class="drag-match-instruction">Desktop: drag items. On touch, tap an answer then its prompt, or use the slot menu.</p>' : ''}${renderDragMatch(q, live.dragMapping, isReveal || live.submitted, 'live', q.dragItems.map((_, index) => index), q.dragTargets.map((_, index) => index))}${!isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-drag" ${live.submitted || !isCompleteDrag(live.dragMapping || []) || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update matches' : 'Lock in matches'} ↗</button></div>` : ''}`
     : typed
     ? isReveal ? '' : `<form id="liveAnswerForm" class="live-answer-form"><label class="sr-only" for="liveAnswerInput">Your answer</label><input id="liveAnswerInput" class="live-input" maxlength="200" placeholder="Type your answer…" value="${escapeHTML(typeof displayedAnswer === 'string' ? displayedAnswer : '')}" ${live.submitted ? 'disabled' : ''} required><button type="submit" class="button button-primary" ${live.submitted ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Send'} ↗</button></form>`
     : `<div class="live-answer-grid">${options.map((option, index) => { const correct = answers.some(a => normalize(a) === normalize(option)); const chosen = isReveal || !q.multiple ? displayedValues.some(value => value != null && normalize(value) === normalize(option)) : live.selected.has(index); const eliminated = !isReveal && (room.myPowers?.fifty || []).includes(index); const cls = isReveal ? correct ? 'is-correct' : chosen ? 'is-wrong' : '' : eliminated ? 'is-eliminated' : chosen ? 'is-selected' : ''; return `<button type="button" class="live-answer-option ${cls}" data-live-choice="${index}" ${isReveal || live.submitted || eliminated ? 'disabled' : ''} aria-pressed="${chosen}"><i>${index + 1}</i><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>${q.multiple && !isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-multi" ${live.submitted || !live.selected.size || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Lock in answers'} ↗</button></div>` : ''}`;
-  const answerNote = isReveal ? '' : live.submitted ? 'Saving your answer…' : hasSavedAnswer && draftChanged ? `Your changes are not saved yet. Press ${drag ? 'Update matches' : 'Update answer'}.` : savedEliminated ? 'Your saved choice was eliminated. Pick another before the question closes.' : hasSavedAnswer ? '✓ Answer saved. You can change it until the question closes.' : q.multiple && live.selected.size ? 'Press Lock in answers to save your selection.' : '';
+  const answerNote = isReveal ? '' : live.submitted ? 'Saving your answer…' : hasSavedAnswer && draftChanged ? `Your changes are not saved yet. Press ${group ? 'Update answers' : drag ? 'Update matches' : 'Update answer'}.` : savedEliminated ? 'Your saved choice was eliminated. Pick another before the question closes.' : hasSavedAnswer ? '✓ Answer saved. You can change it until the question closes.' : group && live.groupDraft.some(Boolean) ? 'Choose True or False for all three statements, then lock in.' : q.multiple && live.selected.size ? 'Press Lock in answers to save your selection.' : '';
   const hint = !isReveal && live.hintStep ? `<div class="coach-panel live-hint-panel"><div class="coach-title">💡 STUDY HINT ${live.hintStep}/3</div><p class="coach-chat">${escapeHTML(hintMessages(q)[live.hintStep - 1])}</p></div>` : '';
   stage.classList.toggle('is-scrambled', Boolean(!isReveal && q.scrambled));
   stage.innerHTML = `<div class="live-quiz-meta"><span class="live-stage-kicker">${isReveal ? 'ANSWER REVEAL' : 'LIVE ROUND'} · QUESTION ${(room.questionIndex ?? 0) + 1} / ${room.total || 10}</span><span id="liveTimer" class="live-timer">◷ <span>—</span></span></div><div class="live-clock-track" aria-hidden="true"><div id="liveClockFill" class="live-clock-fill"></div></div><div class="live-question-text">${safeQuestionHTML(q)}</div>${!isReveal && q.scrambled ? '<div class="live-power-banner">🌀 Choices scrambled for the whole room!</div>' : ''}${answerMarkup}${answerNote ? `<div class="live-answer-note">${answerNote}</div>` : ''}${!isReveal ? livePowerMarkup(room, q, options) : ''}${hint}${isReveal ? `<div class="live-reveal ${mine?.correct ? '' : 'is-wrong'}"><strong>${mine?.correct ? room.mode === 'coop' ? 'You helped the team!' : `Nice hit! +${formatNumber(mine.points || 0)} points` : mine?.shielded ? 'Shield saved your streak' : 'Round complete'}</strong><span>Correct answer${answers.length > 1 ? 's' : ''}: ${escapeHTML(answers.join(' · '))}</span>${!mine?.correct && mine?.answer != null ? `<span>Your answer: ${escapeHTML(Array.isArray(mine.answer) ? mine.answer.join(' · ') : mine.answer)}</span>` : ''}${explanationHtml(q)}<small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div><p class="live-lobby-note">${room.mode === 'coop' ? 'Take a moment to discuss the explanation.' : `Items: −${room.myPowers?.spent || 0} pts${room.myPowers?.penalty ? ` · Zapped: −${room.myPowers.penalty} pts` : ''}${room.myPowers?.blocked ? ' · Ward blocked an attack' : ''}. Next question starts automatically.`}</p>` : ''}`;
@@ -1530,6 +1590,12 @@ function attachLiveEvents() {
       if (draft != null && $('liveAnswerInput')) $('liveAnswerInput').value = draft;
       return;
     }
+    const tfChoice = event.target.closest('[data-tf-index]');
+    if (tfChoice && live.room?.phase === 'question' && !live.submitted && live.room.currentQuestion?.type === 'true_false_group') {
+      const q = live.room.currentQuestion, index = Number(tfChoice.dataset.tfIndex);
+      live.groupDraft = Array.isArray(live.groupDraft) && live.groupDraft.length === q.statements.length ? [...live.groupDraft] : Array(q.statements.length).fill(null);
+      live.groupDraft[index] = tfChoice.dataset.tfAnswer; liveRenderStage(); return;
+    }
     const choice = event.target.closest('[data-live-choice]');
     if (choice && live.room?.phase === 'question' && !live.submitted) {
       const index = +choice.dataset.liveChoice, q = live.room.currentQuestion;
@@ -1547,6 +1613,9 @@ function attachLiveEvents() {
     else if (action === 'submit-multi') {
       const q = live.room?.currentQuestion;
       if (q && live.selected.size) liveSubmitAnswer([...live.selected].map(index => q.options[index]));
+    } else if (action === 'submit-group') {
+      const q = live.room?.currentQuestion;
+      if (q?.type === 'true_false_group' && live.groupDraft.length === q.statements.length && live.groupDraft.every(Boolean)) liveSubmitAnswer(live.groupDraft);
     } else if (action === 'submit-drag') {
       const q = live.room?.currentQuestion; if (q?.matching && isCompleteDrag(live.dragMapping)) liveSubmitAnswer(dragPayload(q, live.dragMapping));
     } else if (action === 'new') liveLeaveRoom();

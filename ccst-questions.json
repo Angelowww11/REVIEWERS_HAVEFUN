@@ -6,8 +6,8 @@
   ],
   "sourceSlideCount": 99,
   "questionCount": 99,
-  "sourceQuestionCount": 83,
-  "supplementalQuestionCount": 16,
+  "sourceQuestionCount": 79,
+  "supplementalQuestionCount": 20,
   "questions": [
     {
       "id": 1,
@@ -375,49 +375,31 @@
       "id": 17,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 23,
-      "type": "true_false_question",
-      "question": "True or False: High levels of network latency decrease network bandwidth.",
-      "questionHtml": "<p>True or False: High levels of network latency decrease network bandwidth.</p>",
+      "type": "true_false_group",
+      "question": "For each statement, choose True or False.",
+      "questionHtml": "<p>For each statement, choose True or False.</p>",
+      "statements": [
+        "High levels of network latency decrease network bandwidth.",
+        "Low bandwidth can increase network latency.",
+        "You can increase throughput by decreasing network latency."
+      ],
       "options": [
         "True",
         "False"
       ],
       "correctAnswers": [
-        "False"
+        "False",
+        "True",
+        "True"
+      ],
+      "statementExplanations": [
+        "Latency is delay; it does not change a link’s rated bandwidth capacity. It can affect achieved throughput, especially during round trips.",
+        "A low-capacity link can add transmission and queuing delay under load. Bandwidth and latency are different measures, but limited capacity can contribute to longer delays.",
+        "Reducing latency can improve achieved throughput, especially for traffic that needs acknowledgements. Throughput also depends on bandwidth, loss, congestion, and endpoints."
       ]
     },
     {
       "id": 18,
-      "sourceFile": "Certification · Standard Concepts",
-      "sourcePage": 23,
-      "type": "true_false_question",
-      "question": "True or False: Low bandwidth can increase network latency.",
-      "questionHtml": "<p>True or False: Low bandwidth can increase network latency.</p>",
-      "options": [
-        "True",
-        "False"
-      ],
-      "correctAnswers": [
-        "True"
-      ]
-    },
-    {
-      "id": 19,
-      "sourceFile": "Certification · Standard Concepts",
-      "sourcePage": 23,
-      "type": "true_false_question",
-      "question": "True or False: You can increase throughput by decreasing network latency.",
-      "questionHtml": "<p>True or False: You can increase throughput by decreasing network latency.</p>",
-      "options": [
-        "True",
-        "False"
-      ],
-      "correctAnswers": [
-        "True"
-      ]
-    },
-    {
-      "id": 20,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 24,
       "type": "matching_question",
@@ -449,7 +431,7 @@
       ]
     },
     {
-      "id": 21,
+      "id": 19,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 26,
       "type": "multiple_choice_question",
@@ -466,7 +448,7 @@
       ]
     },
     {
-      "id": 22,
+      "id": 20,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 27,
       "type": "multiple_choice_question",
@@ -483,7 +465,7 @@
       ]
     },
     {
-      "id": 23,
+      "id": 21,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 29,
       "type": "multiple_choice_question",
@@ -500,7 +482,7 @@
       ]
     },
     {
-      "id": 24,
+      "id": 22,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 30,
       "type": "multiple_choice_question",
@@ -519,7 +501,7 @@
       ]
     },
     {
-      "id": 25,
+      "id": 23,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 32,
       "type": "multiple_choice_question",
@@ -536,7 +518,7 @@
       ]
     },
     {
-      "id": 26,
+      "id": 24,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 33,
       "type": "multiple_choice_question",
@@ -553,7 +535,7 @@
       ]
     },
     {
-      "id": 27,
+      "id": 25,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 34,
       "type": "multiple_choice_question",
@@ -570,7 +552,7 @@
       ]
     },
     {
-      "id": 28,
+      "id": 26,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 35,
       "type": "multiple_choice_question",
@@ -587,7 +569,7 @@
       ]
     },
     {
-      "id": 29,
+      "id": 27,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 36,
       "type": "multiple_choice_question",
@@ -604,7 +586,7 @@
       ]
     },
     {
-      "id": 30,
+      "id": 28,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 37,
       "type": "multiple_choice_question",
@@ -621,7 +603,7 @@
       ]
     },
     {
-      "id": 31,
+      "id": 29,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 38,
       "type": "multiple_choice_question",
@@ -638,7 +620,7 @@
       ]
     },
     {
-      "id": 32,
+      "id": 30,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 39,
       "type": "multiple_choice_question",
@@ -655,7 +637,7 @@
       ]
     },
     {
-      "id": 33,
+      "id": 31,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 40,
       "type": "multiple_choice_question",
@@ -672,7 +654,7 @@
       ]
     },
     {
-      "id": 34,
+      "id": 32,
       "sourceFile": "Certification · Security",
       "sourcePage": 43,
       "type": "multiple_choice_question",
@@ -689,7 +671,7 @@
       ]
     },
     {
-      "id": 35,
+      "id": 33,
       "sourceFile": "Certification · Security",
       "sourcePage": 44,
       "type": "multiple_choice_question",
@@ -706,7 +688,7 @@
       ]
     },
     {
-      "id": 36,
+      "id": 34,
       "sourceFile": "Certification · Security",
       "sourcePage": 45,
       "type": "multiple_choice_question",
@@ -723,7 +705,7 @@
       ]
     },
     {
-      "id": 37,
+      "id": 35,
       "sourceFile": "Certification · Security",
       "sourcePage": 46,
       "type": "multiple_choice_question",
@@ -740,7 +722,7 @@
       ]
     },
     {
-      "id": 38,
+      "id": 36,
       "sourceFile": "Certification · Security",
       "sourcePage": 47,
       "type": "multiple_choice_question",
@@ -757,7 +739,7 @@
       ]
     },
     {
-      "id": 39,
+      "id": 37,
       "sourceFile": "Certification · Security",
       "sourcePage": 48,
       "type": "multiple_choice_question",
@@ -774,7 +756,7 @@
       ]
     },
     {
-      "id": 40,
+      "id": 38,
       "sourceFile": "Certification · Security",
       "sourcePage": 49,
       "type": "matching_question",
@@ -806,7 +788,7 @@
       ]
     },
     {
-      "id": 41,
+      "id": 39,
       "sourceFile": "Certification · Security",
       "sourcePage": 50,
       "type": "matching_question",
@@ -838,7 +820,7 @@
       ]
     },
     {
-      "id": 42,
+      "id": 40,
       "sourceFile": "Certification · Security",
       "sourcePage": 51,
       "type": "matching_question",
@@ -870,7 +852,7 @@
       ]
     },
     {
-      "id": 43,
+      "id": 41,
       "sourceFile": "Certification · Security",
       "sourcePage": 52,
       "type": "matching_question",
@@ -902,7 +884,7 @@
       ]
     },
     {
-      "id": 44,
+      "id": 42,
       "sourceFile": "Certification · Security",
       "sourcePage": 53,
       "type": "multiple_choice_question",
@@ -919,7 +901,7 @@
       ]
     },
     {
-      "id": 45,
+      "id": 43,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 56,
       "type": "multiple_choice_question",
@@ -936,7 +918,7 @@
       ]
     },
     {
-      "id": 46,
+      "id": 44,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 57,
       "type": "multiple_choice_question",
@@ -953,7 +935,7 @@
       ]
     },
     {
-      "id": 47,
+      "id": 45,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 58,
       "type": "multiple_choice_question",
@@ -970,7 +952,7 @@
       ]
     },
     {
-      "id": 48,
+      "id": 46,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 59,
       "type": "multiple_choice_question",
@@ -987,7 +969,7 @@
       ]
     },
     {
-      "id": 49,
+      "id": 47,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 60,
       "type": "multiple_choice_question",
@@ -1004,7 +986,7 @@
       ]
     },
     {
-      "id": 50,
+      "id": 48,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 61,
       "type": "multiple_choice_question",
@@ -1021,7 +1003,7 @@
       ]
     },
     {
-      "id": 51,
+      "id": 49,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 62,
       "type": "multiple_choice_question",
@@ -1039,7 +1021,7 @@
       ]
     },
     {
-      "id": 52,
+      "id": 50,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 63,
       "type": "multiple_choice_question",
@@ -1056,7 +1038,7 @@
       ]
     },
     {
-      "id": 53,
+      "id": 51,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 64,
       "type": "multiple_choice_question",
@@ -1073,7 +1055,7 @@
       ]
     },
     {
-      "id": 54,
+      "id": 52,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 65,
       "type": "multiple_choice_question",
@@ -1090,7 +1072,7 @@
       ]
     },
     {
-      "id": 55,
+      "id": 53,
       "sourceFile": "Certification · Infrastructure",
       "sourcePage": 68,
       "type": "matching_question",
@@ -1128,7 +1110,7 @@
       ]
     },
     {
-      "id": 56,
+      "id": 54,
       "sourceFile": "Certification · Infrastructure",
       "sourcePage": 69,
       "type": "multiple_choice_question",
@@ -1146,7 +1128,7 @@
       ]
     },
     {
-      "id": 57,
+      "id": 55,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 72,
       "type": "multiple_choice_question",
@@ -1165,7 +1147,7 @@
       ]
     },
     {
-      "id": 58,
+      "id": 56,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 73,
       "type": "multiple_choice_question",
@@ -1184,7 +1166,7 @@
       ]
     },
     {
-      "id": 59,
+      "id": 57,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 74,
       "type": "multiple_choice_question",
@@ -1203,7 +1185,7 @@
       ]
     },
     {
-      "id": 60,
+      "id": 58,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 75,
       "type": "matching_question",
@@ -1235,7 +1217,7 @@
       ]
     },
     {
-      "id": 61,
+      "id": 59,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 76,
       "type": "multiple_choice_question",
@@ -1252,7 +1234,7 @@
       ]
     },
     {
-      "id": 62,
+      "id": 60,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 78,
       "type": "multiple_choice_question",
@@ -1269,7 +1251,7 @@
       ]
     },
     {
-      "id": 63,
+      "id": 61,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 79,
       "type": "multiple_choice_question",
@@ -1288,7 +1270,7 @@
       ]
     },
     {
-      "id": 64,
+      "id": 62,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 80,
       "type": "multiple_choice_question",
@@ -1305,7 +1287,7 @@
       ]
     },
     {
-      "id": 65,
+      "id": 63,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 81,
       "type": "multiple_choice_question",
@@ -1322,7 +1304,7 @@
       ]
     },
     {
-      "id": 66,
+      "id": 64,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 82,
       "type": "multiple_choice_question",
@@ -1339,7 +1321,7 @@
       ]
     },
     {
-      "id": 67,
+      "id": 65,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 83,
       "type": "multiple_choice_question",
@@ -1356,7 +1338,7 @@
       ]
     },
     {
-      "id": 68,
+      "id": 66,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 84,
       "type": "multiple_choice_question",
@@ -1373,7 +1355,7 @@
       ]
     },
     {
-      "id": 69,
+      "id": 67,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 85,
       "type": "multiple_choice_question",
@@ -1390,7 +1372,7 @@
       ]
     },
     {
-      "id": 70,
+      "id": 68,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 86,
       "type": "multiple_choice_question",
@@ -1407,52 +1389,34 @@
       ]
     },
     {
-      "id": 71,
+      "id": 69,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 87,
-      "type": "true_false_question",
-      "question": "True or False: A device connected to GigabitEthernet0/1 can send out broadcast traffic.",
-      "questionHtml": "<p><img src=\"exhibits/ccst_notebook_87.jpg\" alt=\"Reviewer exhibit for slide 87\"></p><p>True or False: A device connected to GigabitEthernet0/1 can send out broadcast traffic.</p>",
+      "type": "true_false_group",
+      "question": "For each statement, choose True or False.",
+      "questionHtml": "<p><img src=\"exhibits/ccst_notebook_87.jpg\" alt=\"Reviewer exhibit for slide 87\"></p><p>For each statement, choose True or False.</p>",
+      "statements": [
+        "A device connected to GigabitEthernet0/1 can send out broadcast traffic.",
+        "A technician issued the shutdown command on interface GigabitEthernet0/2.",
+        "A technician set the IP address for GigabitEthernet0/0 by using the CLI."
+      ],
       "options": [
         "True",
         "False"
       ],
       "correctAnswers": [
-        "False"
-      ]
-    },
-    {
-      "id": 72,
-      "sourceFile": "Certification · Diagnosing Problems",
-      "sourcePage": 87,
-      "type": "true_false_question",
-      "question": "True or False: A technician issued the shutdown command on interface GigabitEthernet0/2.",
-      "questionHtml": "<p><img src=\"exhibits/ccst_notebook_87.jpg\" alt=\"Reviewer exhibit for slide 87\"></p><p>True or False: A technician issued the shutdown command on interface GigabitEthernet0/2.</p>",
-      "options": [
+        "False",
         "True",
-        "False"
-      ],
-      "correctAnswers": [
         "True"
-      ]
-    },
-    {
-      "id": 73,
-      "sourceFile": "Certification · Diagnosing Problems",
-      "sourcePage": 87,
-      "type": "true_false_question",
-      "question": "True or False: A technician set the IP address for GigabitEthernet0/0 by using the CLI.",
-      "questionHtml": "<p><img src=\"exhibits/ccst_notebook_87.jpg\" alt=\"Reviewer exhibit for slide 87\"></p><p>True or False: A technician set the IP address for GigabitEthernet0/0 by using the CLI.</p>",
-      "options": [
-        "True",
-        "False"
       ],
-      "correctAnswers": [
-        "True"
+      "statementExplanations": [
+        "The exhibit shows GigabitEthernet0/1 as down/down, so it cannot forward frames.",
+        "The interface status is administratively down, indicating it was disabled in configuration.",
+        "The Method column shows manual for GigabitEthernet0/0, indicating a manually configured address."
       ]
     },
     {
-      "id": 74,
+      "id": 70,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 88,
       "type": "multiple_choice_question",
@@ -1469,7 +1433,7 @@
       ]
     },
     {
-      "id": 75,
+      "id": 71,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 89,
       "type": "multiple_choice_question",
@@ -1486,7 +1450,7 @@
       ]
     },
     {
-      "id": 76,
+      "id": 72,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 90,
       "type": "multiple_choice_question",
@@ -1503,7 +1467,7 @@
       ]
     },
     {
-      "id": 77,
+      "id": 73,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 91,
       "type": "multiple_choice_question",
@@ -1520,7 +1484,7 @@
       ]
     },
     {
-      "id": 78,
+      "id": 74,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 92,
       "type": "multiple_choice_question",
@@ -1537,7 +1501,7 @@
       ]
     },
     {
-      "id": 79,
+      "id": 75,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 93,
       "type": "multiple_choice_question",
@@ -1554,7 +1518,7 @@
       ]
     },
     {
-      "id": 80,
+      "id": 76,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 95,
       "type": "multiple_choice_question",
@@ -1571,7 +1535,7 @@
       ]
     },
     {
-      "id": 81,
+      "id": 77,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 96,
       "type": "multiple_choice_question",
@@ -1588,7 +1552,7 @@
       ]
     },
     {
-      "id": 82,
+      "id": 78,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 97,
       "type": "multiple_choice_question",
@@ -1607,7 +1571,7 @@
       ]
     },
     {
-      "id": 83,
+      "id": 79,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 98,
       "type": "multiple_choice_question",
@@ -1624,7 +1588,7 @@
       ]
     },
     {
-      "id": 84,
+      "id": 80,
       "sourceFile": "Certification · Standards & Concepts",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1641,7 +1605,7 @@
       ]
     },
     {
-      "id": 85,
+      "id": 81,
       "sourceFile": "Certification · Standards & Concepts",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1658,7 +1622,7 @@
       ]
     },
     {
-      "id": 86,
+      "id": 82,
       "sourceFile": "Certification · Standards & Concepts",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1675,7 +1639,7 @@
       ]
     },
     {
-      "id": 87,
+      "id": 83,
       "sourceFile": "Certification · Addressing",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1692,7 +1656,7 @@
       ]
     },
     {
-      "id": 88,
+      "id": 84,
       "sourceFile": "Certification · Addressing",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1709,7 +1673,7 @@
       ]
     },
     {
-      "id": 89,
+      "id": 85,
       "sourceFile": "Certification · Addressing",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1726,7 +1690,7 @@
       ]
     },
     {
-      "id": 90,
+      "id": 86,
       "sourceFile": "Certification · Endpoints & Media",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1743,7 +1707,7 @@
       ]
     },
     {
-      "id": 91,
+      "id": 87,
       "sourceFile": "Certification · Endpoints & Media",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1760,7 +1724,7 @@
       ]
     },
     {
-      "id": 92,
+      "id": 88,
       "sourceFile": "Certification · Infrastructure",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1777,7 +1741,7 @@
       ]
     },
     {
-      "id": 93,
+      "id": 89,
       "sourceFile": "Certification · Infrastructure",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1794,7 +1758,41 @@
       ]
     },
     {
-      "id": 94,
+      "id": 90,
+      "sourceFile": "Certification · Infrastructure",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "What does full-duplex Ethernet allow a device to do?",
+      "questionHtml": "<p>What does full-duplex Ethernet allow a device to do?</p>",
+      "options": [
+        "Send and receive at the same time",
+        "Send only after receiving a frame",
+        "Use two IP addresses on one port",
+        "Forward broadcasts between VLANs"
+      ],
+      "correctAnswers": [
+        "Send and receive at the same time"
+      ]
+    },
+    {
+      "id": 91,
+      "sourceFile": "Certification · Addressing",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "Which IPv4 range is reserved for private networks?",
+      "questionHtml": "<p>Which IPv4 range is reserved for private networks?</p>",
+      "options": [
+        "10.0.0.0/8",
+        "11.0.0.0/8",
+        "100.0.0.0/8",
+        "200.0.0.0/8"
+      ],
+      "correctAnswers": [
+        "10.0.0.0/8"
+      ]
+    },
+    {
+      "id": 92,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1811,7 +1809,7 @@
       ]
     },
     {
-      "id": 95,
+      "id": 93,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1828,7 +1826,7 @@
       ]
     },
     {
-      "id": 96,
+      "id": 94,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1845,7 +1843,7 @@
       ]
     },
     {
-      "id": 97,
+      "id": 95,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1862,7 +1860,24 @@
       ]
     },
     {
-      "id": 98,
+      "id": 96,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "What is the purpose of a DHCP relay agent?",
+      "questionHtml": "<p>What is the purpose of a DHCP relay agent?</p>",
+      "options": [
+        "Forward client DHCP messages across subnets",
+        "Translate private addresses to public addresses",
+        "Encrypt DNS lookups",
+        "Assign MAC addresses to switch ports"
+      ],
+      "correctAnswers": [
+        "Forward client DHCP messages across subnets"
+      ]
+    },
+    {
+      "id": 97,
       "sourceFile": "Certification · Security",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1879,7 +1894,7 @@
       ]
     },
     {
-      "id": 99,
+      "id": 98,
       "sourceFile": "Certification · Security",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1893,6 +1908,23 @@
       ],
       "correctAnswers": [
         "WPA2-Enterprise"
+      ]
+    },
+    {
+      "id": 99,
+      "sourceFile": "Certification · Security",
+      "sourcePage": null,
+      "type": "multiple_choice_question",
+      "question": "Which security practice most directly reduces the risk of unauthorized account access after a password is stolen?",
+      "questionHtml": "<p>Which security practice most directly reduces the risk of unauthorized account access after a password is stolen?</p>",
+      "options": [
+        "Enable multifactor authentication",
+        "Hide the computer name",
+        "Disable DHCP",
+        "Change the Ethernet cable"
+      ],
+      "correctAnswers": [
+        "Enable multifactor authentication"
       ]
     }
   ]

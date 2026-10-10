@@ -89,6 +89,7 @@ EXPLANATIONS = {
 
 # Crops are PDF slide coordinates (960 x 540). They exclude every marked choice.
 CROPS = {
+    86: (12, 100, 722, 212),
     59: (405, 150, 950, 440),
     71: (0, 15, 960, 390),
     74: (20, 125, 955, 540),
@@ -180,6 +181,18 @@ def main():
                           "questionHtml": markup, "options": options, "correctAnswers": correct})
         explanations[str(item_id)] = explanation
 
+    def add_tf_group(page: int, statements: list[tuple[str, str, str]], image: str | None = None):
+        question = "For each statement, choose True or False."
+        image_markup = f'<p><img src="exhibits/{image}" alt="Exhibit from CCST reviewer page {page}"></p>' if image else ""
+        item_id = len(questions) + 1
+        section = "Concepts" if page < 40 else "Diagnostics"
+        questions.append({"id": item_id, "sourceFile": f"CCST · {section}", "sourcePage": page,
+                          "type": "true_false_group", "question": question,
+                          "questionHtml": image_markup + f"<p>{html.escape(question)}</p>",
+                          "statements": [text for text, _, _ in statements], "options": ["True", "False"],
+                          "correctAnswers": [answer for _, answer, _ in statements]})
+        explanations[str(item_id)] = "\n".join(f"{index + 1}. {answer} — {explanation}" for index, (_, answer, explanation) in enumerate(statements))
+
     with pdfplumber.open(PDF) as pdf:
         for page, letters in KEY.items():
             question, options = parse_slide(pdf.pages[page - 1].extract_text(x_tolerance=2, y_tolerance=2) or "")
@@ -190,6 +203,17 @@ def main():
             correct = [options[ord(letter) - ord("A")] for letter in letter_list]
             image = crop_exhibit(page) if page in CROPS else None
             add(page, question, options, correct, EXPLANATIONS[page], image)
+
+    add_tf_group(22, [
+        ("High levels of network latency decrease network bandwidth.", "False", "Latency is delay; it does not change rated bandwidth capacity."),
+        ("Low bandwidth can increase network latency.", "True", "A low-capacity link can add transmission and queuing delay under load."),
+        ("You can increase throughput by decreasing network latency.", "True", "Reducing latency can improve achieved throughput, especially for traffic that needs acknowledgements.")
+    ])
+    add_tf_group(86, [
+        ("A device connected to GigabitEthernet0/1 can send out broadcast traffic.", "False", "The exhibit shows the interface down/down, so it cannot forward frames."),
+        ("A technician issued the shutdown command on interface GigabitEthernet0/2.", "True", "Administratively down means the interface was disabled in configuration."),
+        ("A technician set the IP address for GigabitEthernet0/0 by using the CLI.", "True", "The Method column shows manual for GigabitEthernet0/0.")
+    ], crop_exhibit(86) if 86 in CROPS else None)
 
     # The PDF's drag-and-drop and true/false slides become ordinary cards so
     # every existing mode can use them, including live rooms and mobile.
@@ -209,9 +233,6 @@ def main():
         (23, "A company develops an app using cloud-hosted development tools. Which model is this?", ["IaaS", "PaaS", "SaaS", "On-premises"], "PaaS", "Platform as a Service supplies the tools and runtime for app development."),
         (23, "A user pays monthly for a browser-based graphics app. Which model is this?", ["IaaS", "PaaS", "SaaS", "Private cloud"], "SaaS", "Software as a Service delivers the finished application online."),
         (24, "Cloud virtual machines and virtual storage are examples of which model?", ["IaaS", "PaaS", "SaaS", "WLAN"], "IaaS", "Infrastructure as a Service provides virtual compute, networking, and storage."),
-        (22, "High levels of network latency decrease network bandwidth.", ["True", "False"], "False", "Latency is delay; it does not change a link's rated bandwidth capacity. It can affect achieved throughput, especially for traffic that needs acknowledgements."),
-        (22, "Low bandwidth can increase network latency.", ["True", "False"], "True", "A low-capacity link can add transmission and queuing delay under load. Bandwidth and latency are different measures, but limited capacity can contribute to longer delays."),
-        (22, "You can increase throughput by decreasing network latency.", ["True", "False"], "True", "Reducing latency can improve achieved throughput, especially for traffic that needs acknowledgements. Throughput also depends on bandwidth, loss, congestion, and endpoints."),
         (44, "Can a network firewall block traffic to specific ports on internal computers?", ["True", "False"], "True", "A firewall rule can permit or deny traffic based on destination port."),
         (44, "Can a network firewall by itself prevent an app from running on a computer?", ["True", "False"], "False", "A network firewall filters traffic; application execution control belongs on the endpoint."),
         (48, "A digital signature primarily supports which CIA principle?", ["Availability", "Integrity", "Confidentiality", "Redundancy"], "Integrity", "A signature helps detect tampering and authenticate the signer."),
@@ -228,9 +249,6 @@ def main():
         (67, "Which medium is suitable for the diagram's underground connection between two routers?", ["Straight-through UTP", "Fiber optic", "Console cable", "RJ-11"], "Fiber optic", "Fiber supports long-distance links and resists electrical interference."),
         (67, "Which traditional UTP cable type connects two router Ethernet interfaces directly?", ["Straight-through UTP", "Crossover UTP", "Console cable", "Coaxial"], "Crossover UTP", "A crossover cable traditionally connects like Ethernet devices directly; auto-MDI/MDIX may remove this need."),
         (74, "The diagram shows network 172.100.0.0/16, router 172.100.0.1, and DNS server 172.100.0.254. Which settings should PC-A use?", ["IP 172.100.0.10, mask 255.255.0.0, gateway 172.100.0.1, DNS 172.100.0.254", "IP 172.100.0.1, mask 255.255.0.0, gateway 172.100.0.10, DNS 172.100.0.254", "IP 10.10.100.10, mask 255.255.255.0, gateway 172.100.0.1, DNS 172.100.0.254", "IP 172.100.0.10, mask 255.255.255.0, gateway 10.10.100.254, DNS 172.100.0.254"], "IP 172.100.0.10, mask 255.255.0.0, gateway 172.100.0.1, DNS 172.100.0.254", "The PC needs an unused address in 172.100.0.0/16, its local router as gateway, and the shown DNS server."),
-        (86, "A device connected to GigabitEthernet0/1 can send out broadcast traffic.", ["True", "False"], "False", "The exhibit shows GigabitEthernet0/1 as down/down, so it cannot forward frames."),
-        (86, "A technician issued the shutdown command on interface GigabitEthernet0/2.", ["True", "False"], "True", "The interface status is administratively down, indicating it was disabled in configuration."),
-        (86, "A technician set the IP address for GigabitEthernet0/0 by using the CLI.", ["True", "False"], "True", "The Method column shows manual for GigabitEthernet0/0, indicating a manually configured address."),
         (88, "The DNS server is 64.100.8.8. Which command shows the path from this PC to that server?", ["tracert 64.100.8.8", "nslookup 64.100.8.8", "ipconfig /renew", "netstat -a"], "tracert 64.100.8.8", "tracert displays the network hops toward the DNS server."),
         (89, "For HTTPS traffic to www.companypro.net:7100/api, which Wireshark display filter selects the TCP port?", ["tcp.port == 7100", "udp.port == 53", "tcp.port == 80", "icmp"], "tcp.port == 7100", "The URL explicitly uses HTTPS over TCP port 7100; packet contents remain encrypted."),
         (90, "The PC's default gateway is 192.168.0.1. Which command checks if the router responds?", ["ping 192.168.0.1", "ping 8.8.8.8", "nslookup companypro.net", "ipconfig /release"], "ping 192.168.0.1", "Ping the local gateway shown in ipconfig to check reachability."),
