@@ -37,7 +37,7 @@
         <button type="button" class="nav-link" data-view="leaderboard">Leaderboards</button>
         <button type="button" class="nav-link nav-live" data-view="live"><span class="live-pip" aria-hidden="true"></span> Live arena</button>
       </nav>
-      <div class="top-actions"><button type="button" id="themeButton" class="icon-button" aria-label="Choose theme and motion" title="Appearance">◐</button><div id="accountMount"></div>
+      <div class="top-actions"><button type="button" id="focusButton" class="icon-button focus-launch" aria-label="Open focus timer and fruit garden" aria-haspopup="dialog" aria-controls="focusDialog" title="Focus garden">🍊</button><button type="button" id="themeButton" class="icon-button" aria-label="Choose theme and motion" title="Appearance">◐</button><div id="accountMount"></div>
         <button type="button" id="installButton" class="install-button" hidden>Install app <span aria-hidden="true">↗</span></button>
         <span class="top-streak" title="Your best streak"><span aria-hidden="true">⚡</span> <span id="headerBest">0</span> best</span>
         <button type="button" id="soundButton" class="icon-button" aria-label="Turn sound on" aria-pressed="false" title="Sound off">♪<span class="sound-slash" aria-hidden="true">/</span></button>
@@ -174,11 +174,31 @@
     </form>
   </dialog>
 
+  <dialog id="focusDialog" class="focus-dialog" aria-labelledby="focusTitle">
+    <div class="focus-dialog-head"><div><span class="section-kicker">GROW A LITTLE FOCUS</span><h2 id="focusTitle">Focus garden<span>✳</span></h2></div><button type="button" id="focusClose" class="icon-button close-button" aria-label="Close focus timer">×</button></div>
+    <div class="focus-layout">
+      <section class="focus-controls" aria-label="Focus timer controls">
+        <label class="focus-length-label" for="focusLengthSelect">Focus session</label>
+        <select id="focusLengthSelect" class="focus-length"><option value="15">15 minutes · quick sprint</option><option value="25" selected>25 minutes · classic focus</option><option value="45">45 minutes · deep focus</option></select>
+        <div class="focus-clock-wrap"><span id="focusPhaseLabel" class="focus-phase-label">READY WHEN YOU ARE</span><strong id="focusClock" aria-live="off">25:00</strong><span id="focusStatus" class="focus-status">Stay on this page while you focus.</span></div>
+        <div class="focus-action-row"><button type="button" id="focusToggle" class="button button-primary">Start focusing ↗</button><button type="button" id="focusBreakButton" class="button button-outline">Take a 5 min break</button></div>
+        <button type="button" id="focusResetButton" class="focus-reset">Reset this session</button>
+        <p class="focus-away-note"><span aria-hidden="true">◷</span> The timer pauses when this page is hidden or loses focus.</p>
+      </section>
+      <section class="focus-garden" aria-label="Your fruit rewards">
+        <div class="focus-garden-heading"><span><b id="focusFruitCount">0</b> fruits grown</span><span id="focusTotalText">0 focused minutes</span></div>
+        <div class="focus-jar"><canvas id="focusCanvas" aria-label="A jar where earned fruit bounces around"></canvas><span class="focus-jar-label">FOCUS<br>GROVE</span></div>
+        <p id="focusRewardHint" class="focus-reward-hint">Every 5 focused minutes grows a surprise fruit.</p>
+      </section>
+    </div>
+  </dialog>
+
   <dialog id="answerHistoryDialog" class="answer-history-dialog" aria-labelledby="answerHistoryTitle"><div class="answer-history-head"><span class="section-kicker">ANSWER HISTORY</span><button type="button" id="answerHistoryClose" class="icon-button close-button" aria-label="Close answer history">×</button></div><div id="answerHistoryContent"></div><div class="answer-history-actions"><button type="button" id="answerHistoryOlder" class="button button-outline">← Older</button><button type="button" id="answerHistoryNewer" class="button button-outline">Newer →</button><button type="button" id="answerHistoryReturn" class="button button-primary">Back to question ↗</button></div></dialog>
 
   <dialog id="exhibitDialog" class="exhibit-dialog" aria-label="Enlarged question exhibit"><button type="button" id="exhibitClose" class="exhibit-close" aria-label="Close enlarged exhibit">×</button><img id="exhibitLarge" alt=""></dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
+  <script src="focus.js" defer></script>
 </body>
 </html>
