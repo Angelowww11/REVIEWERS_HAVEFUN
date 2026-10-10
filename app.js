@@ -12,6 +12,7 @@ const modeInfo = {
   training: { name: 'Training loop', eyebrow: 'MASTER EVERY QUESTION', description: 'Choose 20, 30, or all 99. Retry misses until every answer is right.' }
 };
 const rankedModes = ['all', 'shuffle', 'adaptive', 'blitz'];
+const resumableModes = [...rankedModes, 'training'];
 const badgeTiers = [
   { name: 'Noob', points: 0, icon: '○' },
   { name: 'Beginner', points: 1000, icon: '✦' },
@@ -39,16 +40,17 @@ function readJSON(key, fallback) { try { const raw = localStorage.getItem(key); 
 function writeJSON(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); window.packetAccountProgressChanged?.(key); } catch { /* Private browsing can disable storage. */ } }
 function savedRunKey(mode) { return deckStorageKey(`pp_ranked_run_${mode}`); }
 function readSavedRun(mode) {
-  if (!rankedModes.includes(mode)) return null;
+  if (!resumableModes.includes(mode)) return null;
   const saved = readJSON(savedRunKey(mode), null);
-  return saved?.version === savedRunVersion && saved.mode === mode && Array.isArray(saved.order) && Number.isInteger(saved.total) && saved.total > 0 && Number.isInteger(saved.completed) && saved.completed >= 0 && saved.completed <= saved.total ? saved : null;
+  const valid = saved?.version === savedRunVersion && saved.mode === mode && Array.isArray(saved.order) && Number.isInteger(saved.total) && saved.total > 0 && Number.isInteger(saved.completed) && saved.completed >= 0 && saved.completed <= saved.total;
+  return valid && (mode !== 'training' || saved.training && Number.isInteger(saved.training.originalTotal) && saved.training.originalTotal > 0 && Number.isInteger(saved.training.pass) && saved.training.pass > 0 && Array.isArray(saved.training.misses)) ? saved : null;
 }
 function clearSavedRun(mode) {
   try { localStorage.removeItem(savedRunKey(mode)); window.packetAccountProgressChanged?.(savedRunKey(mode)); } catch { /* Storage can be unavailable. */ }
   renderSavedRuns();
 }
-function saveRankedRun() {
-  const g = app.game; if (!g || !rankedModes.includes(g.mode) || !g.current || app.view === 'result') return;
+function saveRankedRun(stageOverride = null) {
+  const g = app.game; if (!g || !resumableModes.includes(g.mode) || !g.current || app.view === 'result') return;
   const now = g.pausedAt || performance.now();
   writeJSON(savedRunKey(g.mode), {
     version: savedRunVersion, mode: g.mode, order: g.order.map(q => q.id), remaining: g.remaining.map(q => q.id), total: g.total,
@@ -60,17 +62,19 @@ function saveRankedRun() {
     questionElapsedMs: Math.max(0, now - g.questionAt), remainingTime: g.remainingTime,
     freezeRemainingMs: Math.max(0, g.freezeUntil - now), events: g.events, history: g.history, ghost: g.ghost,
     firstCorrect: g.firstCorrect, lastResult: g.lastResult || null, dragMapping: g.dragMapping, dragItemOrder: g.dragItemOrder, dragTargetOrder: g.dragTargetOrder,
-    draftAnswer: $('answerInput')?.value || '', stage: $('gameContent')?.querySelector('.wager-card') ? 'wager' : 'question'
+    draftAnswer: $('answerInput')?.value || '',
+    training: g.training ? { originalTotal: g.training.originalTotal, pass: g.training.pass, misses: g.training.misses.map(item => ({ questionId: item.question.id, response: item.response })) } : null,
+    stage: stageOverride || ($('gameContent')?.querySelector('.wager-card') ? 'wager' : 'question')
   });
 }
 function pauseRankedRun() {
-  const g = app.game; if (!g || !rankedModes.includes(g.mode) || app.view !== 'game') return;
+  const g = app.game; if (!g || !resumableModes.includes(g.mode) || app.view !== 'game') return;
   g.pausedAt ||= performance.now();
   clearInterval(app.timer); app.timer = null;
   saveRankedRun();
 }
 function unpauseRankedRun() {
-  const g = app.game; if (!g || !rankedModes.includes(g.mode) || app.view !== 'game' || document.hidden) return;
+  const g = app.game; if (!g || !resumableModes.includes(g.mode) || app.view !== 'game' || document.hidden) return;
   if (g.pausedAt) {
     const pausedFor = performance.now() - g.pausedAt;
     g.startedAt += pausedFor; g.questionAt += pausedFor; g.freezeUntil += pausedFor;
@@ -82,9 +86,9 @@ function unpauseRankedRun() {
 }
 function renderSavedRuns() {
   const panel = $('savedRuns'); if (!panel) return;
-  const runs = rankedModes.map(mode => readSavedRun(mode)).filter(Boolean);
+  const runs = resumableModes.map(mode => readSavedRun(mode)).filter(Boolean);
   panel.hidden = !runs.length;
-  panel.innerHTML = runs.length ? `<div class="saved-runs-heading"><span class="section-kicker">PICK UP WHERE YOU LEFT OFF</span><strong>Continue a run</strong></div><div class="saved-runs-list">${runs.map(run => `<button type="button" class="saved-run-button" data-resume-mode="${run.mode}"><span><b>${escapeHTML(modeInfo[run.mode].name)}</b><small>Question ${Math.min(run.completed + (run.answered ? 0 : 1), run.total)} of ${run.total} · ${formatNumber(run.score)} pts</small></span><em>Continue ↗</em></button>`).join('')}</div>` : '';
+  panel.innerHTML = runs.length ? `<div class="saved-runs-heading"><span class="section-kicker">PICK UP WHERE YOU LEFT OFF</span><strong>Continue a run</strong></div><div class="saved-runs-list">${runs.map(run => { const detail = run.mode === 'training' ? run.stage === 'training-review' ? `Pass ${run.training.pass} complete · ${run.training.misses.length} to retry` : `Pass ${run.training.pass} · Question ${Math.min(run.completed + (run.answered ? 0 : 1), run.total)} of ${run.total}` : `Question ${Math.min(run.completed + (run.answered ? 0 : 1), run.total)} of ${run.total} · ${formatNumber(run.score)} pts`; return `<button type="button" class="saved-run-button" data-resume-mode="${run.mode}"><span><b>${escapeHTML(modeInfo[run.mode].name)}</b><small>${detail}</small></span><em>Continue ↗</em></button>`; }).join('')}</div>` : '';
 }
 function escapeHTML(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
 function normalize(value) { return String(value ?? '').trim().toLocaleLowerCase().replace(/[“”‘’]/g, '').replace(/[^\p{L}\p{N}.:/+-]+/gu, ' ').replace(/\s+/g, ' ').trim(); }
@@ -436,7 +440,9 @@ function openSetup(mode) {
   $('setupResume').hidden = !saved;
   if (saved) {
     $('setupResumeTitle').textContent = `${info.name} is in progress`;
-    $('setupResumeProgress').textContent = `Question ${Math.min(saved.completed + (saved.answered ? 0 : 1), saved.total)} of ${saved.total} · ${formatNumber(saved.score)} points. Starting new replaces this save.`;
+    $('setupResumeProgress').textContent = mode === 'training'
+      ? saved.stage === 'training-review' ? `Pass ${saved.training.pass} complete · ${saved.training.misses.length} questions to retry. Starting new replaces this save.` : `Pass ${saved.training.pass} · Question ${Math.min(saved.completed + (saved.answered ? 0 : 1), saved.total)} of ${saved.total}. Starting new replaces this save.`
+      : `Question ${Math.min(saved.completed + (saved.answered ? 0 : 1), saved.total)} of ${saved.total} · ${formatNumber(saved.score)} points. Starting new replaces this save.`;
   }
   $('setupStartButton').innerHTML = saved ? 'Start a new run <span aria-hidden="true">↗</span>' : 'Start playing <span aria-hidden="true">↗</span>';
   updateSetupRankNote();
@@ -466,6 +472,7 @@ function startGame() {
   if (mode === 'matching' && order.length < 4) { toast('Not enough matching pairs in this deck.'); return; }
   if (mode === 'typing' && !order.length) { toast('No short answers are available.'); return; }
   if (rankedModes.includes(mode)) clearSavedRun(mode);
+  if (mode === 'training') clearSavedRun(mode);
   const total = mode === 'adaptive' ? Math.min(20, questions.length) : order.length;
   let ghost = null;
   if (mode !== 'training' && $('ghostToggle').checked) {
@@ -485,7 +492,7 @@ function startGame() {
   };
   $('gameModeEyebrow').textContent = modeInfo[mode].eyebrow; $('gameModeName').textContent = modeInfo[mode].name;
   $('ghostBadge').hidden = !ghost;
-  $('leaveGame').textContent = rankedModes.includes(mode) ? '← Save & leave' : '← Leave run';
+  $('leaveGame').textContent = resumableModes.includes(mode) ? '← Save & leave' : '← Leave run';
   setView('game'); updateHUD();
   clearInterval(app.timer); app.timer = setInterval(tick, 100);
   if (mode === 'matching') renderMatchBoard(); else nextQuestion();
@@ -498,7 +505,8 @@ function resumeRankedRun(mode) {
     saved.order.every(id => byId.has(id)) && saved.remaining.every(id => byId.has(id)) &&
     (mode === 'adaptive' || saved.order.length === saved.total) && Number.isFinite(saved.score) && saved.score >= 0 &&
     (saved.displayOptions == null || Array.isArray(saved.displayOptions) && saved.displayOptions.every(option => current.options.includes(option))) &&
-    (!saved.answered || saved.lastResult && typeof saved.lastResult.correct === 'boolean');
+    (!saved.answered || saved.lastResult && typeof saved.lastResult.correct === 'boolean') &&
+    (mode !== 'training' || saved.training.misses.every(item => item && byId.has(item.questionId) && typeof item.response === 'string'));
   if (!valid) { clearSavedRun(mode); toast('This saved run no longer matches the question deck.'); return; }
   const now = performance.now();
   const heartLimit = ['1', '3', '5', 'unlimited'].includes(saved.heartLimit) ? saved.heartLimit : '3';
@@ -520,12 +528,18 @@ function resumeRankedRun(mode) {
     firstCorrect: Boolean(saved.firstCorrect), matchPairs: [], matchChoice: { left: null, right: null },
     dragItemOrder: validDisplayOrder(saved.dragItemOrder, isDragMatch(current) ? dragItems(current).length : 0) ? saved.dragItemOrder : isDragMatch(current) ? displayOrder(dragItems(current).length) : null,
     dragTargetOrder: validDisplayOrder(saved.dragTargetOrder, isDragMatch(current) ? dragTargets(current).length : 0) ? saved.dragTargetOrder : isDragMatch(current) ? displayOrder(dragTargets(current).length) : null,
-    lastResult: saved.lastResult || null, pausedAt: null, training: null
+    lastResult: saved.lastResult || null, pausedAt: null,
+    training: mode === 'training' ? { originalTotal: saved.training.originalTotal, pass: saved.training.pass, misses: saved.training.misses.map(item => ({ question: byId.get(item.questionId), response: item.response })) } : null
   };
   clearInterval(app.timer); app.timer = null; app.mode = mode; app.game = g;
   $('gameModeEyebrow').textContent = modeInfo[mode].eyebrow; $('gameModeName').textContent = modeInfo[mode].name;
   $('ghostBadge').hidden = !g.ghost; $('leaveGame').textContent = '← Save & leave';
   setView('game');
+  if (mode === 'training' && saved.stage === 'training-review') {
+    finishTrainingPass();
+    announce(`Training continued at the end of pass ${g.training.pass}.`);
+    return;
+  }
   if (saved.stage === 'wager' && !g.answered) renderWager();
   else {
     renderQuestion();
@@ -808,12 +822,14 @@ function finishTrainingPass() {
   clearInterval(app.timer); app.timer = null;
   const { originalTotal, pass, misses } = g.training;
   if (!misses.length) {
+    clearSavedRun('training');
     app.stats.runs++; app.stats.correct += g.correct; app.stats.bestStreak = Math.max(app.stats.bestStreak, g.bestStreak); app.stats.bestScore = Math.max(app.stats.bestScore, g.score); writeJSON(deckStorageKey('pp_stats'), app.stats); updateStats();
     const duration = Math.max(1, Math.round(performance.now() - g.startedAt));
     $('resultContent').innerHTML = `<div class="result-card"><div class="result-burst" aria-hidden="true">✳</div><span class="section-kicker">TRAINING COMPLETE</span><h1>Every question mastered!</h1><p>You mastered all ${originalTotal} questions, including every retry.</p><div class="result-metrics"><div><strong>${originalTotal}</strong><span>MASTERED</span></div><div><strong>${pass}</strong><span>PASSES</span></div><div><strong>${g.attempts}</strong><span>ANSWERS</span></div><div><strong>${elapsedTime(duration)}</strong><span>TIME</span></div></div><div class="result-actions"><button type="button" class="button button-primary" data-result="again">Train another set ↗</button><button type="button" class="button button-outline" data-result="home">Back to modes</button></div></div>`;
     setView('result'); announce(`Training complete. All ${originalTotal} questions mastered in ${pass} passes.`);
     return;
   }
+  saveRankedRun('training-review');
   const mastered = originalTotal - misses.length;
   $('resultContent').innerHTML = `<div class="result-card training-result"><div class="result-burst" aria-hidden="true">↻</div><span class="section-kicker">PASS ${pass} COMPLETE</span><h1>${misses.length} to practice again</h1><p>${mastered} of ${originalTotal} mastered. Review your answers, then retry only the ones you missed.</p><div class="training-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${originalTotal}" aria-valuenow="${mastered}"><i style="width:${Math.round(mastered / originalTotal * 100)}%"></i></div><div class="result-actions"><button type="button" class="button button-primary" data-result="retry-training">Retry ${misses.length} missed ↗</button><button type="button" class="button button-outline" data-result="home">Back to modes</button></div><div class="review-list"><h2>Review before the next pass</h2>${misses.map(({ question, response }) => `<div class="review-item"><strong>#${question.id}</strong><div class="training-review-prompt">${safeQuestionHTML(question)}</div><span class="training-your-answer">You answered: ${escapeHTML(response)}</span><span>Correct: ${escapeHTML(answerText(question))}</span><p>${escapeHTML(explanationText(question))}</p></div>`).join('')}</div></div>`;
   setView('result'); announce(`Pass ${pass} complete. ${misses.length} questions to retry.`);
