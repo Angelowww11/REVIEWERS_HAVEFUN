@@ -181,8 +181,8 @@ function currentQuestion(state, index, viewer = null) {
   const question = roundQuestion(state, index);
   if (!round || !question) return null;
   const playerPowers = viewer?.powers?.[index] || {};
-  const itemOrder = playerPowers.matchItemOrder || round.matchItemOrder || question.dragPairs?.map((_, pairIndex) => pairIndex);
-  const targetOrder = playerPowers.matchTargetOrder || round.matchTargetOrder || question.dragPairs?.map((_, pairIndex) => pairIndex);
+  const itemOrder = round.matchItemOrder || playerPowers.matchItemOrder || question.dragPairs?.map((_, pairIndex) => pairIndex);
+  const targetOrder = round.matchTargetOrder || playerPowers.matchTargetOrder || question.dragPairs?.map((_, pairIndex) => pairIndex);
   return {
     id: question.id,
     question: question.question,
@@ -192,10 +192,10 @@ function currentQuestion(state, index, viewer = null) {
     dragItems: question.type === 'matching_question' ? itemOrder.map(itemIndex => question.dragPairs[itemIndex].item) : undefined,
     dragTargets: question.type === 'matching_question' ? targetOrder.map(targetIndex => question.dragPairs[targetIndex].target) : undefined,
     multiple: question.correctAnswers.length > 1,
-    scrambled: Boolean(playerPowers.scrambled),
-    options: question.type === 'short_answer_question'
-      ? []
-      : (playerPowers.optionOrder || round.optionOrder).map(optionIndex => question.options[optionIndex])
+    scrambled: Boolean(round.scrambled || playerPowers.scrambled),
+    scrambledBy: round.scrambledBy || playerPowers.attackedBy || null,
+    scrambledById: round.scrambledById || null,
+    options: question.type === 'short_answer_question' ? [] : round.optionOrder.map(optionIndex => question.options[optionIndex])
   };
 }
 
@@ -251,6 +251,7 @@ function publicRoom(state, viewer, now) {
       until: viewer.powers[shownIndex].splatUntil || null,
       from: viewer.powers[shownIndex].attackedBy || 'A rival'
     } : null,
+    scrambleUsed: Boolean(time.phase === 'question' && state.sequence[shownIndex]?.scrambleUsed),
     streakPerk: visibleTotals(viewer, time.index - 1).streak > 0 && visibleTotals(viewer, time.index - 1).streak % 3 === 0 && !viewer.answers[time.index - 1]?.shielded,
     status: time.status,
     phase: time.phase,
@@ -404,6 +405,8 @@ function handleStart(room, player, now) {
     optionOrder: shuffled(question.options.map((_, optionIndex) => optionIndex)),
     matchItemOrder: question.type === 'matching_question' ? shuffledDisplayOrder(question.dragPairs.map((_, itemIndex) => itemIndex)) : undefined,
     matchTargetOrder: question.type === 'matching_question' ? shuffledDisplayOrder(question.dragPairs.map((_, targetIndex) => targetIndex)) : undefined,
+    scrambled: false,
+    scrambleUsed: false,
     revealAt: now + index * ROUND_MS + QUESTION_MS,
     endsAt: now + (index + 1) * ROUND_MS
   }));
@@ -478,7 +481,30 @@ function handlePower(room, player, now, body) {
   const available = visibleTotals(player, time.index - 1).score - (used.spent || 0) - (used.penalty || 0);
   const cost = room.mode === 'coop' ? 0 : POWER_COSTS[name];
   if (available < cost) throw new ApiError(409, `Earn ${POWER_COSTS[name]} points to use this power-up.`);
-  if (['splat', 'zap', 'scramble'].includes(name)) {
+  if (name === 'scramble') {
+    const round = room.sequence[time.index];
+    const question = roundQuestion(room, time.index);
+    if (!question?.options || question.options.length < 2) throw new ApiError(409, 'This question does not have choices to shuffle.');
+    if (used.attack) throw new ApiError(409, 'One playful attack per question.');
+    if (round.scrambleUsed) throw new ApiError(409, 'The room has already been scrambled this question.');
+    round.scrambleUsed = true;
+    round.scrambled = true;
+    round.scrambledBy = player.name;
+    round.scrambledById = player.id;
+    round.optionOrder = shuffledDisplayOrder(question.options.map((_, optionIndex) => optionIndex), round.optionOrder);
+    for (const roomPlayer of room.players) {
+      const picks = roomPlayer.powers?.[time.index]?.fifty;
+      if (!Array.isArray(picks)) continue;
+      const eliminated = picks.map(optionIndex => question.options[round.optionOrder[optionIndex]]).filter(option => option != null);
+      roomPlayer.powers[time.index].fifty = eliminated.map(option => round.optionOrder.findIndex(optionIndex => normalizeAnswer(question.options[optionIndex]) === normalizeAnswer(option)));
+    }
+    if (question.type === 'matching_question') {
+      round.matchItemOrder = shuffledDisplayOrder(question.dragPairs.map((_, itemIndex) => itemIndex), round.matchItemOrder);
+      round.matchTargetOrder = shuffledDisplayOrder(question.dragPairs.map((_, targetIndex) => targetIndex), round.matchTargetOrder);
+    }
+    used.attack = true;
+    used.scramble = true;
+  } else if (['splat', 'zap'].includes(name)) {
     if (used.attack) throw new ApiError(409, 'One playful attack per question.');
     const target = room.players.find(p => p.id === body.targetId && p.id !== player.id);
     if (!target || target.answers[time.index]) throw new ApiError(409, 'Choose a player who is still thinking.');
@@ -488,18 +514,8 @@ function handlePower(room, player, now, body) {
     if (name === 'zap' && !targetPower.ward && targetAvailable === 0) throw new ApiError(409, 'That player has no points to zap.');
     targetPower.attacked = true; targetPower.attackType = name; targetPower.attackedBy = player.name; used.attack = true; used[name] = true;
     if (targetPower.ward) { targetPower.blocked = true; }
-    else if (name === 'splat') targetPower.splatUntil = now + 4000;
-    else if (name === 'zap') targetPower.penalty = Math.min(20, targetAvailable);
-    else {
-      const round = room.sequence[time.index];
-      const question = roundQuestion(room, time.index);
-      targetPower.scrambled = true;
-      if (question?.type === 'matching_question') {
-        targetPower.matchItemOrder = shuffledDisplayOrder(question.dragPairs.map((_, itemIndex) => itemIndex), round.matchItemOrder || null);
-        targetPower.matchTargetOrder = shuffledDisplayOrder(question.dragPairs.map((_, targetIndex) => targetIndex), round.matchTargetOrder || null);
-      }
-      else targetPower.optionOrder = shuffled(round.optionOrder);
-    }
+    else if (name === 'splat') targetPower.splatUntil = now + 8000;
+    else if (name === 'zap') targetPower.penalty = Math.min(50, targetAvailable);
   } else if (name === 'ward') { used.ward = true; used.splatUntil = 0; }
   else if (name === 'lucky') { used.lucky = true; }
   else if (name === 'fifty') {
