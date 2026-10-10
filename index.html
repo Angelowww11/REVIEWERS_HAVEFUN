@@ -182,7 +182,7 @@
         <select id="focusLengthSelect" class="focus-length"><option value="15">15 minutes · quick sprint</option><option value="25" selected>25 minutes · classic focus</option><option value="45">45 minutes · deep focus</option></select>
         <div class="focus-clock-wrap"><span id="focusPhaseLabel" class="focus-phase-label">READY WHEN YOU ARE</span><strong id="focusClock" aria-live="off">25:00</strong><span id="focusStatus" class="focus-status">Stay on this page while you focus.</span></div>
         <div class="focus-action-row"><button type="button" id="focusToggle" class="button button-primary">Start focusing ↗</button><button type="button" id="focusBreakButton" class="button button-outline">Take a 5 min break</button></div>
-        <button type="button" id="focusResetButton" class="focus-reset">Reset this session</button>
+        <div class="focus-extra-controls"><button type="button" id="focusTiltButton" class="focus-tilt-button" aria-pressed="false">Enable tilt</button><button type="button" id="focusResetButton" class="focus-reset">Reset this session</button></div>
         <p class="focus-away-note"><span aria-hidden="true">◷</span> The timer pauses when this page is hidden or loses focus.</p>
       </section>
       <section class="focus-garden" aria-label="Your fruit rewards">
@@ -192,6 +192,12 @@
       </section>
     </div>
   </dialog>
+
+  <aside id="focusJarDock" class="focus-jar-dock" aria-label="Focus fruit garden">
+    <button type="button" id="focusDockOpen" class="focus-dock-head" aria-label="Open focus timer controls"><span>🍊 Focus garden</span><strong id="focusDockClock">25:00</strong></button>
+    <canvas id="focusMiniCanvas" class="focus-mini-canvas" aria-label="Tap or tilt to bounce your earned fruit"></canvas>
+    <span class="focus-dock-caption"><b id="focusDockFruitCount">0 fruit</b><i>Tap to bounce</i></span>
+  </aside>
 
   <dialog id="answerHistoryDialog" class="answer-history-dialog" aria-labelledby="answerHistoryTitle"><div class="answer-history-head"><span class="section-kicker">ANSWER HISTORY</span><button type="button" id="answerHistoryClose" class="icon-button close-button" aria-label="Close answer history">×</button></div><div id="answerHistoryContent"></div><div class="answer-history-actions"><button type="button" id="answerHistoryOlder" class="button button-outline">← Older</button><button type="button" id="answerHistoryNewer" class="button button-outline">Newer →</button><button type="button" id="answerHistoryReturn" class="button button-primary">Back to question ↗</button></div></dialog>
 

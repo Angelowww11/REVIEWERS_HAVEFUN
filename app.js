@@ -164,6 +164,50 @@ function hasImage(q) { return /<img\b/i.test(q.questionHtml || ''); }
 function isCorrectOption(q, option) { return (q.correctAnswers || []).some(a => normalize(a) === normalize(option)); }
 function answerText(q) { return (q.correctAnswers || []).join(' · '); }
 function explanationText(q) { return app.explanations[q.id] || 'Compare the key term in the question with the correct answer, then try this card again later.'; }
+function explanationHtml(q) {
+  const blocks = []; let active = null;
+  const section = (kind, title) => {
+    if (active?.kind === kind) return active;
+    active = { kind, title, paragraphs: [], items: [] }; blocks.push(active); return active;
+  };
+  const listItems = text => String(text).split(/\s+·\s+/).map(part => part.trim()).filter(Boolean);
+  for (const rawLine of String(explanationText(q)).replace(/\r\n?/g, '\n').split('\n')) {
+    const line = rawLine.trim();
+    if (!line) { active = null; continue; }
+    const marker = line.match(/^(✅|❌|💡)\s*(.*)$/u);
+    if (marker) {
+      const type = marker[1], content = marker[2].trim();
+      if (type === '✅') {
+        const block = section('idea', 'Key idea');
+        if (content) block.paragraphs.push(content);
+      } else if (type === '❌') {
+        const heading = content.match(/^(Why\b[^:]{2,90}):\s*(.*)$/i);
+        const block = section('wrong', heading ? heading[1] : 'Other choices');
+        const details = heading ? heading[2] : content;
+        if (details) block.items.push(...listItems(details));
+      } else {
+        const block = section('tips', 'Memory cues');
+        if (content) block.items.push(...listItems(content));
+      }
+      continue;
+    }
+    const numbered = line.match(/^\d+[.)]\s+(.+)$/);
+    if (numbered) { section('steps', 'Step by step').items.push(numbered[1]); continue; }
+    const bullet = line.match(/^(?:•|[-*])\s+(.+)$/);
+    if (bullet) { section('details', 'Details').items.push(...listItems(bullet[1])); continue; }
+    if (active?.kind === 'wrong' || active?.kind === 'tips' || active?.kind === 'steps' || active?.kind === 'details') active.items.push(...listItems(line));
+    else section('text', '').paragraphs.push(line);
+  }
+  const content = blocks.map(block => {
+    const paragraphs = block.paragraphs.map(text => `<p>${escapeHTML(text)}</p>`).join('');
+    const list = block.items.length ? `<${block.kind === 'steps' ? 'ol' : 'ul'}>${block.items.map(text => `<li>${escapeHTML(text)}</li>`).join('')}</${block.kind === 'steps' ? 'ol' : 'ul'}>` : '';
+    return `<section class="explanation-section ${block.kind === 'idea' ? 'is-key-idea' : ''}">${block.title ? `<h4>${escapeHTML(block.title)}</h4>` : ''}${paragraphs}${list}</section>`;
+  }).join('');
+  return `<div class="feedback-explanation"><div class="explanation-title">Why this answer works</div><div class="explanation-content">${content}</div></div>`;
+}
+function answerComparison(q, response = '') {
+  return `<div class="answer-comparison">${response ? `<div><span>Your answer</span><strong>${escapeHTML(response)}</strong></div>` : ''}<div><span>Correct answer</span><strong>${escapeHTML(answerText(q))}</strong></div></div>`;
+}
 function hintMessages(q) {
   const prompt = String(q.question || '').toLocaleLowerCase();
   return [
@@ -394,7 +438,7 @@ function renderPractice() {
   if (typed) answers = `<label class="sr-only" for="practiceAnswerInput">Type your answer</label><input id="practiceAnswerInput" class="answer-input" type="text" autocomplete="off" spellcheck="false" placeholder="Type your answer…" value="${escapeHTML(record?.response || '')}" ${answered ? 'disabled' : ''}><p class="input-helper">${q.type === 'short_answer_question' ? 'Follow the format in the question.' : 'Capitalization is ignored.'}</p>`;
   else if (drag) { const savedMap = Array.isArray(record?.mapping) ? record.mapping : practice.dragMappings[q.id]; const order = practiceDragOrders(q); answers = renderDragMatch(q, savedMap, answered, 'practice', order.items, order.targets); }
   else answers = `<div class="game-choices" role="group" aria-label="Answer choices${practice.shuffleChoices ? ' in shuffled order' : ' in original order'}">${practiceOptionsOrder(q).map((originalIndex, displayIndex) => { const option = q.options[originalIndex]; const picked = response.some(item => normalize(item) === normalize(option)); const correct = isCorrectOption(q, option); const cls = answered ? correct ? 'is-correct' : picked ? 'is-wrong' : '' : practice.selected.has(originalIndex) ? 'is-selected' : ''; return `<button type="button" class="choice-button ${cls}" data-practice-choice="${originalIndex}" aria-pressed="${picked || practice.selected.has(originalIndex)}" ${answered ? 'disabled' : ''}><span class="choice-key">${displayIndex + 1}</span><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>`;
-  const feedback = answered ? `<div class="feedback ${record.status === 'correct' ? 'is-correct' : 'is-wrong'}" role="status"><strong>${record.status === 'correct' ? 'You got it!' : record.status === 'revealed' ? 'Answer revealed' : 'Good one to review.'}</strong>${record.status === 'wrong' && response.length ? `<span class="practice-your-answer">Your answer: ${escapeHTML(response.join(' · '))}</span>` : ''}<span class="answer-line">Correct answer: ${escapeHTML(answerText(q))}</span><span class="feedback-explanation"><b>Why this answer works</b>${escapeHTML(explanationText(q))}</span><small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div>` : record?.status === 'skipped' ? '<p class="practice-skipped-note">You skipped this one. Try it whenever you’re ready.</p>' : '';
+  const feedback = answered ? `<div class="feedback ${record.status === 'correct' ? 'is-correct' : 'is-wrong'}" role="status"><strong>${record.status === 'correct' ? 'You got it!' : record.status === 'revealed' ? 'Answer revealed' : 'Good one to review.'}</strong>${answerComparison(q, record.status === 'wrong' && response.length ? response.join(' · ') : '')}${explanationHtml(q)}<small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div>` : record?.status === 'skipped' ? '<p class="practice-skipped-note">You skipped this one. Try it whenever you’re ready.</p>' : '';
   const action = answered ? '<button type="button" class="practice-retry" data-practice-action="retry">Try this question again</button>' : `<div class="practice-answer-actions">${typed || multi || drag ? `<button type="button" class="question-submit" data-practice-action="check" ${typed || drag ? 'disabled' : !practice.selected.size ? 'disabled' : ''}>Check answer</button>` : ''}<button type="button" class="practice-reveal" data-practice-action="reveal">Show answer</button></div>`;
   $('practiceContent').innerHTML = `<article class="question-card practice-question-card"><div class="question-card-head"><span class="question-tag">QUESTION ${practice.index + 1} · ${escapeHTML(sourceName(q).toUpperCase())}</span><span class="practice-type-tag">${escapeHTML(typeName(q))}</span></div><div class="question-prompt">${safeQuestionHTML(q)}</div>${answers}${feedback}${action}</article>`;
   if (drag) { const board = $('practiceContent').querySelector('[data-drag-board]'); attachDragInteraction(board, '#practiceContent'); const map = dragMappingFrom(board); const button = $('practiceContent').querySelector('[data-practice-action="check"]'); button.disabled = !isCompleteDrag(map); }
@@ -703,7 +747,7 @@ function resolveAnswer(correct, response = '') {
 function renderAnswerFeedback(g) {
   const q = g.current, { correct, response, points, resultWord } = g.lastResult;
   const slot = $('feedbackSlot');
-  slot.innerHTML = `<div class="feedback ${correct ? 'is-correct' : 'is-wrong'}"><strong>${resultWord}</strong>${correct ? `+${formatNumber(points)} points${g.wager ? ` · ${formatNumber(g.wager)} wager won` : ''}` : `${response ? 'Your answer: ' + escapeHTML(response) + '. ' : ''}${g.wager ? `${formatNumber(g.wager)} points lost. ` : ''}<span class="answer-line">Correct answer: ${escapeHTML(answerText(q))}</span>`}<span class="feedback-explanation"><b>Why this answer works</b>${escapeHTML(explanationText(q))}</span><small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div>`;
+  slot.innerHTML = `<div class="feedback ${correct ? 'is-correct' : 'is-wrong'}"><div class="feedback-result"><strong>${resultWord}</strong><span>${correct ? `+${formatNumber(points)} points${g.wager ? ` · ${formatNumber(g.wager)} wager won` : ''}` : `${g.wager ? `${formatNumber(g.wager)} points lost` : 'Answer saved for review'}`}</span></div>${answerComparison(q, correct ? '' : response)}${explanationHtml(q)}<small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div>`;
   if (isDragMatch(q)) { const board = $('gameContent').querySelector('[data-drag-board]'); if (board) board.outerHTML = renderDragMatch(q, g.dragMapping, true, 'solo', g.dragItemOrder, g.dragTargetOrder); }
   document.querySelectorAll('.choice-button').forEach(button => {
     const index = +button.dataset.choiceIndex, option = g.displayOptions[index];
@@ -759,7 +803,7 @@ function renderAnswerHistory() {
     const chosen = (item.selected || []).includes(index), correct = isCorrectOption(q, option);
     return `<div class="history-choice ${correct ? 'is-correct' : chosen ? 'is-wrong' : ''}"><span>${index + 1}</span><b>${escapeHTML(option)}</b>${correct ? '<em>Correct</em>' : chosen ? '<em>Your pick</em>' : ''}</div>`;
   }).join('');
-  $('answerHistoryContent').innerHTML = `<h2 id="answerHistoryTitle">Question ${answerHistoryIndex + 1} of ${g.history.length}${g.training ? ` · Pass ${item.pass || 1}` : ''}</h2><div class="answer-history-prompt">${safeQuestionHTML(q)}</div>${choices ? `<div class="history-choices">${choices}</div>` : ''}<div class="history-recap ${item.correct ? 'is-correct' : 'is-wrong'}"><strong>${item.correct ? '✓ Correct' : '↻ Worth another look'}</strong><span>Your answer: ${escapeHTML(item.response || 'Skipped')}</span><span>Correct answer: ${escapeHTML(answerText(q))}</span><p>${escapeHTML(explanationText(q))}</p></div><p class="history-readonly">Review only · your score and answers stay the same.</p>`;
+  $('answerHistoryContent').innerHTML = `<h2 id="answerHistoryTitle">Question ${answerHistoryIndex + 1} of ${g.history.length}${g.training ? ` · Pass ${item.pass || 1}` : ''}</h2><div class="answer-history-prompt">${safeQuestionHTML(q)}</div>${choices ? `<div class="history-choices">${choices}</div>` : ''}<div class="history-recap ${item.correct ? 'is-correct' : 'is-wrong'}"><strong>${item.correct ? '✓ Correct' : '↻ Worth another look'}</strong>${answerComparison(q, item.response || 'Skipped')}${explanationHtml(q)}</div><p class="history-readonly">Review only · your score and answers stay the same.</p>`;
   $('answerHistoryOlder').disabled = answerHistoryIndex <= 0;
   $('answerHistoryNewer').disabled = answerHistoryIndex >= g.history.length - 1;
 }
@@ -802,14 +846,14 @@ function handleMatchClick(button) {
     g.attempts++; g.streak++; g.bestStreak = Math.max(g.bestStreak, g.streak); g.correct++; g.score += 70 + Math.min(90, g.streak * 10); g.completed++;
     g.events.push({ t: Math.round(performance.now() - g.startedAt), score: g.score, completed: g.completed, correct: true, responseMs: 0 });
     playTone('good'); burst(); announce(`Matched. ${g.streak} streak.`);
-    if (selectedQuestion) $('matchFeedback').innerHTML = `<strong>Nice match!</strong><span>${escapeHTML(explanationText(selectedQuestion))}</span>`;
+    if (selectedQuestion) $('matchFeedback').innerHTML = `<strong>Nice match!</strong>${answerComparison(selectedQuestion)}${explanationHtml(selectedQuestion)}`;
     if (g.matchPairs.every(pair => document.querySelector(`[data-match-side="left"][data-match-id="${pair.q.id}"]`)?.disabled)) setTimeout(() => { if (app.game === g) renderMatchBoard(); }, 2400);
   } else {
     g.attempts++; g.hearts = Math.max(0, g.hearts - 1); g.streak = 0; playTone('bad');
     g.events.push({ t: Math.round(performance.now() - g.startedAt), score: g.score, completed: g.completed, correct: false, responseMs: 0 });
     left.classList.add('is-error'); right.classList.add('is-error');
     toast('Not a match. Try another connection.'); announce(`Not a match. ${heartsRemaining(g)} remain.`);
-    if (selectedQuestion) $('matchFeedback').innerHTML = `<strong>Correct pair: ${escapeHTML(answerText(selectedQuestion))}</strong><span>${escapeHTML(explanationText(selectedQuestion))}</span>`;
+    if (selectedQuestion) $('matchFeedback').innerHTML = `<strong>Not a match</strong>${answerComparison(selectedQuestion, right.textContent.replace(/^\s*\d+\s*/, ''))}${explanationHtml(selectedQuestion)}`;
     setTimeout(() => { left?.classList.remove('is-error', 'is-selected'); right?.classList.remove('is-error', 'is-selected'); if (g.hearts <= 0 && app.game === g) finishGame(); }, 480);
   }
   g.matchChoice = { left: null, right: null }; updateHUD();
@@ -831,7 +875,7 @@ function finishTrainingPass() {
   }
   saveRankedRun('training-review');
   const mastered = originalTotal - misses.length;
-  $('resultContent').innerHTML = `<div class="result-card training-result"><div class="result-burst" aria-hidden="true">↻</div><span class="section-kicker">PASS ${pass} COMPLETE</span><h1>${misses.length} to practice again</h1><p>${mastered} of ${originalTotal} mastered. Review your answers, then retry only the ones you missed.</p><div class="training-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${originalTotal}" aria-valuenow="${mastered}"><i style="width:${Math.round(mastered / originalTotal * 100)}%"></i></div><div class="result-actions"><button type="button" class="button button-primary" data-result="retry-training">Retry ${misses.length} missed ↗</button><button type="button" class="button button-outline" data-result="home">Back to modes</button></div><div class="review-list"><h2>Review before the next pass</h2>${misses.map(({ question, response }) => `<div class="review-item"><strong>#${question.id}</strong><div class="training-review-prompt">${safeQuestionHTML(question)}</div><span class="training-your-answer">You answered: ${escapeHTML(response)}</span><span>Correct: ${escapeHTML(answerText(question))}</span><p>${escapeHTML(explanationText(question))}</p></div>`).join('')}</div></div>`;
+  $('resultContent').innerHTML = `<div class="result-card training-result"><div class="result-burst" aria-hidden="true">↻</div><span class="section-kicker">PASS ${pass} COMPLETE</span><h1>${misses.length} to practice again</h1><p>${mastered} of ${originalTotal} mastered. Review your answers, then retry only the ones you missed.</p><div class="training-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${originalTotal}" aria-valuenow="${mastered}"><i style="width:${Math.round(mastered / originalTotal * 100)}%"></i></div><div class="result-actions"><button type="button" class="button button-primary" data-result="retry-training">Retry ${misses.length} missed ↗</button><button type="button" class="button button-outline" data-result="home">Back to modes</button></div><div class="review-list"><h2>Review before the next pass</h2>${misses.map(({ question, response }) => `<div class="review-item"><strong>#${question.id}</strong><div class="training-review-prompt">${safeQuestionHTML(question)}</div>${answerComparison(question, response)}${explanationHtml(question)}</div>`).join('')}</div></div>`;
   setView('result'); announce(`Pass ${pass} complete. ${misses.length} questions to retry.`);
 }
 function retryTraining() {
@@ -1377,7 +1421,7 @@ function liveRenderStage() {
   const answerNote = isReveal ? '' : live.submitted ? 'Saving your answer…' : hasSavedAnswer && draftChanged ? `Your changes are not saved yet. Press ${drag ? 'Update matches' : 'Update answer'}.` : savedEliminated ? 'Your saved choice was eliminated. Pick another before the question closes.' : hasSavedAnswer ? '✓ Answer saved. You can change it until the question closes.' : q.multiple && live.selected.size ? 'Press Lock in answers to save your selection.' : '';
   const hint = !isReveal && live.hintStep ? `<div class="coach-panel live-hint-panel"><div class="coach-title">💡 STUDY HINT ${live.hintStep}/3</div><p class="coach-chat">${escapeHTML(hintMessages(q)[live.hintStep - 1])}</p></div>` : '';
   stage.classList.toggle('is-scrambled', Boolean(!isReveal && q.scrambled));
-  stage.innerHTML = `<div class="live-quiz-meta"><span class="live-stage-kicker">${isReveal ? 'ANSWER REVEAL' : 'LIVE ROUND'} · QUESTION ${(room.questionIndex ?? 0) + 1} / ${room.total || 10}</span><span id="liveTimer" class="live-timer">◷ <span>—</span></span></div><div class="live-clock-track" aria-hidden="true"><div id="liveClockFill" class="live-clock-fill"></div></div><div class="live-question-text">${safeQuestionHTML(q)}</div>${!isReveal && q.scrambled ? '<div class="live-power-banner">🌀 Choices scrambled for the whole room!</div>' : ''}${answerMarkup}${answerNote ? `<div class="live-answer-note">${answerNote}</div>` : ''}${!isReveal ? livePowerMarkup(room, q, options) : ''}${hint}${isReveal ? `<div class="live-reveal ${mine?.correct ? '' : 'is-wrong'}"><strong>${mine?.correct ? room.mode === 'coop' ? 'You helped the team!' : `Nice hit! +${formatNumber(mine.points || 0)} points` : mine?.shielded ? 'Shield saved your streak' : 'Round complete'}</strong><span>Correct answer${answers.length > 1 ? 's' : ''}: ${escapeHTML(answers.join(' · '))}</span>${!mine?.correct && mine?.answer != null ? `<span>Your answer: ${escapeHTML(Array.isArray(mine.answer) ? mine.answer.join(' · ') : mine.answer)}</span>` : ''}<span class="feedback-explanation"><b>Why this answer works</b>${escapeHTML(explanationText(q))}</span><small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div><p class="live-lobby-note">${room.mode === 'coop' ? 'Take a moment to discuss the explanation.' : `Items: −${room.myPowers?.spent || 0} pts${room.myPowers?.penalty ? ` · Zapped: −${room.myPowers.penalty} pts` : ''}${room.myPowers?.blocked ? ' · Ward blocked an attack' : ''}. Next question starts automatically.`}</p>` : ''}`;
+  stage.innerHTML = `<div class="live-quiz-meta"><span class="live-stage-kicker">${isReveal ? 'ANSWER REVEAL' : 'LIVE ROUND'} · QUESTION ${(room.questionIndex ?? 0) + 1} / ${room.total || 10}</span><span id="liveTimer" class="live-timer">◷ <span>—</span></span></div><div class="live-clock-track" aria-hidden="true"><div id="liveClockFill" class="live-clock-fill"></div></div><div class="live-question-text">${safeQuestionHTML(q)}</div>${!isReveal && q.scrambled ? '<div class="live-power-banner">🌀 Choices scrambled for the whole room!</div>' : ''}${answerMarkup}${answerNote ? `<div class="live-answer-note">${answerNote}</div>` : ''}${!isReveal ? livePowerMarkup(room, q, options) : ''}${hint}${isReveal ? `<div class="live-reveal ${mine?.correct ? '' : 'is-wrong'}"><strong>${mine?.correct ? room.mode === 'coop' ? 'You helped the team!' : `Nice hit! +${formatNumber(mine.points || 0)} points` : mine?.shielded ? 'Shield saved your streak' : 'Round complete'}</strong><span>Correct answer${answers.length > 1 ? 's' : ''}: ${escapeHTML(answers.join(' · '))}</span>${!mine?.correct && mine?.answer != null ? `<span>Your answer: ${escapeHTML(Array.isArray(mine.answer) ? mine.answer.join(' · ') : mine.answer)}</span>` : ''}${explanationHtml(q)}<small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div><p class="live-lobby-note">${room.mode === 'coop' ? 'Take a moment to discuss the explanation.' : `Items: −${room.myPowers?.spent || 0} pts${room.myPowers?.penalty ? ` · Zapped: −${room.myPowers.penalty} pts` : ''}${room.myPowers?.blocked ? ' · Ward blocked an attack' : ''}. Next question starts automatically.`}</p>` : ''}`;
   if (drag && !isReveal) {
     const board = stage.querySelector('[data-drag-board]'); attachDragInteraction(board, '#liveStage', live.submitted);
     board.addEventListener('change', () => { live.dragMapping = dragMappingFrom(board); const button = stage.querySelector('[data-live-action="submit-drag"]'); if (button) button.disabled = live.submitted || !isCompleteDrag(live.dragMapping) || JSON.stringify(live.dragMapping) === JSON.stringify(live.savedDragMapping); const note = stage.querySelector('.live-answer-note'); if (note) note.textContent = hasSavedAnswer ? 'Your changes are not saved yet. Press Update matches.' : 'Complete the pairs, then lock in your matches.'; });

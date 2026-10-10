@@ -1,211 +1,143 @@
 (() => {
-  const byId = id => document.getElementById(id);
-  const storageKey = new URL(location.href).searchParams.get('deck') === 'ccst' ? 'pp_ccst_notebook_focus_v1' : 'pp_focus_v1';
-  const fruitTypes = ['🍊', '🍓', '🍋', '🍇', '🍐', '🍒', '🥝', '🍑', '🍎', '🫐'];
-  const rewardStep = 5 * 60 * 1000;
-  const defaultMinutes = 25;
-  const read = () => { try { return JSON.parse(localStorage.getItem(storageKey)) || {}; } catch { return {}; } };
-  const saved = read();
-  const state = {
-    phase: ['focus', 'break', 'complete'].includes(saved.phase) ? saved.phase : 'idle',
-    active: false,
-    durationMs: Number(saved.durationMs) || defaultMinutes * 60 * 1000,
-    remainingMs: Number.isFinite(saved.remainingMs) ? Math.max(0, saved.remainingMs) : defaultMinutes * 60 * 1000,
-    breakRemainingMs: Number.isFinite(saved.breakRemainingMs) ? Math.max(0, saved.breakRemainingMs) : 5 * 60 * 1000,
-    elapsedMs: Math.max(0, Number(saved.elapsedMs) || 0),
-    totalMs: Math.max(0, Number(saved.totalMs) || 0),
-    fruits: Array.isArray(saved.fruits) ? saved.fruits.filter(item => fruitTypes.includes(item)).slice(-60) : [],
-    lastSavedSecond: -1
-  };
-  if (state.phase === 'focus' && state.remainingMs <= 0) state.phase = 'complete';
-  if (state.phase === 'break' && state.breakRemainingMs <= 0) { state.phase = 'focus'; state.active = false; }
-  let canvas, ctx, width = 0, height = 0, animation = 0, lastFrame = 0, lastTick = Date.now(), hasDrawn = false;
-  let bodies = [];
-
-  function persist() {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const dialog = $('focusDialog'), mainCanvas = $('focusCanvas'), dockCanvas = $('focusMiniCanvas');
+  if (!dialog || !mainCanvas || !dockCanvas) return;
+  const fruitTypes = ['🍊', '🍓', '🍋', '🍇', '🍎', '🍐', '🍒', '🥝', '🍉', '🫐', '🍍'];
+  const key = new URLSearchParams(location.search).get('deck') === 'ccst' ? 'pp_ccst_notebook_focus_v1' : 'pp_focus_v1';
+  const defaults = { minutes: 25, remaining: 1500, phase: 'focus', running: false, focusedSeconds: 0, totalSeconds: 0, fruit: [] };
+  let state = { ...defaults, ...load() }, bodies = [], raf = 0, previousFrame = 0, previousTick = Date.now();
+  let tiltEnabled = false, gravityX = 0, gravityY = .76;
+  state.running = false; state.fruit = Array.isArray(state.fruit) ? state.fruit.slice(-60) : [];
+  function load() {
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ phase: state.phase, durationMs: state.durationMs, remainingMs: state.remainingMs, breakRemainingMs: state.breakRemainingMs, elapsedMs: state.elapsedMs, totalMs: state.totalMs, fruits: state.fruits }));
-    } catch { /* The timer still works when browser storage is unavailable. */ }
+      const saved = JSON.parse(localStorage.getItem(key) || '{}');
+      if (saved.durationMs || saved.remainingMs !== undefined || saved.fruits) {
+        const minutes = [15, 25, 45].reduce((closest, value) => Math.abs(value - Math.round((Number(saved.durationMs) || 25 * 60_000) / 60_000)) < Math.abs(closest - Math.round((Number(saved.durationMs) || 25 * 60_000) / 60_000)) ? value : closest, 25);
+        const oldRemaining = Number(saved.phase === 'break' ? saved.breakRemainingMs : saved.remainingMs);
+        return { minutes, remaining: Number.isFinite(oldRemaining) ? Math.max(0, Math.round(oldRemaining / 1000)) : minutes * 60, phase: saved.phase === 'break' ? 'break' : 'focus', focusedSeconds: Math.max(0, (Number(saved.elapsedMs) || 0) / 1000), totalSeconds: Math.max(0, (Number(saved.totalMs) || 0) / 1000), fruit: Array.isArray(saved.fruits) ? saved.fruits : [] };
+      }
+      return saved;
+    } catch { return {}; }
   }
-  function formatTime(ms) {
-    const seconds = Math.max(0, Math.ceil(ms / 1000));
-    return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  function save() { try { localStorage.setItem(key, JSON.stringify({ ...state, running: false })); } catch { /* Storage may be unavailable. */ } }
+  function clock(seconds) { seconds = Math.max(0, Math.ceil(seconds)); return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`; }
+  function updateUI() {
+    const value = clock(state.remaining);
+    if ($('focusClock')) $('focusClock').textContent = value;
+    if ($('focusDockClock')) $('focusDockClock').textContent = value;
+    if ($('focusLengthSelect') && !$('focusLengthSelect').matches(':focus')) $('focusLengthSelect').value = String(state.minutes);
+    if ($('focusFruitCount')) $('focusFruitCount').textContent = String(state.fruit.length);
+    if ($('focusDockFruitCount')) $('focusDockFruitCount').textContent = `${state.fruit.length} ${state.fruit.length === 1 ? 'fruit' : 'fruits'}`;
+    if ($('focusTotalText')) $('focusTotalText').textContent = `${Math.floor(state.totalSeconds / 60)} focused minutes`;
+    if ($('focusToggle')) $('focusToggle').textContent = state.running ? 'Pause focus' : state.remaining <= 0 ? 'Start another session ↗' : 'Start focusing ↗';
+    if ($('focusBreakButton')) $('focusBreakButton').disabled = state.running && state.phase === 'break';
+    if ($('focusResetButton')) $('focusResetButton').disabled = state.focusedSeconds === 0 && state.remaining === state.minutes * 60;
+    if ($('focusPhaseLabel')) $('focusPhaseLabel').textContent = state.phase === 'break' ? 'GENTLE BREAK' : state.running ? 'FOCUSING' : 'READY WHEN YOU ARE';
+    if ($('focusStatus') && !tiltEnabled) $('focusStatus').textContent = state.running ? state.phase === 'break' ? 'Rest a little. The garden is still yours.' : 'You’re here. Your garden is growing.' : state.remaining <= 0 ? 'Session complete. Lovely work!' : 'Stay on this page while you focus.';
+    if ($('focusRewardHint')) $('focusRewardHint').textContent = state.fruit.length ? 'Tap fruit or tilt your device to bounce your garden.' : 'Every 5 focused minutes grows a surprise fruit.';
+    $('focusButton')?.classList.toggle('is-focusing', state.running && state.phase === 'focus');
   }
-  function render() {
-    const minutes = Math.max(5, Math.min(90, Number(byId('focusLengthSelect').value) || defaultMinutes));
-    if (state.phase === 'idle' || state.phase === 'complete') {
-      if (state.phase === 'idle' && !state.elapsedMs) state.durationMs = minutes * 60 * 1000;
-      byId('focusClock').textContent = formatTime(state.phase === 'complete' ? 0 : state.remainingMs || state.durationMs);
-    } else byId('focusClock').textContent = formatTime(state.phase === 'break' ? state.breakRemainingMs : state.remainingMs);
-    const label = byId('focusPhaseLabel');
-    const status = byId('focusStatus');
-    const toggle = byId('focusToggle');
-    const breakButton = byId('focusBreakButton');
-    const length = byId('focusLengthSelect');
-    length.value = String(Math.round(state.durationMs / 60000));
-    length.disabled = state.active || state.phase === 'focus' || state.phase === 'break';
-    if (state.phase === 'break') {
-      label.textContent = state.active ? 'TAKE A BREATHER' : 'BREAK PAUSED';
-      status.textContent = state.active ? 'Your focus time is safely paused.' : 'Rest a little, then jump back in.';
-      toggle.textContent = state.active ? 'Pause break' : 'Resume break ↗';
-      breakButton.textContent = 'Back to focus ↗';
-      breakButton.disabled = false;
-    } else if (state.phase === 'complete') {
-      label.textContent = 'SESSION COMPLETE'; status.textContent = 'Nice work. Your garden grew while you focused.';
-      toggle.textContent = 'Start another session ↗'; breakButton.textContent = 'Take a 5 min break'; breakButton.disabled = true;
-    } else if (state.phase === 'focus' && state.active) {
-      label.textContent = 'IN THE ZONE'; status.textContent = 'Keep Packet Party open to grow your next fruit.';
-      toggle.textContent = 'Pause focus'; breakButton.textContent = 'Take a 5 min break'; breakButton.disabled = false;
-    } else if (state.phase === 'focus') {
-      label.textContent = 'FOCUS PAUSED'; status.textContent = 'Ready when you are. Your progress is saved.';
-      toggle.textContent = 'Continue focusing ↗'; breakButton.textContent = 'Take a 5 min break'; breakButton.disabled = false;
-    } else {
-      label.textContent = 'READY WHEN YOU ARE'; status.textContent = 'Stay on this page while you focus.';
-      toggle.textContent = 'Start focusing ↗'; breakButton.textContent = 'Take a 5 min break'; breakButton.disabled = true;
+  function prepareCanvas(canvas) {
+    const rect = canvas.getBoundingClientRect(); if (!rect.width || !rect.height) return null;
+    const ratio = Math.min(2, devicePixelRatio || 1), width = Math.round(rect.width * ratio), height = Math.round(rect.height * ratio);
+    if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+    const ctx = canvas.getContext('2d'); ctx.setTransform(ratio, 0, 0, ratio, 0, 0); ctx.clearRect(0, 0, rect.width, rect.height);
+    return { ctx, width: rect.width, height: rect.height };
+  }
+  function jar(ctx, width, height) {
+    const left = width * .16, right = width * .84, top = height * .07, bottom = height * .94;
+    ctx.save(); ctx.beginPath(); ctx.moveTo(left + width * .05, top + height * .04); ctx.lineTo(right - width * .05, top + height * .04);
+    ctx.lineTo(right - width * .02, top + height * .17); ctx.quadraticCurveTo(right + width * .06, top + height * .23, right + width * .04, top + height * .32);
+    ctx.lineTo(right, bottom - height * .1); ctx.quadraticCurveTo(right, bottom, right - width * .12, bottom); ctx.lineTo(left + width * .12, bottom);
+    ctx.quadraticCurveTo(left, bottom, left, bottom - height * .1); ctx.lineTo(left - width * .04, top + height * .32); ctx.quadraticCurveTo(left - width * .06, top + height * .23, left + width * .02, top + height * .17); ctx.closePath();
+    const fill = ctx.createLinearGradient(left, top, right, bottom); fill.addColorStop(0, 'rgba(255,255,255,.06)'); fill.addColorStop(.5, 'rgba(255,255,255,.015)'); fill.addColorStop(1, 'rgba(255,255,255,.07)');
+    ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#a7f2ed'; ctx.globalAlpha = .58; ctx.lineWidth = Math.max(1.2, width * .009); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.beginPath(); ctx.roundRect(left + width * .09, top, width * .66, height * .075, height * .025); ctx.fillStyle = 'rgba(255,255,255,.13)'; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.stroke(); ctx.restore();
+    return { left: left + width * .035, right: right - width * .035, top: top + height * .16, bottom: bottom - height * .035 };
+  }
+  const radiusN = .085;
+  function syncBodies() {
+    const count = Math.min(state.fruit.length, 12);
+    while (bodies.length < count) { const i = bodies.length; bodies.push({ fruit: state.fruit[i] || fruitTypes[i % fruitTypes.length], x: .2 + Math.random() * .6, y: .83, vx: (Math.random() - .5) * .6, vy: -Math.random() * .4, spin: Math.random() * Math.PI * 2 }); }
+    bodies.length = count;
+    bodies.forEach((body, i) => { body.fruit = state.fruit[i] || body.fruit; });
+  }
+  function physics(dt) {
+    dt = Math.min(.035, Math.max(0, dt)); const damping = .7;
+    for (let i = 0; i < bodies.length; i++) {
+      const a = bodies[i]; a.vx += gravityX * dt; a.vy += gravityY * dt; a.x += a.vx * dt; a.y += a.vy * dt;
+      if (a.x < radiusN) { a.x = radiusN; a.vx = Math.abs(a.vx) * damping; }
+      if (a.x > 1 - radiusN) { a.x = 1 - radiusN; a.vx = -Math.abs(a.vx) * damping; }
+      if (a.y < .05 + radiusN) { a.y = .05 + radiusN; a.vy = Math.abs(a.vy) * damping; }
+      if (a.y > .94 - radiusN) { a.y = .94 - radiusN; a.vy = -Math.abs(a.vy) * damping; a.vx *= .985; }
+      for (let j = 0; j < i; j++) {
+        const b = bodies[j], dx = (a.x - b.x) * .82, dy = a.y - b.y, d = Math.hypot(dx, dy) || .001, min = radiusN * 2;
+        if (d < min) { const nx = dx / d, ny = dy / d, overlap = (min - d) * .5; a.x += nx * overlap / .82; a.y += ny * overlap; b.x -= nx * overlap / .82; b.y -= ny * overlap;
+          const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny; if (rel < 0) { const impulse = -rel * .45; a.vx += impulse * nx; a.vy += impulse * ny; b.vx -= impulse * nx; b.vy -= impulse * ny; } }
+      }
+      a.spin += dt * 2;
     }
-    byId('focusResetButton').disabled = state.active;
-    byId('focusTotalText').textContent = `${Math.floor(state.totalMs / 60000)} focused minute${Math.floor(state.totalMs / 60000) === 1 ? '' : 's'}`;
-    byId('focusFruitCount').textContent = state.fruits.length;
-    const progressed = state.elapsedMs % rewardStep;
-    const minutesToFruit = Math.ceil((rewardStep - progressed) / 60000);
-    byId('focusRewardHint').textContent = state.phase === 'complete' ? 'Session complete — every fruit is earned focus time.' : `${minutesToFruit} focused minute${minutesToFruit === 1 ? '' : 's'} to your next surprise fruit.`;
-    byId('focusButton').classList.toggle('is-focusing', state.active && state.phase === 'focus');
-    byId('focusButton').setAttribute('aria-label', state.active ? 'Focus timer is running; open focus garden' : 'Open focus timer and fruit garden');
-    persist();
-    if (byId('focusDialog').open) drawJar(true);
   }
-  function pause(reason = '') {
-    if (!state.active) return;
-    state.active = false;
-    lastTick = Date.now();
-    persist(); render();
-    if (reason) byId('focusStatus').textContent = reason;
-  }
-  function beginFocus() {
-    if (state.phase === 'complete' || state.phase === 'idle') {
-      state.durationMs = (Number(byId('focusLengthSelect').value) || defaultMinutes) * 60000;
-      state.remainingMs = state.durationMs; state.elapsedMs = 0; state.phase = 'focus';
+  function draw(canvas) {
+    const surface = prepareCanvas(canvas); if (!surface) return false;
+    const { ctx, width, height } = surface, bounds = jar(ctx, width, height); syncBodies();
+    const jarWidth = bounds.right - bounds.left, jarHeight = bounds.bottom - bounds.top, radius = Math.min(17, Math.max(7, jarWidth * radiusN));
+    for (const body of bodies) {
+      const x = bounds.left + body.x * jarWidth, y = bounds.top + body.y * jarHeight;
+      ctx.save(); ctx.translate(x, y + Math.sin(body.spin) * radius * .035); ctx.rotate(Math.max(-.5, Math.min(.5, body.vx * .8)));
+      ctx.font = `${radius * 1.9}px system-ui, "Apple Color Emoji", "Segoe UI Emoji"`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(body.fruit, 0, 0); ctx.restore();
     }
-    if (state.phase !== 'focus' || document.hidden || !document.hasFocus()) return;
-    state.active = true; lastTick = Date.now(); render();
+    return bodies.some(b => Math.abs(b.vx) > .008 || Math.abs(b.vy) > .008);
   }
-  function takeBreak() {
-    if (state.phase === 'break') {
-      state.phase = 'focus'; state.breakRemainingMs = 5 * 60000; state.active = false;
-    } else if (state.phase === 'focus' && state.remainingMs > 0) {
-      state.phase = 'break'; state.breakRemainingMs = 5 * 60000;
-      state.active = !document.hidden && document.hasFocus();
-      lastTick = Date.now();
-    }
+  function frame(time = 0) {
+    raf = 0; const dt = previousFrame ? (time - previousFrame) / 1000 : 0; previousFrame = time; syncBodies(); physics(dt);
+    const mainMoving = draw(mainCanvas), dockMoving = draw(dockCanvas), moving = mainMoving || dockMoving;
+    if (dialog.open || state.running || moving) raf = requestAnimationFrame(frame); else previousFrame = 0;
+  }
+  function render() { if (!raf) raf = requestAnimationFrame(frame); }
+  function addFruit() {
+    const fruit = fruitTypes[Math.floor(Math.random() * fruitTypes.length)]; state.fruit.push(fruit); state.fruit = state.fruit.slice(-60); syncBodies();
+    const body = bodies[bodies.length - 1]; if (body) { body.x = .5 + (Math.random() - .5) * .12; body.y = .84; body.vx = (Math.random() - .5) * 1.1; body.vy = -1.7 - Math.random() * .6; }
+    save(); updateUI(); render();
+  }
+  function tick() {
+    const now = Date.now(), elapsed = Math.max(0, Math.min(2, (now - previousTick) / 1000)); previousTick = now; if (!state.running) return;
+    state.remaining = Math.max(0, state.remaining - elapsed);
+    if (state.phase === 'focus') { const old = Math.floor(state.focusedSeconds / 300); state.focusedSeconds += elapsed; state.totalSeconds += elapsed; for (let i = old; i < Math.floor(state.focusedSeconds / 300); i++) addFruit(); }
+    if (!state.remaining) { state.running = false; if (state.phase === 'break') { state.phase = 'focus'; state.remaining = state.minutes * 60; } }
+    save(); updateUI(); render();
+  }
+  function orientation(event) { if (!tiltEnabled) return; if (Number.isFinite(event.gamma)) gravityX = Math.max(-2.4, Math.min(2.4, event.gamma / 28)); if (Number.isFinite(event.beta)) gravityY = Math.max(.6, Math.min(4.6, .76 + (event.beta - 45) / 90)); render(); }
+  function setTilt(enabled) { tiltEnabled = enabled; $('focusTiltButton')?.setAttribute('aria-pressed', String(enabled)); if ($('focusTiltButton')) $('focusTiltButton').textContent = enabled ? 'Tilt enabled ✓' : 'Enable tilt'; if (!enabled) { window.removeEventListener('deviceorientation', orientation); gravityX = 0; gravityY = .76; } }
+  async function toggleTilt() {
+    if (tiltEnabled) { setTilt(false); return; }
+    try { const sensor = window.DeviceOrientationEvent; if (!sensor) throw new Error('unavailable'); if (typeof sensor.requestPermission === 'function' && await sensor.requestPermission() !== 'granted') throw new Error('denied');
+      window.addEventListener('deviceorientation', orientation, { passive: true }); setTilt(true); if ($('focusStatus')) $('focusStatus').textContent = 'Tilt your device, or tap a fruit to bounce it.';
+    } catch { setTilt(false); if ($('focusStatus')) $('focusStatus').textContent = 'Tilt isn’t available here. Tap the fruit to bounce it instead.'; render(); }
+  }
+  function bounce(event) {
+    const canvas = event.currentTarget, rect = canvas.getBoundingClientRect(), x = event.clientX - rect.left, y = event.clientY - rect.top;
+    const bounds = { left: rect.width * .18, right: rect.width * .82, top: rect.height * .23, bottom: rect.height * .93 };
+    const nx = Math.max(0, Math.min(1, (x - bounds.left) / (bounds.right - bounds.left))), ny = Math.max(0, Math.min(1, (y - bounds.top) / (bounds.bottom - bounds.top)));
+    let closest = null, score = Infinity;
+    for (const body of bodies) { const d = Math.hypot((body.x - nx) * .82, body.y - ny); if (d < score) { closest = body; score = d; } }
+    if (closest && score < radiusN * 3.4) { const dx = closest.x - nx, dy = closest.y - ny, d = Math.hypot(dx, dy) || 1; closest.vx += dx / d * .85 + (Math.random() - .5) * .35; closest.vy = -Math.max(1.3, Math.abs(closest.vy) * .35) - .7; }
+    else bodies.forEach((body, i) => { body.vy -= 1.8 + i * .04; body.vx += (i % 2 ? 1 : -1) * .22; });
     render();
   }
-  function addFruit() {
-    state.fruits.push(fruitTypes[Math.floor(Math.random() * fruitTypes.length)]);
-    if (state.fruits.length > 60) state.fruits.shift();
-    if (bodies.length < 18) bodies.push(makeBody(true));
-    if (byId('focusDialog').open) drawJar(true);
-    byId('focusRewardHint').textContent = 'Fruit earned! Keep going to grow another.';
-    persist();
-  }
-  function makeBody(drop = false, index = 0) {
-    const radius = 13 + Math.random() * 5;
-    return { emoji: state.fruits[(index + state.fruits.length - 1) % state.fruits.length] || fruitTypes[Math.floor(Math.random() * fruitTypes.length)], r: radius, x: 24 + Math.random() * Math.max(1, width - 48), y: drop ? -24 : Math.max(radius + 8, height - 35 - Math.random() * Math.min(height - 60, (index + 1) * 20)), vx: (Math.random() - .5) * 100, vy: drop ? 20 : (Math.random() - .5) * 40 };
-  }
-  function resizeCanvas() {
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect(); if (!rect.width || !rect.height) return;
-    const ratio = Math.min(2, window.devicePixelRatio || 1);
-    width = rect.width; height = rect.height;
-    canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    bodies = state.fruits.slice(-18).map((_, index) => makeBody(false, index));
-    hasDrawn = false; drawJar(true);
-  }
-  function drawJar(force = false) {
-    if (!ctx || (!force && !byId('focusDialog').open)) return;
-    ctx.clearRect(0, 0, width, height);
-    const left = width * .13, right = width * .87, top = 17, bottom = height - 12;
-    const visibleFruitCount = Math.min(18, state.fruits.length);
-    if (!bodies.length && visibleFruitCount) bodies = state.fruits.slice(-18).map((_, index) => makeBody(false, index));
-    const grad = ctx.createLinearGradient(0, top, 0, bottom);
-    grad.addColorStop(0, 'rgba(255,255,255,.12)'); grad.addColorStop(1, 'rgba(255,255,255,.025)');
-    ctx.beginPath(); ctx.moveTo(width * .38, top); ctx.lineTo(width * .62, top); ctx.lineTo(width * .66, top + 18); ctx.quadraticCurveTo(right, top + 32, right - 7, bottom - 20); ctx.quadraticCurveTo(width / 2, bottom + 10, left + 7, bottom - 20); ctx.quadraticCurveTo(left, top + 32, width * .34, top + 18); ctx.closePath();
-    ctx.fillStyle = grad; ctx.fill();
-    const border = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#ffbd83';
-    ctx.strokeStyle = border; ctx.lineWidth = 3; ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(width * .35, top + 3); ctx.lineTo(width * .65, top + 3); ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.stroke();
-    if (!state.fruits.length) {
-      ctx.font = '600 13px system-ui'; ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#bfccdf'; ctx.textAlign = 'center'; ctx.fillText('Your first fruit is 5 focused minutes away', width / 2, height * .61);
-    }
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    bodies.forEach(body => { ctx.font = `${body.r * 1.8}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`; ctx.fillText(body.emoji, body.x, body.y); });
-    if (state.fruits.length > 18) {
-      ctx.font = '800 11px system-ui'; ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#fff'; ctx.fillText(`+${state.fruits.length - 18} in your harvest`, width / 2, bottom - 4);
-    }
-    hasDrawn = true;
-  }
-  function animate(time) {
-    if (!byId('focusDialog').open) { animation = 0; return; }
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches && document.documentElement.dataset.motion !== 'calm') {
-      const dt = Math.min(.035, Math.max(0, (time - (lastFrame || time)) / 1000)); lastFrame = time;
-      const floor = height - 28, minX = width * .16 + 12, maxX = width * .84 - 12;
-      bodies.forEach(body => {
-        body.vy += 720 * dt; body.x += body.vx * dt; body.y += body.vy * dt;
-        if (body.x < minX + body.r) { body.x = minX + body.r; body.vx = Math.abs(body.vx) * .76; }
-        if (body.x > maxX - body.r) { body.x = maxX - body.r; body.vx = -Math.abs(body.vx) * .76; }
-        if (body.y > floor - body.r) { body.y = floor - body.r; body.vy = -Math.abs(body.vy) * .58; body.vx *= .985; if (Math.abs(body.vy) < 30) body.vy = 0; }
-      });
-      for (let i = 0; i < bodies.length; i++) for (let j = i + 1; j < bodies.length; j++) {
-        const a = bodies[i], b = bodies[j], dx = b.x - a.x, dy = b.y - a.y, distance = Math.hypot(dx, dy) || 1, min = (a.r + b.r) * .84;
-        if (distance < min) { const push = (min - distance) * .5, nx = dx / distance, ny = dy / distance; a.x -= nx * push; a.y -= ny * push; b.x += nx * push; b.y += ny * push; const bounce = (b.vy - a.vy) * .12; a.vy += bounce; b.vy -= bounce; }
-      }
-    }
-    drawJar(); animation = requestAnimationFrame(animate);
-  }
-  function syncTick() {
-    const now = Date.now();
-    if (state.active && (document.hidden || !document.hasFocus())) { pause('Timer paused while you were away.'); return; }
-    if (!state.active) { lastTick = now; return; }
-    const elapsed = Math.max(0, Math.min(now - lastTick, 1800)); lastTick = now;
-    if (state.phase === 'break') {
-      state.breakRemainingMs = Math.max(0, state.breakRemainingMs - elapsed);
-      if (!state.breakRemainingMs) { state.phase = 'focus'; state.active = false; }
-    } else if (state.phase === 'focus') {
-      state.remainingMs = Math.max(0, state.remainingMs - elapsed); state.elapsedMs += elapsed; state.totalMs += elapsed;
-      while (state.elapsedMs >= rewardStep * (state.fruitsEarnedThisSession + 1)) { state.fruitsEarnedThisSession++; addFruit(); }
-      if (!state.remainingMs) { state.phase = 'complete'; state.active = false; }
-    }
-    const second = Math.floor(state.phase === 'break' ? state.breakRemainingMs : state.remainingMs);
-    if (second !== state.lastSavedSecond || !state.active) { state.lastSavedSecond = second; render(); }
-  }
-  function setup() {
-    canvas = byId('focusCanvas'); ctx = canvas.getContext('2d');
-    state.fruitsEarnedThisSession = Math.floor(state.elapsedMs / rewardStep);
-    byId('focusLengthSelect').value = String(Math.round(state.durationMs / 60000));
-    byId('focusButton').addEventListener('click', () => { byId('focusDialog').showModal(); resizeCanvas(); render(); if (!animation) animation = requestAnimationFrame(animate); });
-    byId('focusClose').addEventListener('click', () => byId('focusDialog').close());
-    byId('focusDialog').addEventListener('click', event => { if (event.target === byId('focusDialog')) byId('focusDialog').close(); });
-    byId('focusDialog').addEventListener('close', () => { if (animation) cancelAnimationFrame(animation); animation = 0; });
-    byId('focusToggle').addEventListener('click', () => {
-      if (state.active) pause();
-      else if (state.phase === 'break') { state.active = !document.hidden && document.hasFocus(); lastTick = Date.now(); render(); }
-      else beginFocus();
-    });
-    byId('focusBreakButton').addEventListener('click', takeBreak);
-    byId('focusResetButton').addEventListener('click', () => {
-      state.active = false; state.phase = 'idle'; state.durationMs = (Number(byId('focusLengthSelect').value) || defaultMinutes) * 60000; state.remainingMs = state.durationMs; state.elapsedMs = 0; state.breakRemainingMs = 5 * 60000; state.fruitsEarnedThisSession = 0; render();
-    });
-    byId('focusLengthSelect').addEventListener('change', () => {
-      state.durationMs = (Number(byId('focusLengthSelect').value) || defaultMinutes) * 60000; state.remainingMs = state.durationMs; state.elapsedMs = 0; state.phase = 'idle'; state.fruitsEarnedThisSession = 0; render();
-    });
-    document.addEventListener('visibilitychange', () => { if (document.hidden) pause('Timer paused while you were away.'); });
-    window.addEventListener('blur', () => pause('Timer paused while this page was out of focus.'));
-    window.addEventListener('focus', () => { lastTick = Date.now(); });
-    window.addEventListener('pagehide', () => { pause(); persist(); });
-    window.addEventListener('resize', () => { if (byId('focusDialog').open) resizeCanvas(); });
-    window.addEventListener('packet:motion', () => drawJar(true));
-    window.addEventListener('packet:theme', () => drawJar(true));
-    render(); setInterval(syncTick, 250);
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup, { once: true }); else setup();
+  $('focusButton')?.addEventListener('click', () => { if (!dialog.open) dialog.showModal(); render(); });
+  $('focusDockOpen')?.addEventListener('click', () => { if (!dialog.open) dialog.showModal(); render(); });
+  $('focusClose')?.addEventListener('click', () => dialog.close()); dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
+  $('focusToggle')?.addEventListener('click', () => { if (state.remaining <= 0) { state.phase = 'focus'; state.remaining = state.minutes * 60; } state.running = !state.running; previousTick = Date.now(); save(); updateUI(); render(); });
+  $('focusBreakButton')?.addEventListener('click', () => { state.phase = 'break'; state.remaining = 300; state.running = true; previousTick = Date.now(); save(); updateUI(); render(); });
+  $('focusResetButton')?.addEventListener('click', () => { state.running = false; state.phase = 'focus'; state.focusedSeconds = 0; state.remaining = state.minutes * 60; save(); updateUI(); render(); });
+  $('focusLengthSelect')?.addEventListener('change', e => { const minutes = Number(e.target.value); state.minutes = [15, 25, 45].includes(minutes) ? minutes : 25; if (state.phase === 'focus' && !state.running) state.remaining = state.minutes * 60; save(); updateUI(); render(); });
+  $('focusTiltButton')?.addEventListener('click', toggleTilt);
+  [mainCanvas, dockCanvas].forEach(canvas => canvas.addEventListener('pointerdown', bounce, { passive: true }));
+  window.addEventListener('resize', render, { passive: true });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && state.running) { state.running = false; save(); updateUI(); } else previousTick = Date.now(); });
+  window.addEventListener('blur', () => { if (state.running) { state.running = false; save(); updateUI(); } });
+  window.addEventListener('pagehide', () => { if (state.running) { state.running = false; save(); } });
+  window.setInterval(tick, 250); updateUI(); render();
 })();
