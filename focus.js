@@ -7,8 +7,10 @@
   const key = new URLSearchParams(location.search).get('deck') === 'ccst' ? 'pp_ccst_notebook_focus_v1' : 'pp_focus_v1';
   const defaults = { minutes: 25, remaining: 1500, phase: 'focus', running: false, focusedSeconds: 0, totalSeconds: 0, fruit: [] };
   let state = { ...defaults, ...load() }, bodies = [], raf = 0, previousFrame = 0, previousTick = Date.now();
+  let resumeWhenVisible = state.running === true;
   let tiltEnabled = false, gravityX = 0, gravityY = .76;
-  state.running = false; state.fruit = Array.isArray(state.fruit) ? state.fruit.slice(-60) : [];
+  state.running = resumeWhenVisible && !document.hidden; state.fruit = Array.isArray(state.fruit) ? state.fruit.slice(-60) : [];
+  if (state.remaining <= 0) { state.running = false; resumeWhenVisible = false; }
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(key) || '{}');
@@ -20,7 +22,7 @@
       return saved;
     } catch { return {}; }
   }
-  function save() { try { localStorage.setItem(key, JSON.stringify({ ...state, running: false })); } catch { /* Storage may be unavailable. */ } }
+  function save() { try { localStorage.setItem(key, JSON.stringify({ ...state, running: state.running || resumeWhenVisible })); } catch { /* Storage may be unavailable. */ } }
   function clock(seconds) { seconds = Math.max(0, Math.ceil(seconds)); return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`; }
   function updateUI() {
     const value = clock(state.remaining);
@@ -29,6 +31,7 @@
     if ($('focusLengthSelect') && !$('focusLengthSelect').matches(':focus')) $('focusLengthSelect').value = String(state.minutes);
     if ($('focusFruitCount')) $('focusFruitCount').textContent = String(state.fruit.length);
     if ($('focusDockFruitCount')) $('focusDockFruitCount').textContent = `${state.fruit.length} ${state.fruit.length === 1 ? 'fruit' : 'fruits'}`;
+    if ($('focusDockFruitCount')?.nextElementSibling) $('focusDockFruitCount').nextElementSibling.textContent = state.fruit.length ? 'Tap to bounce' : 'Fruit at 5 min';
     if ($('focusTotalText')) $('focusTotalText').textContent = `${Math.floor(state.totalSeconds / 60)} focused minutes`;
     if ($('focusToggle')) $('focusToggle').textContent = state.running ? 'Pause focus' : state.remaining <= 0 ? 'Start another session ↗' : 'Start focusing ↗';
     if ($('focusBreakButton')) $('focusBreakButton').disabled = state.running && state.phase === 'break';
@@ -51,9 +54,11 @@
     ctx.lineTo(right - width * .02, top + height * .17); ctx.quadraticCurveTo(right + width * .06, top + height * .23, right + width * .04, top + height * .32);
     ctx.lineTo(right, bottom - height * .1); ctx.quadraticCurveTo(right, bottom, right - width * .12, bottom); ctx.lineTo(left + width * .12, bottom);
     ctx.quadraticCurveTo(left, bottom, left, bottom - height * .1); ctx.lineTo(left - width * .04, top + height * .32); ctx.quadraticCurveTo(left - width * .06, top + height * .23, left + width * .02, top + height * .17); ctx.closePath();
-    const fill = ctx.createLinearGradient(left, top, right, bottom); fill.addColorStop(0, 'rgba(255,255,255,.06)'); fill.addColorStop(.5, 'rgba(255,255,255,.015)'); fill.addColorStop(1, 'rgba(255,255,255,.07)');
-    ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#a7f2ed'; ctx.globalAlpha = .58; ctx.lineWidth = Math.max(1.2, width * .009); ctx.stroke(); ctx.globalAlpha = 1;
-    ctx.beginPath(); ctx.roundRect(left + width * .09, top, width * .66, height * .075, height * .025); ctx.fillStyle = 'rgba(255,255,255,.13)'; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.stroke(); ctx.restore();
+    const fill = ctx.createLinearGradient(left, top, right, bottom); fill.addColorStop(0, 'rgba(167,242,237,.10)'); fill.addColorStop(.48, 'rgba(255,255,255,.015)'); fill.addColorStop(1, 'rgba(173,167,255,.09)');
+    ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#a7f2ed'; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = Math.min(12, width * .08); ctx.globalAlpha = .84; ctx.lineWidth = Math.max(1.5, width * .012); ctx.stroke(); ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+    ctx.beginPath(); ctx.moveTo(left + width * .105, top + height * .34); ctx.quadraticCurveTo(left + width * .025, height * .68, left + width * .17, bottom - height * .08); ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = Math.max(1, width * .014); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(width * .5, bottom - height * .018, width * .25, height * .018, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.13)'; ctx.fill();
+    ctx.beginPath(); ctx.roundRect(left + width * .075, top, width * .70, height * .075, height * .025); ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.38)'; ctx.lineWidth = Math.max(1, width * .008); ctx.stroke(); ctx.restore();
     return { left: left + width * .035, right: right - width * .035, top: top + height * .16, bottom: bottom - height * .035 };
   }
   const radiusN = .085;
@@ -83,6 +88,10 @@
     const surface = prepareCanvas(canvas); if (!surface) return false;
     const { ctx, width, height } = surface, bounds = jar(ctx, width, height); syncBodies();
     const jarWidth = bounds.right - bounds.left, jarHeight = bounds.bottom - bounds.top, radius = Math.min(17, Math.max(7, jarWidth * radiusN));
+    if (!bodies.length) {
+      ctx.save(); ctx.globalAlpha = .82; ctx.font = `${Math.max(13, Math.min(20, jarWidth * .27))}px system-ui, "Apple Color Emoji", "Segoe UI Emoji"`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('🌱', bounds.left + jarWidth * .5, bounds.top + jarHeight * .78); ctx.restore();
+    }
     for (const body of bodies) {
       const x = bounds.left + body.x * jarWidth, y = bounds.top + body.y * jarHeight;
       ctx.save(); ctx.translate(x, y + Math.sin(body.spin) * radius * .035); ctx.rotate(Math.max(-.5, Math.min(.5, body.vx * .8)));
@@ -105,7 +114,7 @@
     const now = Date.now(), elapsed = Math.max(0, Math.min(2, (now - previousTick) / 1000)); previousTick = now; if (!state.running) return;
     state.remaining = Math.max(0, state.remaining - elapsed);
     if (state.phase === 'focus') { const old = Math.floor(state.focusedSeconds / 300); state.focusedSeconds += elapsed; state.totalSeconds += elapsed; for (let i = old; i < Math.floor(state.focusedSeconds / 300); i++) addFruit(); }
-    if (!state.remaining) { state.running = false; if (state.phase === 'break') { state.phase = 'focus'; state.remaining = state.minutes * 60; } }
+    if (!state.remaining) { state.running = false; resumeWhenVisible = false; if (state.phase === 'break') { state.phase = 'focus'; state.remaining = state.minutes * 60; } }
     save(); updateUI(); render();
   }
   function orientation(event) { if (!tiltEnabled) return; if (Number.isFinite(event.gamma)) gravityX = Math.max(-2.4, Math.min(2.4, event.gamma / 28)); if (Number.isFinite(event.beta)) gravityY = Math.max(.6, Math.min(4.6, .76 + (event.beta - 45) / 90)); render(); }
@@ -129,15 +138,19 @@
   $('focusButton')?.addEventListener('click', () => { if (!dialog.open) dialog.showModal(); render(); });
   $('focusDockOpen')?.addEventListener('click', () => { if (!dialog.open) dialog.showModal(); render(); });
   $('focusClose')?.addEventListener('click', () => dialog.close()); dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
-  $('focusToggle')?.addEventListener('click', () => { if (state.remaining <= 0) { state.phase = 'focus'; state.remaining = state.minutes * 60; } state.running = !state.running; previousTick = Date.now(); save(); updateUI(); render(); });
-  $('focusBreakButton')?.addEventListener('click', () => { state.phase = 'break'; state.remaining = 300; state.running = true; previousTick = Date.now(); save(); updateUI(); render(); });
-  $('focusResetButton')?.addEventListener('click', () => { state.running = false; state.phase = 'focus'; state.focusedSeconds = 0; state.remaining = state.minutes * 60; save(); updateUI(); render(); });
+  $('focusToggle')?.addEventListener('click', () => { if (state.remaining <= 0) { state.phase = 'focus'; state.remaining = state.minutes * 60; } state.running = !state.running; resumeWhenVisible = state.running; previousTick = Date.now(); save(); updateUI(); render(); });
+  $('focusBreakButton')?.addEventListener('click', () => { state.phase = 'break'; state.remaining = 300; state.running = true; resumeWhenVisible = true; previousTick = Date.now(); save(); updateUI(); render(); });
+  $('focusResetButton')?.addEventListener('click', () => { state.running = false; resumeWhenVisible = false; state.phase = 'focus'; state.focusedSeconds = 0; state.remaining = state.minutes * 60; save(); updateUI(); render(); });
   $('focusLengthSelect')?.addEventListener('change', e => { const minutes = Number(e.target.value); state.minutes = [15, 25, 45].includes(minutes) ? minutes : 25; if (state.phase === 'focus' && !state.running) state.remaining = state.minutes * 60; save(); updateUI(); render(); });
   $('focusTiltButton')?.addEventListener('click', toggleTilt);
   [mainCanvas, dockCanvas].forEach(canvas => canvas.addEventListener('pointerdown', bounce, { passive: true }));
   window.addEventListener('resize', render, { passive: true });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && state.running) { state.running = false; save(); updateUI(); } else previousTick = Date.now(); });
-  window.addEventListener('blur', () => { if (state.running) { state.running = false; save(); updateUI(); } });
-  window.addEventListener('pagehide', () => { if (state.running) { state.running = false; save(); } });
+  function pauseForAway() { if (state.running) { state.running = false; resumeWhenVisible = true; save(); updateUI(); } }
+  function resumeOnReturn() { if (document.hidden) return; previousTick = Date.now(); if (resumeWhenVisible && state.remaining > 0) { state.running = true; resumeWhenVisible = false; save(); updateUI(); render(); } }
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pauseForAway(); else resumeOnReturn(); });
+  window.addEventListener('blur', pauseForAway);
+  window.addEventListener('focus', resumeOnReturn);
+  window.addEventListener('pagehide', () => { if (state.running) { state.running = false; resumeWhenVisible = true; save(); } });
+  window.addEventListener('pageshow', resumeOnReturn);
   window.setInterval(tick, 250); updateUI(); render();
 })();
