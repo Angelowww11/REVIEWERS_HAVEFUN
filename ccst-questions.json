@@ -6,8 +6,8 @@
   ],
   "sourceSlideCount": 99,
   "questionCount": 99,
-  "sourceQuestionCount": 79,
-  "supplementalQuestionCount": 20,
+  "sourceQuestionCount": 83,
+  "supplementalQuestionCount": 16,
   "questions": [
     {
       "id": 1,
@@ -375,9 +375,9 @@
       "id": 17,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 23,
-      "type": "multiple_choice_question",
-      "question": "True or False: Increasing a link’s latency by itself changes its rated bandwidth.",
-      "questionHtml": "<p>True or False: Increasing a link’s latency by itself changes its rated bandwidth.</p>",
+      "type": "true_false_question",
+      "question": "True or False: High levels of network latency decrease network bandwidth.",
+      "questionHtml": "<p>True or False: High levels of network latency decrease network bandwidth.</p>",
       "options": [
         "True",
         "False"
@@ -388,6 +388,36 @@
     },
     {
       "id": 18,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 23,
+      "type": "true_false_question",
+      "question": "True or False: Low bandwidth can increase network latency.",
+      "questionHtml": "<p>True or False: Low bandwidth can increase network latency.</p>",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correctAnswers": [
+        "True"
+      ]
+    },
+    {
+      "id": 19,
+      "sourceFile": "Certification · Standard Concepts",
+      "sourcePage": 23,
+      "type": "true_false_question",
+      "question": "True or False: You can increase throughput by decreasing network latency.",
+      "questionHtml": "<p>True or False: You can increase throughput by decreasing network latency.</p>",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correctAnswers": [
+        "True"
+      ]
+    },
+    {
+      "id": 20,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 24,
       "type": "matching_question",
@@ -419,7 +449,7 @@
       ]
     },
     {
-      "id": 19,
+      "id": 21,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 26,
       "type": "multiple_choice_question",
@@ -436,7 +466,7 @@
       ]
     },
     {
-      "id": 20,
+      "id": 22,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 27,
       "type": "multiple_choice_question",
@@ -453,7 +483,7 @@
       ]
     },
     {
-      "id": 21,
+      "id": 23,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 29,
       "type": "multiple_choice_question",
@@ -470,7 +500,7 @@
       ]
     },
     {
-      "id": 22,
+      "id": 24,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 30,
       "type": "multiple_choice_question",
@@ -489,7 +519,7 @@
       ]
     },
     {
-      "id": 23,
+      "id": 25,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 32,
       "type": "multiple_choice_question",
@@ -506,7 +536,7 @@
       ]
     },
     {
-      "id": 24,
+      "id": 26,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 33,
       "type": "multiple_choice_question",
@@ -523,7 +553,7 @@
       ]
     },
     {
-      "id": 25,
+      "id": 27,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 34,
       "type": "multiple_choice_question",
@@ -540,7 +570,7 @@
       ]
     },
     {
-      "id": 26,
+      "id": 28,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 35,
       "type": "multiple_choice_question",
@@ -557,7 +587,7 @@
       ]
     },
     {
-      "id": 27,
+      "id": 29,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 36,
       "type": "multiple_choice_question",
@@ -574,7 +604,7 @@
       ]
     },
     {
-      "id": 28,
+      "id": 30,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 37,
       "type": "multiple_choice_question",
@@ -591,7 +621,7 @@
       ]
     },
     {
-      "id": 29,
+      "id": 31,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 38,
       "type": "multiple_choice_question",
@@ -608,7 +638,7 @@
       ]
     },
     {
-      "id": 30,
+      "id": 32,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 39,
       "type": "multiple_choice_question",
@@ -625,7 +655,7 @@
       ]
     },
     {
-      "id": 31,
+      "id": 33,
       "sourceFile": "Certification · Standard Concepts",
       "sourcePage": 40,
       "type": "multiple_choice_question",
@@ -642,7 +672,7 @@
       ]
     },
     {
-      "id": 32,
+      "id": 34,
       "sourceFile": "Certification · Security",
       "sourcePage": 43,
       "type": "multiple_choice_question",
@@ -659,7 +689,7 @@
       ]
     },
     {
-      "id": 33,
+      "id": 35,
       "sourceFile": "Certification · Security",
       "sourcePage": 44,
       "type": "multiple_choice_question",
@@ -676,7 +706,7 @@
       ]
     },
     {
-      "id": 34,
+      "id": 36,
       "sourceFile": "Certification · Security",
       "sourcePage": 45,
       "type": "multiple_choice_question",
@@ -693,7 +723,7 @@
       ]
     },
     {
-      "id": 35,
+      "id": 37,
       "sourceFile": "Certification · Security",
       "sourcePage": 46,
       "type": "multiple_choice_question",
@@ -710,7 +740,7 @@
       ]
     },
     {
-      "id": 36,
+      "id": 38,
       "sourceFile": "Certification · Security",
       "sourcePage": 47,
       "type": "multiple_choice_question",
@@ -727,7 +757,7 @@
       ]
     },
     {
-      "id": 37,
+      "id": 39,
       "sourceFile": "Certification · Security",
       "sourcePage": 48,
       "type": "multiple_choice_question",
@@ -744,7 +774,7 @@
       ]
     },
     {
-      "id": 38,
+      "id": 40,
       "sourceFile": "Certification · Security",
       "sourcePage": 49,
       "type": "matching_question",
@@ -776,7 +806,7 @@
       ]
     },
     {
-      "id": 39,
+      "id": 41,
       "sourceFile": "Certification · Security",
       "sourcePage": 50,
       "type": "matching_question",
@@ -808,7 +838,7 @@
       ]
     },
     {
-      "id": 40,
+      "id": 42,
       "sourceFile": "Certification · Security",
       "sourcePage": 51,
       "type": "matching_question",
@@ -840,7 +870,7 @@
       ]
     },
     {
-      "id": 41,
+      "id": 43,
       "sourceFile": "Certification · Security",
       "sourcePage": 52,
       "type": "matching_question",
@@ -872,7 +902,7 @@
       ]
     },
     {
-      "id": 42,
+      "id": 44,
       "sourceFile": "Certification · Security",
       "sourcePage": 53,
       "type": "multiple_choice_question",
@@ -889,7 +919,7 @@
       ]
     },
     {
-      "id": 43,
+      "id": 45,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 56,
       "type": "multiple_choice_question",
@@ -906,7 +936,7 @@
       ]
     },
     {
-      "id": 44,
+      "id": 46,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 57,
       "type": "multiple_choice_question",
@@ -923,7 +953,7 @@
       ]
     },
     {
-      "id": 45,
+      "id": 47,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 58,
       "type": "multiple_choice_question",
@@ -940,7 +970,7 @@
       ]
     },
     {
-      "id": 46,
+      "id": 48,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 59,
       "type": "multiple_choice_question",
@@ -957,7 +987,7 @@
       ]
     },
     {
-      "id": 47,
+      "id": 49,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 60,
       "type": "multiple_choice_question",
@@ -974,7 +1004,7 @@
       ]
     },
     {
-      "id": 48,
+      "id": 50,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 61,
       "type": "multiple_choice_question",
@@ -991,7 +1021,7 @@
       ]
     },
     {
-      "id": 49,
+      "id": 51,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 62,
       "type": "multiple_choice_question",
@@ -1009,7 +1039,7 @@
       ]
     },
     {
-      "id": 50,
+      "id": 52,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 63,
       "type": "multiple_choice_question",
@@ -1026,7 +1056,7 @@
       ]
     },
     {
-      "id": 51,
+      "id": 53,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 64,
       "type": "multiple_choice_question",
@@ -1043,7 +1073,7 @@
       ]
     },
     {
-      "id": 52,
+      "id": 54,
       "sourceFile": "Certification · Endpoints & Media Types",
       "sourcePage": 65,
       "type": "multiple_choice_question",
@@ -1060,7 +1090,7 @@
       ]
     },
     {
-      "id": 53,
+      "id": 55,
       "sourceFile": "Certification · Infrastructure",
       "sourcePage": 68,
       "type": "matching_question",
@@ -1098,7 +1128,7 @@
       ]
     },
     {
-      "id": 54,
+      "id": 56,
       "sourceFile": "Certification · Infrastructure",
       "sourcePage": 69,
       "type": "multiple_choice_question",
@@ -1116,7 +1146,7 @@
       ]
     },
     {
-      "id": 55,
+      "id": 57,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 72,
       "type": "multiple_choice_question",
@@ -1135,7 +1165,7 @@
       ]
     },
     {
-      "id": 56,
+      "id": 58,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 73,
       "type": "multiple_choice_question",
@@ -1154,7 +1184,7 @@
       ]
     },
     {
-      "id": 57,
+      "id": 59,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 74,
       "type": "multiple_choice_question",
@@ -1173,7 +1203,7 @@
       ]
     },
     {
-      "id": 58,
+      "id": 60,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 75,
       "type": "matching_question",
@@ -1205,7 +1235,7 @@
       ]
     },
     {
-      "id": 59,
+      "id": 61,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 76,
       "type": "multiple_choice_question",
@@ -1222,7 +1252,7 @@
       ]
     },
     {
-      "id": 60,
+      "id": 62,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 78,
       "type": "multiple_choice_question",
@@ -1239,7 +1269,7 @@
       ]
     },
     {
-      "id": 61,
+      "id": 63,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 79,
       "type": "multiple_choice_question",
@@ -1258,7 +1288,7 @@
       ]
     },
     {
-      "id": 62,
+      "id": 64,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 80,
       "type": "multiple_choice_question",
@@ -1275,7 +1305,7 @@
       ]
     },
     {
-      "id": 63,
+      "id": 65,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 81,
       "type": "multiple_choice_question",
@@ -1292,7 +1322,7 @@
       ]
     },
     {
-      "id": 64,
+      "id": 66,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 82,
       "type": "multiple_choice_question",
@@ -1309,7 +1339,7 @@
       ]
     },
     {
-      "id": 65,
+      "id": 67,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 83,
       "type": "multiple_choice_question",
@@ -1326,7 +1356,7 @@
       ]
     },
     {
-      "id": 66,
+      "id": 68,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 84,
       "type": "multiple_choice_question",
@@ -1343,7 +1373,7 @@
       ]
     },
     {
-      "id": 67,
+      "id": 69,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 85,
       "type": "multiple_choice_question",
@@ -1360,7 +1390,7 @@
       ]
     },
     {
-      "id": 68,
+      "id": 70,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 86,
       "type": "multiple_choice_question",
@@ -1377,24 +1407,52 @@
       ]
     },
     {
-      "id": 69,
+      "id": 71,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 87,
-      "type": "multiple_choice_question",
-      "question": "The exhibit shows show ip interface brief. Which statement is true?",
-      "questionHtml": "<p>The exhibit shows show ip interface brief. Which statement is true?</p><p><img src=\"exhibits/ccst_notebook_87.jpg\" alt=\"Reviewer exhibit for slide 87\"></p>",
+      "type": "true_false_question",
+      "question": "True or False: A device connected to GigabitEthernet0/1 can send out broadcast traffic.",
+      "questionHtml": "<p><img src=\"exhibits/ccst_notebook_87.jpg\" alt=\"Reviewer exhibit for slide 87\"></p><p>True or False: A device connected to GigabitEthernet0/1 can send out broadcast traffic.</p>",
       "options": [
-        "Gi0/1 is up/up and forwarding broadcasts.",
-        "Gi0/2 has a manually configured IP address.",
-        "Gi0/2 is administratively down.",
-        "Gi0/0 is administratively down."
+        "True",
+        "False"
       ],
       "correctAnswers": [
-        "Gi0/2 is administratively down."
+        "False"
       ]
     },
     {
-      "id": 70,
+      "id": 72,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 87,
+      "type": "true_false_question",
+      "question": "True or False: A technician issued the shutdown command on interface GigabitEthernet0/2.",
+      "questionHtml": "<p><img src=\"exhibits/ccst_notebook_87.jpg\" alt=\"Reviewer exhibit for slide 87\"></p><p>True or False: A technician issued the shutdown command on interface GigabitEthernet0/2.</p>",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correctAnswers": [
+        "True"
+      ]
+    },
+    {
+      "id": 73,
+      "sourceFile": "Certification · Diagnosing Problems",
+      "sourcePage": 87,
+      "type": "true_false_question",
+      "question": "True or False: A technician set the IP address for GigabitEthernet0/0 by using the CLI.",
+      "questionHtml": "<p><img src=\"exhibits/ccst_notebook_87.jpg\" alt=\"Reviewer exhibit for slide 87\"></p><p>True or False: A technician set the IP address for GigabitEthernet0/0 by using the CLI.</p>",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correctAnswers": [
+        "True"
+      ]
+    },
+    {
+      "id": 74,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 88,
       "type": "multiple_choice_question",
@@ -1411,7 +1469,7 @@
       ]
     },
     {
-      "id": 71,
+      "id": 75,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 89,
       "type": "multiple_choice_question",
@@ -1428,7 +1486,7 @@
       ]
     },
     {
-      "id": 72,
+      "id": 76,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 90,
       "type": "multiple_choice_question",
@@ -1445,7 +1503,7 @@
       ]
     },
     {
-      "id": 73,
+      "id": 77,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 91,
       "type": "multiple_choice_question",
@@ -1462,7 +1520,7 @@
       ]
     },
     {
-      "id": 74,
+      "id": 78,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 92,
       "type": "multiple_choice_question",
@@ -1479,7 +1537,7 @@
       ]
     },
     {
-      "id": 75,
+      "id": 79,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 93,
       "type": "multiple_choice_question",
@@ -1496,7 +1554,7 @@
       ]
     },
     {
-      "id": 76,
+      "id": 80,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 95,
       "type": "multiple_choice_question",
@@ -1513,7 +1571,7 @@
       ]
     },
     {
-      "id": 77,
+      "id": 81,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 96,
       "type": "multiple_choice_question",
@@ -1530,7 +1588,7 @@
       ]
     },
     {
-      "id": 78,
+      "id": 82,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 97,
       "type": "multiple_choice_question",
@@ -1549,7 +1607,7 @@
       ]
     },
     {
-      "id": 79,
+      "id": 83,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": 98,
       "type": "multiple_choice_question",
@@ -1566,7 +1624,7 @@
       ]
     },
     {
-      "id": 80,
+      "id": 84,
       "sourceFile": "Certification · Standards & Concepts",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1583,7 +1641,7 @@
       ]
     },
     {
-      "id": 81,
+      "id": 85,
       "sourceFile": "Certification · Standards & Concepts",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1600,7 +1658,7 @@
       ]
     },
     {
-      "id": 82,
+      "id": 86,
       "sourceFile": "Certification · Standards & Concepts",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1617,7 +1675,7 @@
       ]
     },
     {
-      "id": 83,
+      "id": 87,
       "sourceFile": "Certification · Addressing",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1634,7 +1692,7 @@
       ]
     },
     {
-      "id": 84,
+      "id": 88,
       "sourceFile": "Certification · Addressing",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1651,7 +1709,7 @@
       ]
     },
     {
-      "id": 85,
+      "id": 89,
       "sourceFile": "Certification · Addressing",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1668,7 +1726,7 @@
       ]
     },
     {
-      "id": 86,
+      "id": 90,
       "sourceFile": "Certification · Endpoints & Media",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1685,7 +1743,7 @@
       ]
     },
     {
-      "id": 87,
+      "id": 91,
       "sourceFile": "Certification · Endpoints & Media",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1702,24 +1760,7 @@
       ]
     },
     {
-      "id": 88,
-      "sourceFile": "Certification · Endpoints & Media",
-      "sourcePage": null,
-      "type": "multiple_choice_question",
-      "question": "What is the main purpose of Power over Ethernet (PoE)?",
-      "questionHtml": "<p>What is the main purpose of Power over Ethernet (PoE)?</p>",
-      "options": [
-        "Carry electrical power and data over Ethernet cabling",
-        "Convert IPv4 addresses to IPv6",
-        "Encrypt a Wi-Fi password",
-        "Connect two fiber strands"
-      ],
-      "correctAnswers": [
-        "Carry electrical power and data over Ethernet cabling"
-      ]
-    },
-    {
-      "id": 89,
+      "id": 92,
       "sourceFile": "Certification · Infrastructure",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1736,7 +1777,7 @@
       ]
     },
     {
-      "id": 90,
+      "id": 93,
       "sourceFile": "Certification · Infrastructure",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1753,24 +1794,7 @@
       ]
     },
     {
-      "id": 91,
-      "sourceFile": "Certification · Diagnosing Problems",
-      "sourcePage": null,
-      "type": "multiple_choice_question",
-      "question": "Which protocol does the common ping utility use for its echo request and reply?",
-      "questionHtml": "<p>Which protocol does the common ping utility use for its echo request and reply?</p>",
-      "options": [
-        "ICMP",
-        "FTP",
-        "ARP only",
-        "SMTP"
-      ],
-      "correctAnswers": [
-        "ICMP"
-      ]
-    },
-    {
-      "id": 92,
+      "id": 94,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1787,7 +1811,7 @@
       ]
     },
     {
-      "id": 93,
+      "id": 95,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1804,7 +1828,7 @@
       ]
     },
     {
-      "id": 94,
+      "id": 96,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1821,7 +1845,7 @@
       ]
     },
     {
-      "id": 95,
+      "id": 97,
       "sourceFile": "Certification · Diagnosing Problems",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1838,24 +1862,7 @@
       ]
     },
     {
-      "id": 96,
-      "sourceFile": "Certification · Security",
-      "sourcePage": null,
-      "type": "multiple_choice_question",
-      "question": "Which part of the CIA triad protects information from unauthorized modification?",
-      "questionHtml": "<p>Which part of the CIA triad protects information from unauthorized modification?</p>",
-      "options": [
-        "Availability",
-        "Confidentiality",
-        "Integrity",
-        "Accounting"
-      ],
-      "correctAnswers": [
-        "Integrity"
-      ]
-    },
-    {
-      "id": 97,
+      "id": 98,
       "sourceFile": "Certification · Security",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1872,7 +1879,7 @@
       ]
     },
     {
-      "id": 98,
+      "id": 99,
       "sourceFile": "Certification · Security",
       "sourcePage": null,
       "type": "multiple_choice_question",
@@ -1886,23 +1893,6 @@
       ],
       "correctAnswers": [
         "WPA2-Enterprise"
-      ]
-    },
-    {
-      "id": 99,
-      "sourceFile": "Certification · Security",
-      "sourcePage": null,
-      "type": "multiple_choice_question",
-      "question": "Which security principle is most directly supported by encrypting a sensitive email so unauthorized people cannot read it?",
-      "questionHtml": "<p>Which security principle is most directly supported by encrypting a sensitive email so unauthorized people cannot read it?</p>",
-      "options": [
-        "Confidentiality",
-        "Availability",
-        "Routing",
-        "Address translation"
-      ],
-      "correctAnswers": [
-        "Confidentiality"
       ]
     }
   ]

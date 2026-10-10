@@ -19,8 +19,20 @@ for (; i < raw.length; i++) {
   else if (ch === ']' && --depth === 0) break;
 }
 const sections = JSON.parse(raw.slice(start + marker.length, i + 1));
-const dropPages = new Set([11, 25, 28, 31, 77, 94, 99]);
+const dropPages = new Set([11, 25, 31, 77, 94, 99]);
 const dragPages = new Set([18, 19, 20, 21, 24, 49, 50, 51, 52, 68, 75]);
+const trueFalseStatements = {
+  23: [
+    ['High levels of network latency decrease network bandwidth.', 'False', 'Latency is delay; it does not change a link’s rated bandwidth capacity. It can affect achieved throughput, especially during round trips.'],
+    ['Low bandwidth can increase network latency.', 'True', 'A low-capacity link can add transmission and queuing delay under load. Bandwidth and latency are different measures, but limited capacity can contribute to longer delays.'],
+    ['You can increase throughput by decreasing network latency.', 'True', 'Reducing latency can improve achieved throughput, especially for traffic that needs acknowledgements. Throughput also depends on bandwidth, loss, congestion, and endpoints.']
+  ],
+  87: [
+    ['A device connected to GigabitEthernet0/1 can send out broadcast traffic.', 'False', 'The exhibit shows GigabitEthernet0/1 as down/down, so it cannot forward frames.'],
+    ['A technician issued the shutdown command on interface GigabitEthernet0/2.', 'True', 'The interface status is administratively down, indicating it was disabled in configuration.'],
+    ['A technician set the IP address for GigabitEthernet0/0 by using the CLI.', 'True', 'The Method column shows manual for GigabitEthernet0/0, indicating a manually configured address.']
+  ]
+};
 const pageNotes = {
   5: 'The source has a typo in the host address and highlights a wrong prefix. The supplied mask has 22 one-bits, so keep the stated host address and use /22.',
   8: '255.255.252.0 has 22 one-bits, so the prefix is /22.',
@@ -50,7 +62,6 @@ const replacements = {
   19: { question: 'Which device operates at the OSI Data Link layer to forward frames using MAC addresses?', options: ['Router', 'Switch', 'Hub', 'DNS server'], correct: [1] },
   20: { question: 'In the four-layer TCP/IP model, which layer includes Ethernet?', options: ['Application', 'Transport', 'Internet', 'Network Access'], correct: [3] },
   21: { question: 'Which network type typically connects personal devices over a short range, such as a phone and Bluetooth headset?', options: ['WAN', 'PAN', 'MAN', 'CAN'], correct: [1] },
-  23: { question: 'True or False: Increasing a link’s latency by itself changes its rated bandwidth.', options: ['True', 'False'], correct: [1] },
   24: { question: 'A user pays monthly to use a hosted graphics-design app in a web browser. Which cloud service model is this?', options: ['IaaS', 'PaaS', 'SaaS', 'On-premises'], correct: [2] },
   45: { question: 'Which action can a network firewall directly perform using a traffic rule?', options: ['Block traffic to a specified port', 'Prevent a user from launching an app on their PC', 'Repair a damaged cable', 'Change an endpoint password'], correct: [0] },
   49: { question: 'A digital signature used to detect unauthorized changes to a message supports which CIA security principle?', options: ['Availability', 'Confidentiality', 'Integrity', 'Authentication'], correct: [2] },
@@ -62,7 +73,6 @@ const replacements = {
   75: { question: 'The diagram shows PC-A on 172.100.0.0/16, Router1 at 172.100.0.1, and a server at 172.100.0.254. With no DHCP server, which PC-A configuration is valid?', options: ['IP 172.100.0.1, mask 255.255.0.0, gateway 172.100.0.254', 'IP 172.100.0.10, mask 255.255.0.0, gateway 172.100.0.1', 'IP 172.100.0.254, mask 255.255.255.0, gateway 172.100.0.10', 'IP 172.100.1.1, mask 255.255.255.0, no gateway'], correct: [1] },
   81: { question: 'A laptop sends a broadcast into Switch 1 on port A. Switch 2 connects to port D on Switch 1. Which Switch 1 ports forward the broadcast?', options: ['D only', 'A, B, and D only', 'B and C only', 'B, C, and D only'], correct: [3] },
   85: { question: 'At the Cisco router prompt router1#, which action is available in privileged EXEC mode?', options: ['Run show commands such as show running-config', 'Enter interface subcommands without selecting an interface', 'Change an interface address without entering configuration mode', 'Use user EXEC mode only'], correct: [0] },
-  87: { question: 'The exhibit shows show ip interface brief. Which statement is true?', options: ['Gi0/1 is up/up and forwarding broadcasts.', 'Gi0/2 has a manually configured IP address.', 'Gi0/2 is administratively down.', 'Gi0/0 is administratively down.'], correct: [2] },
   88: { question: 'A new switch’s running configuration lists interface GigabitEthernet0/1 and 0/2 with no other settings. What can you conclude from the shown lines?', options: ['Both ports were shut down.', 'Both ports have manually assigned IP addresses.', 'The shown configuration does not indicate shutdown or assigned IP addresses.', 'The switch has no Layer 2 ports.'], correct: [2] },
   89: { question: 'The PC’s DNS server is 64.100.8.8. Which command shows the router hops on the path to that DNS server?', options: ['ipconfig /all', 'ping 64.100.8.8', 'tracert 64.100.8.8', 'nslookup 64.100.8.8'], correct: [2] },
   90: { question: 'A web application uses https://www.companypro.net:7100/api. Which Wireshark display filter selects TCP packets using that port?', options: ['tcp.port == 7100', 'dns.port == 7100', 'ip.addr == 7100', 'http.host == 7100'], correct: [0] },
@@ -87,6 +97,23 @@ const questions = [], explanations = {}, seen = new Map();
 for (const [section, cards] of sections) for (const card of cards) {
   const [page, sourceQuestion, rawOptions, key, sourceExplanation, sourceNote, pictures] = card;
   if (dropPages.has(page)) continue;
+  const trueFalse = trueFalseStatements[page];
+  if (trueFalse) {
+    let imageMarkup = '';
+    if (pictures?.length) {
+      const filename = `ccst_notebook_${page}.jpg`, imageData = pictures[0];
+      if (!imageData.startsWith('data:image/jpeg;base64,')) throw new Error(`Unexpected exhibit encoding on slide ${page}.`);
+      fs.writeFileSync(path.join(exhibitDir, filename), Buffer.from(imageData.split(',')[1], 'base64'));
+      imageMarkup = `<p><img src="exhibits/${filename}" alt="Reviewer exhibit for slide ${page}"></p>`;
+    }
+    for (const [statement, answer, explanation] of trueFalse) {
+      const question = `True or False: ${statement}`;
+      const id = questions.length + 1;
+      questions.push({ id, sourceFile: `Certification · ${section}`, sourcePage: page, type: 'true_false_question', question, questionHtml: `${imageMarkup}<p>${escapeHTML(question)}</p>`, options: ['True', 'False'], correctAnswers: [answer] });
+      explanations[String(id)] = explanation;
+    }
+    continue;
+  }
   const patch = replacements[page] || {};
   let question = patch.question || sourceQuestion.replace(/\s+/g, ' ').trim();
   let options = (patch.options || rawOptions.map(([, text]) => text)).map(text => text.trim());
@@ -119,18 +146,14 @@ const supplemental = [
   ['Addressing','What does the IPv6 address ::1 represent?',['The default route','The loopback address','A link-local gateway','A multicast group'],'The loopback address','::1 is the IPv6 loopback address, equivalent in purpose to IPv4 127.0.0.1.'],
   ['Endpoints & Media','Which connector is commonly used with fiber-optic links in local-area network equipment?',['RJ-11','LC fiber connector','BNC coaxial connector','USB-A'],'LC fiber connector','LC is a small form-factor fiber connector commonly used with optical transceivers.'],
   ['Endpoints & Media','Compared with 5 GHz Wi-Fi, 2.4 GHz Wi-Fi generally offers which tradeoff?',['Shorter range and less interference','Longer range but often more interference','No radio interference','Wired-level latency'],'Longer range but often more interference','2.4 GHz often reaches farther and penetrates walls better, but it has fewer channels and more sources of interference.'],
-  ['Endpoints & Media','What is the main purpose of Power over Ethernet (PoE)?',['Carry electrical power and data over Ethernet cabling','Convert IPv4 addresses to IPv6','Encrypt a Wi-Fi password','Connect two fiber strands'],'Carry electrical power and data over Ethernet cabling','PoE lets a switch or injector power devices such as phones and access points over the network cable.'],
   ['Infrastructure','How does a Layer 2 switch learn which port leads to a device?',['It records the source MAC address of an arriving frame','It reads the destination IP address in DNS','It sends every frame to the router first','It learns only from DHCP offers'],'It records the source MAC address of an arriving frame','The switch associates a frame’s source MAC address and VLAN with the ingress port in its MAC table.'],
   ['Infrastructure','What does a router primarily use to choose where to forward an IP packet?',['The destination IP address and its routing table','The source application name only','The Ethernet cable color','A DNS MX record'],'The destination IP address and its routing table','A router compares the destination IP to routes and forwards toward the best matching route.'],
-  ['Diagnosing Problems','Which protocol does the common ping utility use for its echo request and reply?',['ICMP','FTP','ARP only','SMTP'],'ICMP','Ping tests IP reachability with ICMP Echo Request and Echo Reply messages.'],
   ['Diagnosing Problems','What does tracert/traceroute show as it probes toward a destination?',['The sequence of Layer 3 hops that respond','The switch MAC table on the PC','The DNS zone file','The Wi-Fi password'],'The sequence of Layer 3 hops that respond','Traceroute varies the packet TTL/hop limit to reveal intermediate routers that return responses. Some hops may not answer.'],
   ['Diagnosing Problems','On Windows, which command displays detailed local IP, gateway, and DNS configuration?',['ipconfig /all','show ip route','nslookup /all','tracert /config'],'ipconfig /all','ipconfig /all lists detailed configuration for Windows network adapters.'],
   ['Diagnosing Problems','Which command displays the local routing table on Windows?',['route print','ping','hostname','net use'],'route print','route print shows the routes installed on the local Windows host.'],
   ['Diagnosing Problems','On a Cisco switch, which command gives a brief list of interface IP addresses and status?',['show ip interface brief','show cdp neighbors','show startup-config','show vlan password'],'show ip interface brief','This command summarizes interface addresses and their line/protocol status.'],
-  ['Security','Which part of the CIA triad protects information from unauthorized modification?',['Availability','Confidentiality','Integrity','Accounting'],'Integrity','Integrity concerns the correctness and protection of data against unauthorized changes.'],
   ['Security','In AAA, which function records resource use and user activity?',['Authentication','Authorization','Accounting','Encryption'],'Accounting','Accounting logs activity and resource use; authentication checks identity and authorization decides access.'],
-  ['Security','Which Wi-Fi security deployment typically uses individual usernames and a RADIUS/802.1X server rather than one shared home passphrase?',['WPA2-Personal','WPA2-Enterprise','Open Wi-Fi','WEP only'],'WPA2-Enterprise','Enterprise mode uses 802.1X/EAP with an authentication server; Personal mode commonly uses a shared pre-shared key.'],
-  ['Security','Which security principle is most directly supported by encrypting a sensitive email so unauthorized people cannot read it?',['Confidentiality','Availability','Routing','Address translation'],'Confidentiality','Encryption helps keep information secret from people who are not authorized to read it.']
+  ['Security','Which Wi-Fi security deployment typically uses individual usernames and a RADIUS/802.1X server rather than one shared home passphrase?',['WPA2-Personal','WPA2-Enterprise','Open Wi-Fi','WEP only'],'WPA2-Enterprise','Enterprise mode uses 802.1X/EAP with an authentication server; Personal mode commonly uses a shared pre-shared key.']
 ];
 
 for (const [category, question, options, answer, explanation] of supplemental) {

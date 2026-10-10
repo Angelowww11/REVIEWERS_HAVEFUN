@@ -1,6 +1,8 @@
 # CCST certification reviewer audit
 
-The separate **CCST certification** deck contains 99 questions: 79 distinct, reviewed cards from `CCST_Networking_Reviewer_Notebook_Detailed-2.html` and 20 additional practice cards aligned to the Cisco CCST Networking exam topics. Seven repeated source slides were omitted. Matching, configuration, and exhibit questions are presented as multiple choice where needed; referenced notebook exhibits are included in `exhibits/`.
+The separate **CCST certification** deck contains 99 questions: 83 distinct, reviewed cards from `CCST_Networking_Reviewer_Notebook_Detailed-2.html` and 16 additional practice cards aligned to the Cisco CCST Networking exam topics. Seven repeated source slides/cards were omitted. Matching, configuration, and exhibit questions are presented in suitable formats; referenced notebook exhibits are included in `exhibits/`.
+
+The two original true/false exercises (notebook slides 23 and 87; PDF pages 22 and 86) contain three statements each. All six statements and their source-keyed answers are included as individual True/False questions. Slide 28 repeats the MAC-header/FCS question already present on slide 16, so it is correctly deduplicated.
 
 ## Corrections and review notes
 
