@@ -111,9 +111,9 @@ function renderDragMatch(q, mapping, disabled = false, side = 'solo', itemOrder 
   const items = dragItems(q), targetList = dragTargets(q), itemIndexes = validDisplayOrder(itemOrder, items.length) ? itemOrder : items.map((_, index) => index), targets = validDisplayOrder(targetOrder, targetList.length) ? targetOrder : shuffle(targetList.map((_, index) => index));
   if (targets.length > 1 && targets.every((targetIndex, index) => targetIndex === index)) targets.push(targets.shift());
   const targetFor = index => mapping?.[index] ?? '';
-  const left = itemIndexes.map(index => { const item = items[index]; return `<div class="drag-match-row"><div class="drag-match-prompt"><span class="drag-match-grip" aria-hidden="true">⠿</span><span>${escapeHTML(item)}</span></div><span class="drag-match-connector" aria-hidden="true">↔</span><select class="drag-match-slot drag-match-target ${targetFor(index) !== '' && targetFor(index) >= 0 ? 'has-match' : ''}" data-drag-slot="${index}" data-drag-select="${index}" aria-label="Drop or choose a match for ${escapeHTML(item)}" ${disabled ? 'disabled' : ''}><option value="">Drop answer here</option>${targets.map(targetIndex => `<option value="${targetIndex}" ${String(targetFor(index)) === String(targetIndex) ? 'selected' : ''}>${escapeHTML(targetList[targetIndex])}</option>`).join('')}</select></div>`; }).join('');
-  const right = targets.map(targetIndex => { const target = targetList[targetIndex]; return `<div class="drag-match-chip" draggable="${!disabled}" data-drag-right="${targetIndex}" aria-label="Drag ${escapeHTML(target)} to its match"><span aria-hidden="true">⠿</span>${escapeHTML(target)}</div>`; }).join('');
-  return `<div class="drag-match-board ${side === 'live' ? 'drag-match-live' : ''}" data-drag-board="${id}"><div class="drag-match-list">${left}</div><div class="drag-match-targets"><span class="drag-match-caption">AVAILABLE ANSWERS · DRAG OR TAP</span>${right}</div></div>`;
+  const left = itemIndexes.map(index => { const item = items[index]; return `<div class="drag-match-row"><button type="button" class="drag-match-prompt" data-drag-prompt="${index}" aria-label="Choose prompt ${escapeHTML(item)}" ${disabled ? 'disabled' : ''}><span class="drag-match-grip" aria-hidden="true">⠿</span><span>${escapeHTML(item)}</span></button><span class="drag-match-connector" aria-hidden="true">↔</span><select class="drag-match-slot drag-match-target ${targetFor(index) !== '' && targetFor(index) >= 0 ? 'has-match' : ''}" data-drag-slot="${index}" data-drag-select="${index}" aria-label="Drop or choose a match for ${escapeHTML(item)}" ${disabled ? 'disabled' : ''}><option value="">Drop answer here</option>${targets.map(targetIndex => `<option value="${targetIndex}" ${String(targetFor(index)) === String(targetIndex) ? 'selected' : ''}>${escapeHTML(targetList[targetIndex])}</option>`).join('')}</select></div>`; }).join('');
+  const right = targets.map(targetIndex => { const target = targetList[targetIndex]; return `<button type="button" class="drag-match-chip" draggable="${!disabled}" data-drag-right="${targetIndex}" aria-label="Choose answer ${escapeHTML(target)}" aria-pressed="false" ${disabled ? 'disabled' : ''}><span aria-hidden="true">⠿</span>${escapeHTML(target)}</button>`; }).join('');
+  return `<div class="drag-match-board ${side === 'live' ? 'drag-match-live' : ''}" data-drag-board="${id}"><div class="drag-match-list">${left}</div><div class="drag-match-targets"><span class="drag-match-caption">Tap an answer, then its prompt · or use the slot menu</span>${right}</div></div>`;
 }
 function dragMappingFrom(board) { return [...board.querySelectorAll('[data-drag-select]')].sort((a, b) => Number(a.dataset.dragSelect) - Number(b.dataset.dragSelect)).map(select => select.value === '' ? -1 : Number(select.value)); }
 function dragPayload(q, mapping) { return mapping.map((target, index) => target < 0 ? '' : dragAnswer(q, index, target)); }
@@ -122,13 +122,34 @@ function gradeDrag(q, mapping) { const answers = dragPayload(q, mapping); const 
 function attachDragInteraction(container, selector, disabled = false) {
   if (disabled) return;
   let dragged = null;
+  let pickedTarget = null;
+  const caption = container.querySelector('.drag-match-caption');
+  const defaultCaption = caption?.textContent || '';
   container.addEventListener('dragstart', event => { const chip = event.target.closest('[data-drag-right]'); if (!chip) return; dragged = Number(chip.dataset.dragRight); event.dataTransfer?.setData('text/plain', String(dragged)); });
   container.addEventListener('dragend', () => { dragged = null; });
   container.addEventListener('dragover', event => { if (event.target.closest('[data-drag-slot]')) event.preventDefault(); });
   container.addEventListener('drop', event => { const select = event.target.closest('[data-drag-slot]'); if (!select) return; event.preventDefault(); const index = Number(event.dataTransfer?.getData('text/plain') || dragged); if (index >= 0) { select.value = String(index); select.dispatchEvent(new Event('change', { bubbles: true })); } });
   container.addEventListener('click', event => {
+    const prompt = event.target.closest('[data-drag-prompt]');
+    if (prompt) {
+      if (pickedTarget == null) { caption?.replaceChildren(document.createTextNode('Tap an answer first, or use the slot menu.')); const select = container.querySelector(`[data-drag-select="${prompt.dataset.dragPrompt}"]`); select?.focus(); try { select?.showPicker?.(); } catch { /* Native picker is optional. */ } return; }
+      const select = container.querySelector(`[data-drag-select="${prompt.dataset.dragPrompt}"]`); if (!select || select.disabled) return;
+      const other = [...container.querySelectorAll('[data-drag-select]')].find(candidate => candidate !== select && candidate.value === String(pickedTarget));
+      const previous = select.value;
+      select.value = String(pickedTarget);
+      if (other) other.value = previous;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      if (other) other.dispatchEvent(new Event('change', { bubbles: true }));
+      pickedTarget = null;
+      container.querySelectorAll('[data-drag-right]').forEach(button => { button.classList.remove('is-picked'); button.setAttribute('aria-pressed', 'false'); });
+      if (caption) caption.textContent = defaultCaption;
+      return;
+    }
     const chip = event.target.closest('[data-drag-right]'); if (!chip) return;
-    const target = Number(chip.dataset.dragRight); const open = [...container.querySelectorAll('[data-drag-select]')].find(select => !select.disabled && select.value === ''); const select = open || container.querySelector('[data-drag-select]'); if (select) { select.value = String(target); select.dispatchEvent(new Event('change', { bubbles: true })); }
+    const target = Number(chip.dataset.dragRight);
+    pickedTarget = pickedTarget === target ? null : target;
+    if (caption) caption.textContent = pickedTarget == null ? defaultCaption : 'Answer picked · tap its matching prompt';
+    container.querySelectorAll('[data-drag-right]').forEach(button => { const isPicked = Number(button.dataset.dragRight) === pickedTarget; button.classList.toggle('is-picked', isPicked); button.setAttribute('aria-pressed', String(isPicked)); });
   });
   container.addEventListener('change', event => {
     const select = event.target.closest('[data-drag-select]'); if (!select) return;
@@ -589,7 +610,7 @@ function renderQuestion() {
 function renderDragQuestion(g, q) {
   const mapping = Array.isArray(g.dragMapping) ? g.dragMapping : (g.dragMapping = q.dragPairs.map(() => -1));
   const board = renderDragMatch(q, mapping, g.answered, 'solo', g.dragItemOrder, g.dragTargetOrder);
-  $('gameContent').innerHTML = `<article class="question-card"><div class="question-card-head"><span class="question-tag">DRAG & MATCH · ${escapeHTML(sourceName(q).toUpperCase())}</span><span class="difficulty-tag">${difficulty(q) > .72 ? 'HARD' : difficulty(q) > .38 ? 'MEDIUM' : 'WARM-UP'} · ${100 + Math.round(difficulty(q) * 75)} PTS</span></div><div class="question-prompt" id="currentQuestion">${safeQuestionHTML(q)}</div><p class="drag-match-instruction">Drag each card to its match, or choose a match from the menu.</p>${board}<div id="feedbackSlot"></div><div class="question-actions"><div class="question-actions-left">${powerMarkup(g, q)}<button type="button" class="hint-button" data-action="hint">💡 Hint bot</button></div><button type="button" id="answerAction" class="question-submit" data-action="submit" ${g.answered || !isCompleteDrag(mapping) ? 'disabled' : ''}>Check matches</button></div><div id="coachSlot"></div></article>`;
+  $('gameContent').innerHTML = `<article class="question-card"><div class="question-card-head"><span class="question-tag">DRAG & MATCH · ${escapeHTML(sourceName(q).toUpperCase())}</span><span class="difficulty-tag">${difficulty(q) > .72 ? 'HARD' : difficulty(q) > .38 ? 'MEDIUM' : 'WARM-UP'} · ${100 + Math.round(difficulty(q) * 75)} PTS</span></div><div class="question-prompt" id="currentQuestion">${safeQuestionHTML(q)}</div><p class="drag-match-instruction">Desktop: drag cards. On touch, tap an answer then its prompt, or use the slot menu.</p>${board}<div id="feedbackSlot"></div><div class="question-actions"><div class="question-actions-left">${powerMarkup(g, q)}<button type="button" class="hint-button" data-action="hint">💡 Hint bot</button></div><button type="button" id="answerAction" class="question-submit" data-action="submit" ${g.answered || !isCompleteDrag(mapping) ? 'disabled' : ''}>Check matches</button></div><div id="coachSlot"></div></article>`;
   const el = $('gameContent').querySelector('[data-drag-board]'); attachDragInteraction(el, '#gameContent', g.answered);
   if (!g.answered) el.addEventListener('change', () => { g.dragMapping = dragMappingFrom(el); $('answerAction').disabled = !isCompleteDrag(g.dragMapping); saveRankedRun(); });
   g.questionAt = performance.now(); announce(`Question ${g.completed + 1} of ${g.total}. Match each item to its description.`);
@@ -1333,7 +1354,7 @@ function liveRenderStage() {
   const savedEliminated = savedIndexes.some(index => (room.myPowers?.fifty || []).includes(index));
   const draftChanged = drag ? JSON.stringify(live.dragMapping || []) !== JSON.stringify(live.savedDragMapping || []) : q.multiple && (live.selected.size !== savedIndexes.length || [...live.selected].some(index => !savedIndexes.includes(index)));
   const answerMarkup = drag
-    ? `${!isReveal ? '<p class="drag-match-instruction">Drag each item to its match, or choose from the menus.</p>' : ''}${renderDragMatch(q, live.dragMapping, isReveal || live.submitted, 'live', q.dragItems.map((_, index) => index), q.dragTargets.map((_, index) => index))}${!isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-drag" ${live.submitted || !isCompleteDrag(live.dragMapping || []) || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update matches' : 'Lock in matches'} ↗</button></div>` : ''}`
+    ? `${!isReveal ? '<p class="drag-match-instruction">Desktop: drag items. On touch, tap an answer then its prompt, or use the slot menu.</p>' : ''}${renderDragMatch(q, live.dragMapping, isReveal || live.submitted, 'live', q.dragItems.map((_, index) => index), q.dragTargets.map((_, index) => index))}${!isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-drag" ${live.submitted || !isCompleteDrag(live.dragMapping || []) || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update matches' : 'Lock in matches'} ↗</button></div>` : ''}`
     : typed
     ? isReveal ? '' : `<form id="liveAnswerForm" class="live-answer-form"><label class="sr-only" for="liveAnswerInput">Your answer</label><input id="liveAnswerInput" class="live-input" maxlength="200" placeholder="Type your answer…" value="${escapeHTML(typeof displayedAnswer === 'string' ? displayedAnswer : '')}" ${live.submitted ? 'disabled' : ''} required><button type="submit" class="button button-primary" ${live.submitted ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Send'} ↗</button></form>`
     : `<div class="live-answer-grid">${options.map((option, index) => { const correct = answers.some(a => normalize(a) === normalize(option)); const chosen = isReveal || !q.multiple ? displayedValues.some(value => value != null && normalize(value) === normalize(option)) : live.selected.has(index); const eliminated = !isReveal && (room.myPowers?.fifty || []).includes(index); const cls = isReveal ? correct ? 'is-correct' : chosen ? 'is-wrong' : '' : eliminated ? 'is-eliminated' : chosen ? 'is-selected' : ''; return `<button type="button" class="live-answer-option ${cls}" data-live-choice="${index}" ${isReveal || live.submitted || eliminated ? 'disabled' : ''} aria-pressed="${chosen}"><i>${index + 1}</i><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>${q.multiple && !isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-multi" ${live.submitted || !live.selected.size || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Lock in answers'} ↗</button></div>` : ''}`;
