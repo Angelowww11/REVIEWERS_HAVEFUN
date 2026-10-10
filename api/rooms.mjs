@@ -131,6 +131,13 @@ function shuffled(items) {
   return result;
 }
 
+function shuffledDisplayOrder(items, previous = null) {
+  const result = shuffled(items);
+  const sameAs = order => Array.isArray(order) && order.length === result.length && result.every((value, index) => value === order[index]);
+  if (result.length > 1 && sameAs(previous)) result.push(result.shift());
+  return result;
+}
+
 function normalizeAnswer(value) {
   return String(value ?? '')
     .normalize('NFKC')
@@ -174,14 +181,16 @@ function currentQuestion(state, index, viewer = null) {
   const question = roundQuestion(state, index);
   if (!round || !question) return null;
   const playerPowers = viewer?.powers?.[index] || {};
+  const itemOrder = playerPowers.matchItemOrder || round.matchItemOrder || question.dragPairs?.map((_, pairIndex) => pairIndex);
+  const targetOrder = playerPowers.matchTargetOrder || round.matchTargetOrder || question.dragPairs?.map((_, pairIndex) => pairIndex);
   return {
     id: question.id,
     question: question.question,
     questionHtml: question.questionHtml,
     type: question.type,
     matching: question.type === 'matching_question',
-    dragItems: question.type === 'matching_question' ? question.dragPairs.map(pair => pair.item) : undefined,
-    dragTargets: question.type === 'matching_question' ? (playerPowers.matchTargetOrder || round.matchTargetOrder).map(targetIndex => question.dragPairs[targetIndex].target) : undefined,
+    dragItems: question.type === 'matching_question' ? itemOrder.map(itemIndex => question.dragPairs[itemIndex].item) : undefined,
+    dragTargets: question.type === 'matching_question' ? targetOrder.map(targetIndex => question.dragPairs[targetIndex].target) : undefined,
     multiple: question.correctAnswers.length > 1,
     scrambled: Boolean(playerPowers.scrambled),
     options: question.type === 'short_answer_question'
@@ -393,7 +402,8 @@ function handleStart(room, player, now) {
   room.sequence = selected.map((question, index) => ({
     id: question.id,
     optionOrder: shuffled(question.options.map((_, optionIndex) => optionIndex)),
-    matchTargetOrder: question.type === 'matching_question' ? shuffled(question.dragPairs.map((_, targetIndex) => targetIndex)) : undefined,
+    matchItemOrder: question.type === 'matching_question' ? shuffledDisplayOrder(question.dragPairs.map((_, itemIndex) => itemIndex)) : undefined,
+    matchTargetOrder: question.type === 'matching_question' ? shuffledDisplayOrder(question.dragPairs.map((_, targetIndex) => targetIndex)) : undefined,
     revealAt: now + index * ROUND_MS + QUESTION_MS,
     endsAt: now + (index + 1) * ROUND_MS
   }));
@@ -484,7 +494,10 @@ function handlePower(room, player, now, body) {
       const round = room.sequence[time.index];
       const question = roundQuestion(room, time.index);
       targetPower.scrambled = true;
-      if (question?.type === 'matching_question') targetPower.matchTargetOrder = shuffled(round.matchTargetOrder);
+      if (question?.type === 'matching_question') {
+        targetPower.matchItemOrder = shuffledDisplayOrder(question.dragPairs.map((_, itemIndex) => itemIndex), round.matchItemOrder || null);
+        targetPower.matchTargetOrder = shuffledDisplayOrder(question.dragPairs.map((_, targetIndex) => targetIndex), round.matchTargetOrder || null);
+      }
       else targetPower.optionOrder = shuffled(round.optionOrder);
     }
   } else if (name === 'ward') { used.ward = true; used.splatUntil = 0; }

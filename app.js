@@ -59,7 +59,7 @@ function saveRankedRun() {
     used: g.used, activeShield: g.activeShield, elapsedMs: Math.max(0, now - g.startedAt),
     questionElapsedMs: Math.max(0, now - g.questionAt), remainingTime: g.remainingTime,
     freezeRemainingMs: Math.max(0, g.freezeUntil - now), events: g.events, history: g.history, ghost: g.ghost,
-    firstCorrect: g.firstCorrect, lastResult: g.lastResult || null, dragMapping: g.dragMapping,
+    firstCorrect: g.firstCorrect, lastResult: g.lastResult || null, dragMapping: g.dragMapping, dragItemOrder: g.dragItemOrder, dragTargetOrder: g.dragTargetOrder,
     draftAnswer: $('answerInput')?.value || '', stage: $('gameContent')?.querySelector('.wager-card') ? 'wager' : 'question'
   });
 }
@@ -99,16 +99,23 @@ function isDragMatch(q) { return q?.type === 'matching_question' && (Array.isArr
 function dragItems(q) { return q.dragItems || (q.dragPairs || []).map(pair => pair.item); }
 function dragTargets(q) { return q.dragTargets || (q.dragPairs || []).map(pair => pair.target); }
 function dragAnswer(q, pairIndex, targetIndex) { return `${dragItems(q)[pairIndex]} → ${dragTargets(q)[targetIndex]}`; }
-function renderDragMatch(q, mapping, disabled = false, side = 'solo') {
+function displayOrder(length, previous = null) {
+  const indexes = Array.from({ length }, (_, index) => index);
+  let order = shuffle(indexes);
+  if (length > 1 && Array.isArray(previous) && order.every((value, index) => value === previous[index])) order = [...order.slice(1), order[0]];
+  return order;
+}
+function validDisplayOrder(order, length) { return Array.isArray(order) && order.length === length && new Set(order).size === length && order.every(index => Number.isInteger(index) && index >= 0 && index < length); }
+function renderDragMatch(q, mapping, disabled = false, side = 'solo', itemOrder = null, targetOrder = null) {
   const id = side === 'live' ? 'liveDrag' : side === 'practice' ? 'practiceDrag' : 'drag';
-  const items = dragItems(q), targetList = dragTargets(q), targets = shuffle(targetList.map((_, index) => index));
+  const items = dragItems(q), targetList = dragTargets(q), itemIndexes = validDisplayOrder(itemOrder, items.length) ? itemOrder : items.map((_, index) => index), targets = validDisplayOrder(targetOrder, targetList.length) ? targetOrder : shuffle(targetList.map((_, index) => index));
   if (targets.length > 1 && targets.every((targetIndex, index) => targetIndex === index)) targets.push(targets.shift());
   const targetFor = index => mapping?.[index] ?? '';
-  const left = items.map((item, index) => `<div class="drag-match-row"><div class="drag-match-prompt"><span class="drag-match-grip" aria-hidden="true">⠿</span><span>${escapeHTML(item)}</span></div><span class="drag-match-connector" aria-hidden="true">↔</span><select class="drag-match-slot drag-match-target ${targetFor(index) !== '' && targetFor(index) >= 0 ? 'has-match' : ''}" data-drag-slot="${index}" data-drag-select="${index}" aria-label="Drop or choose a match for ${escapeHTML(item)}" ${disabled ? 'disabled' : ''}><option value="">Drop answer here</option>${targets.map(targetIndex => `<option value="${targetIndex}" ${String(targetFor(index)) === String(targetIndex) ? 'selected' : ''}>${escapeHTML(targetList[targetIndex])}</option>`).join('')}</select></div>`).join('');
+  const left = itemIndexes.map(index => { const item = items[index]; return `<div class="drag-match-row"><div class="drag-match-prompt"><span class="drag-match-grip" aria-hidden="true">⠿</span><span>${escapeHTML(item)}</span></div><span class="drag-match-connector" aria-hidden="true">↔</span><select class="drag-match-slot drag-match-target ${targetFor(index) !== '' && targetFor(index) >= 0 ? 'has-match' : ''}" data-drag-slot="${index}" data-drag-select="${index}" aria-label="Drop or choose a match for ${escapeHTML(item)}" ${disabled ? 'disabled' : ''}><option value="">Drop answer here</option>${targets.map(targetIndex => `<option value="${targetIndex}" ${String(targetFor(index)) === String(targetIndex) ? 'selected' : ''}>${escapeHTML(targetList[targetIndex])}</option>`).join('')}</select></div>`; }).join('');
   const right = targets.map(targetIndex => { const target = targetList[targetIndex]; return `<div class="drag-match-chip" draggable="${!disabled}" data-drag-right="${targetIndex}" aria-label="Drag ${escapeHTML(target)} to its match"><span aria-hidden="true">⠿</span>${escapeHTML(target)}</div>`; }).join('');
   return `<div class="drag-match-board ${side === 'live' ? 'drag-match-live' : ''}" data-drag-board="${id}"><div class="drag-match-list">${left}</div><div class="drag-match-targets"><span class="drag-match-caption">AVAILABLE ANSWERS · DRAG OR TAP</span>${right}</div></div>`;
 }
-function dragMappingFrom(board) { return [...board.querySelectorAll('[data-drag-select]')].map(select => select.value === '' ? -1 : Number(select.value)); }
+function dragMappingFrom(board) { return [...board.querySelectorAll('[data-drag-select]')].sort((a, b) => Number(a.dataset.dragSelect) - Number(b.dataset.dragSelect)).map(select => select.value === '' ? -1 : Number(select.value)); }
 function dragPayload(q, mapping) { return mapping.map((target, index) => target < 0 ? '' : dragAnswer(q, index, target)); }
 function isCompleteDrag(mapping) { return mapping.length > 1 && mapping.every(index => index >= 0); }
 function gradeDrag(q, mapping) { const answers = dragPayload(q, mapping); const expected = new Set(q.correctAnswers.map(normalize)); return isCompleteDrag(mapping) && answers.length === expected.size && answers.every(answer => expected.has(normalize(answer))); }
@@ -284,13 +291,15 @@ function renderBank() {
   }).join('') : `<div class="bank-empty"><strong>No questions found</strong>Try a different search or filter.</div>`;
 }
 
-const practice = { index: 0, entries: {}, selected: new Set(), shuffleChoices: false, choiceOrder: {}, dragMappings: {} };
+const practice = { index: 0, entries: {}, selected: new Set(), shuffleChoices: false, choiceOrder: {}, dragMappings: {}, dragItemOrders: {}, dragTargetOrders: {} };
 function restorePractice() {
   const saved = readJSON(deckStorageKey('pp_practice_v1'), null);
   if (!saved || saved.version !== 1 || saved.count !== app.questions.length) return;
   practice.index = Number.isInteger(saved.index) ? Math.max(0, Math.min(app.questions.length - 1, saved.index)) : 0;
   practice.shuffleChoices = saved.shuffleChoices === true;
   if (saved.dragMappings && typeof saved.dragMappings === 'object') practice.dragMappings = saved.dragMappings;
+  if (saved.dragItemOrders && typeof saved.dragItemOrders === 'object') practice.dragItemOrders = saved.dragItemOrders;
+  if (saved.dragTargetOrders && typeof saved.dragTargetOrders === 'object') practice.dragTargetOrders = saved.dragTargetOrders;
   if (saved.choiceOrder && typeof saved.choiceOrder === 'object') {
     for (const q of app.questions) {
       const order = saved.choiceOrder[q.id];
@@ -306,7 +315,7 @@ function restorePractice() {
     practice.entries[q.id] = { status: entry.status, response };
   }
 }
-function savePractice() { writeJSON(deckStorageKey('pp_practice_v1'), { version: 1, count: app.questions.length, index: practice.index, entries: practice.entries, shuffleChoices: practice.shuffleChoices, choiceOrder: practice.choiceOrder, dragMappings: practice.dragMappings }); }
+function savePractice() { writeJSON(deckStorageKey('pp_practice_v1'), { version: 1, count: app.questions.length, index: practice.index, entries: practice.entries, shuffleChoices: practice.shuffleChoices, choiceOrder: practice.choiceOrder, dragMappings: practice.dragMappings, dragItemOrders: practice.dragItemOrders, dragTargetOrders: practice.dragTargetOrders }); }
 function renderPracticeCard() {
   const label = $('practiceCardProgress');
   if (label) label.textContent = practice.index || Object.keys(practice.entries).length ? `Continue at #${practice.index + 1}` : 'Start at #1';
@@ -324,7 +333,7 @@ function practiceGoTo(index) {
 }
 function resetPractice() {
   if (!confirm('Erase all Practice path answers and start again at question 1?')) return;
-  practice.index = 0; practice.entries = {}; practice.selected = new Set(); practice.choiceOrder = {}; practice.dragMappings = {};
+  practice.index = 0; practice.entries = {}; practice.selected = new Set(); practice.choiceOrder = {}; practice.dragMappings = {}; practice.dragItemOrders = {}; practice.dragTargetOrders = {};
   $('practiceJumpInput').value = '';
   savePractice(); renderPractice(); renderPracticeCard();
   scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
@@ -343,6 +352,12 @@ function practiceOptionsOrder(q) {
   }
   return practice.choiceOrder[q.id];
 }
+function practiceDragOrders(q, reroll = false) {
+  const items = dragItems(q), targets = dragTargets(q);
+  if (reroll || !validDisplayOrder(practice.dragItemOrders[q.id], items.length)) practice.dragItemOrders[q.id] = displayOrder(items.length, practice.dragItemOrders[q.id]);
+  if (reroll || !validDisplayOrder(practice.dragTargetOrders[q.id], targets.length)) practice.dragTargetOrders[q.id] = displayOrder(targets.length, practice.dragTargetOrders[q.id]);
+  return { items: practice.dragItemOrders[q.id], targets: practice.dragTargetOrders[q.id] };
+}
 function renderPractice() {
   const q = app.questions[practice.index]; if (!q) return;
   const record = practiceRecord(q), answered = practiceAnswered(record);
@@ -352,7 +367,7 @@ function renderPractice() {
   const response = Array.isArray(record?.response) ? record.response : record?.response ? [record.response] : [];
   let answers;
   if (typed) answers = `<label class="sr-only" for="practiceAnswerInput">Type your answer</label><input id="practiceAnswerInput" class="answer-input" type="text" autocomplete="off" spellcheck="false" placeholder="Type your answer…" value="${escapeHTML(record?.response || '')}" ${answered ? 'disabled' : ''}><p class="input-helper">${q.type === 'short_answer_question' ? 'Follow the format in the question.' : 'Capitalization is ignored.'}</p>`;
-  else if (drag) { const savedMap = Array.isArray(record?.mapping) ? record.mapping : practice.dragMappings[q.id]; answers = renderDragMatch(q, savedMap, answered, 'practice'); }
+  else if (drag) { const savedMap = Array.isArray(record?.mapping) ? record.mapping : practice.dragMappings[q.id]; const order = practiceDragOrders(q); answers = renderDragMatch(q, savedMap, answered, 'practice', order.items, order.targets); }
   else answers = `<div class="game-choices" role="group" aria-label="Answer choices${practice.shuffleChoices ? ' in shuffled order' : ' in original order'}">${practiceOptionsOrder(q).map((originalIndex, displayIndex) => { const option = q.options[originalIndex]; const picked = response.some(item => normalize(item) === normalize(option)); const correct = isCorrectOption(q, option); const cls = answered ? correct ? 'is-correct' : picked ? 'is-wrong' : '' : practice.selected.has(originalIndex) ? 'is-selected' : ''; return `<button type="button" class="choice-button ${cls}" data-practice-choice="${originalIndex}" aria-pressed="${picked || practice.selected.has(originalIndex)}" ${answered ? 'disabled' : ''}><span class="choice-key">${displayIndex + 1}</span><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>`;
   const feedback = answered ? `<div class="feedback ${record.status === 'correct' ? 'is-correct' : 'is-wrong'}" role="status"><strong>${record.status === 'correct' ? 'You got it!' : record.status === 'revealed' ? 'Answer revealed' : 'Good one to review.'}</strong>${record.status === 'wrong' && response.length ? `<span class="practice-your-answer">Your answer: ${escapeHTML(response.join(' · '))}</span>` : ''}<span class="answer-line">Correct answer: ${escapeHTML(answerText(q))}</span><span class="feedback-explanation"><b>Why this answer works</b>${escapeHTML(explanationText(q))}</span><small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div>` : record?.status === 'skipped' ? '<p class="practice-skipped-note">You skipped this one. Try it whenever you’re ready.</p>' : '';
   const action = answered ? '<button type="button" class="practice-retry" data-practice-action="retry">Try this question again</button>' : `<div class="practice-answer-actions">${typed || multi || drag ? `<button type="button" class="question-submit" data-practice-action="check" ${typed || drag ? 'disabled' : !practice.selected.size ? 'disabled' : ''}>Check answer</button>` : ''}<button type="button" class="practice-reveal" data-practice-action="reveal">Show answer</button></div>`;
@@ -376,7 +391,7 @@ function practiceSubmit(response) {
   if (!Array.isArray(picks) && !picks) return;
   const mapping = isDragMatch(q) && Array.isArray(picks) ? picks.map(value => { const match = String(value).match(/ → (.*)$/); return match ? q.dragPairs.findIndex(pair => normalize(pair.target) === normalize(match[1])) : -1; }) : null;
   const correct = isDragMatch(q) ? gradeDrag(q, mapping) : Array.isArray(picks) ? (() => { const expected = new Set(q.correctAnswers.map(normalize)); return picks.length === expected.size && picks.every(option => expected.has(normalize(option))); })() : checkTypedAnswer(q, picks);
-  practice.entries[q.id] = { status: correct ? 'correct' : 'wrong', response: picks, ...(mapping ? { mapping } : {}) };
+  practice.entries[q.id] = { status: correct ? 'correct' : 'wrong', response: picks, ...(mapping ? { mapping, itemOrder: practice.dragItemOrders[q.id], targetOrder: practice.dragTargetOrders[q.id] } : {}) };
   if (mapping) practice.dragMappings[q.id] = mapping;
   practice.selected = new Set(); savePractice(); renderPractice(); renderPracticeCard();
   playTone(correct ? 'good' : 'bad'); if (correct) burst();
@@ -440,7 +455,7 @@ function startGame() {
   app.game = {
     mode, order, remaining: mode === 'adaptive' ? shuffle(questions) : [], total, completed: 0, current: null,
     score: 0, streak: 0, bestStreak: 0, correct: 0, attempts: 0, hearts: heartLimit === 'unlimited' ? Infinity : Number(heartLimit), heartLimit, missed: [], selected: new Set(),
-    dragMapping: null,
+    dragMapping: null, dragItemOrder: null, dragTargetOrder: null,
     answered: false, wager: 0, hiddenChoices: new Set(), hintStep: 0, coachOpen: false,
     used: { fifty: false, shield: false, freeze: false }, activeShield: false,
     startedAt: performance.now(), questionAt: performance.now(), timerLast: performance.now(), remainingTime: 0, freezeUntil: 0,
@@ -482,6 +497,8 @@ function resumeRankedRun(mode) {
     remainingTime: Math.max(0, Number(saved.remainingTime) || 0), freezeUntil: now + Math.max(0, Number(saved.freezeRemainingMs) || 0),
     events: Array.isArray(saved.events) ? saved.events : [], history: Array.isArray(saved.history) ? saved.history.filter(item => item && byId.has(item.questionId) && Array.isArray(item.options) && Array.isArray(item.selected)) : [], ghost: validGhost(saved.ghost) ? saved.ghost : null,
     firstCorrect: Boolean(saved.firstCorrect), matchPairs: [], matchChoice: { left: null, right: null },
+    dragItemOrder: validDisplayOrder(saved.dragItemOrder, isDragMatch(current) ? dragItems(current).length : 0) ? saved.dragItemOrder : isDragMatch(current) ? displayOrder(dragItems(current).length) : null,
+    dragTargetOrder: validDisplayOrder(saved.dragTargetOrder, isDragMatch(current) ? dragTargets(current).length : 0) ? saved.dragTargetOrder : isDragMatch(current) ? displayOrder(dragTargets(current).length) : null,
     lastResult: saved.lastResult || null, pausedAt: null, training: null
   };
   clearInterval(app.timer); app.timer = null; app.mode = mode; app.game = g;
@@ -521,7 +538,10 @@ function nextQuestion() {
   const preferHard = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100;
   g.current = g.mode === 'adaptive' ? selectAdaptiveQuestion(g, preferHard) : g.order[g.completed];
   if (!g.current) { if (g.training) finishTrainingPass(); else finishGame(); return; }
-  g.selected = new Set(); g.dragMapping = isDragMatch(g.current) ? g.current.dragPairs.map(() => -1) : null; g.answered = false; g.wager = 0; g.hiddenChoices = new Set(); g.displayOptions = null; g.hintStep = 0; g.coachOpen = false; g.used = { fifty: false, shield: false, freeze: false }; g.activeShield = false; g.lastResult = null;
+  g.selected = new Set(); g.dragMapping = isDragMatch(g.current) ? g.current.dragPairs.map(() => -1) : null;
+  g.dragItemOrder = isDragMatch(g.current) ? displayOrder(dragItems(g.current).length) : null;
+  g.dragTargetOrder = isDragMatch(g.current) ? displayOrder(dragTargets(g.current).length) : null;
+  g.answered = false; g.wager = 0; g.hiddenChoices = new Set(); g.displayOptions = null; g.hintStep = 0; g.coachOpen = false; g.used = { fifty: false, shield: false, freeze: false }; g.activeShield = false; g.lastResult = null;
   g.questionAt = performance.now();
   if (g.mode === 'blitz') { g.remainingTime = Math.max(5, 15 - Math.floor(g.completed * .7)); g.timerLast = performance.now(); }
   const wagerRound = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100 && difficulty(g.current) >= .55 && !['typing', 'training'].includes(g.mode);
@@ -568,7 +588,7 @@ function renderQuestion() {
 }
 function renderDragQuestion(g, q) {
   const mapping = Array.isArray(g.dragMapping) ? g.dragMapping : (g.dragMapping = q.dragPairs.map(() => -1));
-  const board = renderDragMatch(q, mapping, g.answered);
+  const board = renderDragMatch(q, mapping, g.answered, 'solo', g.dragItemOrder, g.dragTargetOrder);
   $('gameContent').innerHTML = `<article class="question-card"><div class="question-card-head"><span class="question-tag">DRAG & MATCH · ${escapeHTML(sourceName(q).toUpperCase())}</span><span class="difficulty-tag">${difficulty(q) > .72 ? 'HARD' : difficulty(q) > .38 ? 'MEDIUM' : 'WARM-UP'} · ${100 + Math.round(difficulty(q) * 75)} PTS</span></div><div class="question-prompt" id="currentQuestion">${safeQuestionHTML(q)}</div><p class="drag-match-instruction">Drag each card to its match, or choose a match from the menu.</p>${board}<div id="feedbackSlot"></div><div class="question-actions"><div class="question-actions-left">${powerMarkup(g, q)}<button type="button" class="hint-button" data-action="hint">💡 Hint bot</button></div><button type="button" id="answerAction" class="question-submit" data-action="submit" ${g.answered || !isCompleteDrag(mapping) ? 'disabled' : ''}>Check matches</button></div><div id="coachSlot"></div></article>`;
   const el = $('gameContent').querySelector('[data-drag-board]'); attachDragInteraction(el, '#gameContent', g.answered);
   if (!g.answered) el.addEventListener('change', () => { g.dragMapping = dragMappingFrom(el); $('answerAction').disabled = !isCompleteDrag(g.dragMapping); saveRankedRun(); });
@@ -649,7 +669,7 @@ function renderAnswerFeedback(g) {
   const q = g.current, { correct, response, points, resultWord } = g.lastResult;
   const slot = $('feedbackSlot');
   slot.innerHTML = `<div class="feedback ${correct ? 'is-correct' : 'is-wrong'}"><strong>${resultWord}</strong>${correct ? `+${formatNumber(points)} points${g.wager ? ` · ${formatNumber(g.wager)} wager won` : ''}` : `${response ? 'Your answer: ' + escapeHTML(response) + '. ' : ''}${g.wager ? `${formatNumber(g.wager)} points lost. ` : ''}<span class="answer-line">Correct answer: ${escapeHTML(answerText(q))}</span>`}<span class="feedback-explanation"><b>Why this answer works</b>${escapeHTML(explanationText(q))}</span><small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div>`;
-  if (isDragMatch(q)) { const board = $('gameContent').querySelector('[data-drag-board]'); if (board) board.outerHTML = renderDragMatch(q, g.dragMapping, true); }
+  if (isDragMatch(q)) { const board = $('gameContent').querySelector('[data-drag-board]'); if (board) board.outerHTML = renderDragMatch(q, g.dragMapping, true, 'solo', g.dragItemOrder, g.dragTargetOrder); }
   document.querySelectorAll('.choice-button').forEach(button => {
     const index = +button.dataset.choiceIndex, option = g.displayOptions[index];
     button.disabled = true;
@@ -942,7 +962,7 @@ function attachEvents() {
       return;
     }
     const action = event.target.closest('[data-practice-action]')?.dataset.practiceAction;
-    if (action === 'retry') { delete practice.entries[q.id]; practice.selected = new Set(); savePractice(); renderPractice(); }
+    if (action === 'retry') { delete practice.entries[q.id]; delete practice.dragMappings[q.id]; if (isDragMatch(q)) practiceDragOrders(q, true); practice.selected = new Set(); savePractice(); renderPractice(); }
     else if (action === 'reveal') { practice.entries[q.id] = { status: 'revealed', response: '' }; practice.selected = new Set(); savePractice(); renderPractice(); }
     else if (action === 'check') {
       if (isDragMatch(q)) practiceSubmit(dragPayload(q, dragMappingFrom($('practiceContent').querySelector('[data-drag-board]'))));
@@ -1100,8 +1120,13 @@ function liveApplyResponse(data, seq) {
   const oldQuestion = live.room?.currentQuestion;
   const nextQuestion = data.room.currentQuestion;
   if (previousRound && previousRound === liveRoundKey(data.room) && oldQuestion && nextQuestion && oldQuestion.id === nextQuestion.id) {
-    if (oldQuestion.matching && nextQuestion.matching && JSON.stringify(oldQuestion.dragTargets) !== JSON.stringify(nextQuestion.dragTargets)) {
-      const remap = mapping => mapping.map(index => index < 0 ? -1 : nextQuestion.dragTargets.findIndex(target => normalize(target) === normalize(oldQuestion.dragTargets[index])));
+    if (oldQuestion.matching && nextQuestion.matching && (JSON.stringify(oldQuestion.dragItems) !== JSON.stringify(nextQuestion.dragItems) || JSON.stringify(oldQuestion.dragTargets) !== JSON.stringify(nextQuestion.dragTargets))) {
+      const remap = mapping => nextQuestion.dragItems.map(item => {
+        const oldItemIndex = oldQuestion.dragItems.findIndex(candidate => normalize(candidate) === normalize(item));
+        const oldTargetIndex = mapping[oldItemIndex];
+        if (oldTargetIndex == null || oldTargetIndex < 0) return -1;
+        return nextQuestion.dragTargets.findIndex(target => normalize(target) === normalize(oldQuestion.dragTargets[oldTargetIndex]));
+      });
       live.dragMapping = remap(live.dragMapping);
       live.savedDragMapping = remap(live.savedDragMapping);
     }
@@ -1304,7 +1329,7 @@ function liveRenderStage() {
   const savedEliminated = savedIndexes.some(index => (room.myPowers?.fifty || []).includes(index));
   const draftChanged = drag ? JSON.stringify(live.dragMapping || []) !== JSON.stringify(live.savedDragMapping || []) : q.multiple && (live.selected.size !== savedIndexes.length || [...live.selected].some(index => !savedIndexes.includes(index)));
   const answerMarkup = drag
-    ? `${!isReveal ? '<p class="drag-match-instruction">Drag each item to its match, or choose from the menus.</p>' : ''}${renderDragMatch(q, live.dragMapping, isReveal || live.submitted, 'live')}${!isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-drag" ${live.submitted || !isCompleteDrag(live.dragMapping || []) || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update matches' : 'Lock in matches'} ↗</button></div>` : ''}`
+    ? `${!isReveal ? '<p class="drag-match-instruction">Drag each item to its match, or choose from the menus.</p>' : ''}${renderDragMatch(q, live.dragMapping, isReveal || live.submitted, 'live', q.dragItems.map((_, index) => index), q.dragTargets.map((_, index) => index))}${!isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-drag" ${live.submitted || !isCompleteDrag(live.dragMapping || []) || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update matches' : 'Lock in matches'} ↗</button></div>` : ''}`
     : typed
     ? isReveal ? '' : `<form id="liveAnswerForm" class="live-answer-form"><label class="sr-only" for="liveAnswerInput">Your answer</label><input id="liveAnswerInput" class="live-input" maxlength="200" placeholder="Type your answer…" value="${escapeHTML(typeof displayedAnswer === 'string' ? displayedAnswer : '')}" ${live.submitted ? 'disabled' : ''} required><button type="submit" class="button button-primary" ${live.submitted ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Send'} ↗</button></form>`
     : `<div class="live-answer-grid">${options.map((option, index) => { const correct = answers.some(a => normalize(a) === normalize(option)); const chosen = isReveal || !q.multiple ? displayedValues.some(value => value != null && normalize(value) === normalize(option)) : live.selected.has(index); const eliminated = !isReveal && (room.myPowers?.fifty || []).includes(index); const cls = isReveal ? correct ? 'is-correct' : chosen ? 'is-wrong' : '' : eliminated ? 'is-eliminated' : chosen ? 'is-selected' : ''; return `<button type="button" class="live-answer-option ${cls}" data-live-choice="${index}" ${isReveal || live.submitted || eliminated ? 'disabled' : ''} aria-pressed="${chosen}"><i>${index + 1}</i><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>${q.multiple && !isReveal ? `<div class="live-answer-action"><button type="button" class="button button-primary" data-live-action="submit-multi" ${live.submitted || !live.selected.size || !draftChanged ? 'disabled' : ''}>${hasSavedAnswer ? 'Update answer' : 'Lock in answers'} ↗</button></div>` : ''}`;
