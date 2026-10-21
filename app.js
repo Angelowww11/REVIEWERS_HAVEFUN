@@ -255,7 +255,7 @@ function safeQuestionHTML(q) {
     }
     if (node.tagName === 'IMG') {
       const src = (node.getAttribute('src') || '').replace(/^\.\//, '');
-      if (!/^exhibits\/[a-z0-9._-]+\.(?:png|jpe?g|gif|webp|svg)$/i.test(src)) return null;
+      if (!/^exhibits\/(?:[a-z0-9_-]+\/)*[a-z0-9_-][a-z0-9._-]*\.(?:png|jpe?g|gif|webp|svg)$/i.test(src)) return null;
       const img = document.createElement('img');
       img.setAttribute('src', src); img.setAttribute('alt', node.getAttribute('alt') || 'Question exhibit');
       img.setAttribute('loading', 'lazy'); img.setAttribute('tabindex', '0'); img.setAttribute('role', 'button');
