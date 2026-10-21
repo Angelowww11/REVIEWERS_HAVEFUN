@@ -1,7 +1,9 @@
 /* Solo progress stays in this browser; ranked scores and live rooms use the API. */
 const $ = id => document.getElementById(id);
-const deckId = new URL(location.href).searchParams.get('deck') === 'ccst' ? 'ccst-notebook' : 'pools';
-function deckStorageKey(key) { return deckId === 'ccst-notebook' ? key.replace(/^pp_/, 'pp_ccst_notebook_') : key; }
+const deckParam = new URL(location.href).searchParams.get('deck');
+const deckId = deckParam === 'ccst' ? 'ccst-notebook' : deckParam === 'summative3' ? 'summative3' : 'pools';
+const deckFiles = deckId === 'summative3' ? ['summative3-questions.json', 'summative3-explanations.json'] : deckId === 'ccst-notebook' ? ['ccst-questions.json', 'ccst-explanations.json'] : ['questions.json', 'explanations.json'];
+function deckStorageKey(key) { return deckId === 'ccst-notebook' ? key.replace(/^pp_/, 'pp_ccst_notebook_') : deckId === 'summative3' ? key.replace(/^pp_/, 'pp_summative3_') : key; }
 const modeInfo = {
   all: { name: 'All questions', eyebrow: 'COMPLETE DECK', description: 'The full deck, in order.' },
   shuffle: { name: 'Shuffle run', eyebrow: 'FRESH EACH TIME', description: 'The full deck, reshuffled.' },
@@ -98,7 +100,7 @@ function formatNumber(n) { return Number(n || 0).toLocaleString(); }
 function lifetimeRankedPoints() { return Math.max(0, Number(app.stats.rankedPoints) || 0); }
 function badgeForPoints(points) { return [...badgeTiers].reverse().find(tier => points >= tier.points) || badgeTiers[0]; }
 function leaderboardBadge(entry) { return badgeForPoints(Number(entry.lifetimePoints ?? entry.score) || 0); }
-function sourceName(q) { if (q.sourcePage) return `Reviewer p. ${q.sourcePage}`; const match = String(q.sourceFile || '').match(/pool\s+(\w+)/i); return match ? `Pool ${match[1].replace(/^./, c => c.toUpperCase())}` : 'Question pool'; }
+function sourceName(q) { if (q.sourcePage) return `Reviewer p. ${q.sourcePage}`; if (String(q.sourceFile).startsWith('Summative 3 · ')) return q.sourceFile.replace('Summative 3 · ', ''); const match = String(q.sourceFile || '').match(/pool\s+(\w+)/i); return match ? `Pool ${match[1].replace(/^./, c => c.toUpperCase())}` : 'Question pool'; }
 function typeName(q) { return q.type === 'matching_question' ? 'Drag to match' : q.type === 'true_false_group' ? '3 × True / False' : q.type === 'true_false_question' ? 'True / false' : q.type === 'short_answer_question' ? 'Short answer' : q.correctAnswers.length > 1 ? 'Multiple answers' : 'Multiple choice'; }
 function isDragMatch(q) { return q?.type === 'matching_question' && (Array.isArray(q.dragPairs) ? q.dragPairs.length : q.dragItems?.length) > 1; }
 function isTrueFalseGroup(q) { return q?.type === 'true_false_group' && Array.isArray(q.statements) && q.statements.length > 0; }
@@ -320,7 +322,7 @@ function setView(view) {
 function renderHome() {
   const sources = new Set(app.questions.map(q => q.sourceFile).filter(Boolean));
   $('questionCount').textContent = formatNumber(app.questions.length);
-  $('sourceCount').textContent = deckId === 'ccst-notebook' ? '1' : formatNumber(sources.size || 8);
+  $('sourceCount').textContent = deckId === 'ccst-notebook' ? '1' : formatNumber(app.sourceFileCount || sources.size || 8);
   $('bankCountBadge').textContent = `${formatNumber(app.questions.length)} questions`;
   updateStats();
   renderPracticeCard();
@@ -338,6 +340,14 @@ function renderDeckChrome() {
   document.body.dataset.deck = deckId;
   $('poolsDeckLink').setAttribute('aria-current', deckId === 'pools' ? 'page' : 'false');
   $('ccstDeckLink').setAttribute('aria-current', deckId === 'ccst-notebook' ? 'page' : 'false');
+  $('summative3DeckLink').setAttribute('aria-current', deckId === 'summative3' ? 'page' : 'false');
+  if (deckId === 'summative3') {
+    document.title = 'Summative 3 Review — Packet Party';
+    $('deckSwitchNote').textContent = 'Summative 3 networking review';
+    $('heroEyebrowText').textContent = 'SUMMATIVE 3 · NETWORKING';
+    $('heroLede').textContent = 'Your new question pools, ready for practice, training, and battles with friends.';
+    return;
+  }
   if (deckId !== 'ccst-notebook') return;
   document.title = 'CCST Certification Review — Packet Party';
   $('deckSwitchNote').textContent = 'Midterm certification review';
@@ -1030,10 +1040,15 @@ function exportGhost() {
 
 async function loadQuestions() {
   try {
-    const response = await fetch(deckId === 'ccst-notebook' ? './ccst-questions.json' : './questions.json', { cache: 'no-cache' }); if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const response = await fetch(`./${deckFiles[0]}`, { cache: 'no-cache' }); if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json(); if (!Array.isArray(data.questions)) throw new Error('Missing questions');
-    try { const notesResponse = await fetch(deckId === 'ccst-notebook' ? './ccst-explanations.json' : './explanations.json', { cache: 'no-cache' }); if (notesResponse.ok) app.explanations = await notesResponse.json(); } catch { /* Quiz still works if the notes are unavailable. */ }
+    app.sourceFileCount = Array.isArray(data.sourceFiles) ? data.sourceFiles.length : 0;
+    try { const notesResponse = await fetch(`./${deckFiles[1]}`, { cache: 'no-cache' }); if (notesResponse.ok) app.explanations = await notesResponse.json(); } catch { /* Quiz still works if the notes are unavailable. */ }
     app.questions = data.questions.filter(q => q && q.question && Array.isArray(q.correctAnswers) && q.correctAnswers.length && Array.isArray(q.options)).map((q, index) => ({ ...q, id: Number(q.id) || index + 1 }));
+    const fullTraining = $('trainingLengthSelect').querySelector('option[value="99"]');
+    if (fullTraining) { fullTraining.value = String(app.questions.length); fullTraining.textContent = `${app.questions.length} questions · full deck`; }
+    modeInfo.training.description = `Choose 20, 30, or the full deck. Retry misses until every answer is right.`;
+    document.querySelector('.mode-training .mode-card-bottom em').textContent = `20, 30 or all ${app.questions.length}`;
     restorePractice(); prepareDifficulty(); renderHome(); renderBank();
   } catch (error) {
     $('questionCount').textContent = '0'; $('bankList').innerHTML = `<div class="bank-empty"><strong>The deck could not load</strong>Open this site through a web server or refresh the page. (${escapeHTML(error.message)})</div>`;
@@ -1209,7 +1224,7 @@ const live = {
 function liveInviteURL(code = live.code) {
   const url = new URL(location.href);
   url.searchParams.set('room', code);
-  if (deckId === 'ccst-notebook') url.searchParams.set('deck', 'ccst'); else url.searchParams.delete('deck');
+  if (deckId === 'ccst-notebook') url.searchParams.set('deck', 'ccst'); else if (deckId === 'summative3') url.searchParams.set('deck', 'summative3'); else url.searchParams.delete('deck');
   url.hash = '';
   return url.toString();
 }

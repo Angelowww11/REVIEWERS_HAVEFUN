@@ -5,6 +5,7 @@ import { isIP } from 'node:net';
 const require = createRequire(import.meta.url);
 const questionBanks = {
   pools: require('../questions.json').questions,
+  summative3: require('../summative3-questions.json').questions,
   ccst: require('../ccst-questions.json').questions,
   'ccst-notebook': require('../ccst-questions.json').questions
 };
