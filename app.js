@@ -299,6 +299,20 @@ function burst() {
     layer.append(dot); setTimeout(() => dot.remove(), 800);
   }
 }
+function answerResultFX(correct) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.motion === 'calm') return;
+  document.querySelectorAll('.answer-result-fx').forEach(node => node.remove());
+  const badge = document.createElement('div'); badge.className = `answer-result-fx ${correct ? '' : 'is-wrong'}`; badge.setAttribute('aria-hidden', 'true');
+  badge.innerHTML = correct ? '<b>✦</b> Nice work!' : '<b>↻</b> Learn it. Try again.';
+  document.body.append(badge); setTimeout(() => badge.remove(), 1000);
+}
+document.addEventListener('click', event => {
+  const button = event.target.closest('.choice-button,.live-answer-option,.tf-choice,.drag-match-chip,.match-option');
+  if (!button || button.disabled || matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.motion === 'calm') return;
+  const rect = button.getBoundingClientRect(), ring = document.createElement('i'); ring.className = 'answer-tap-ring'; ring.setAttribute('aria-hidden', 'true');
+  ring.style.left = `${event.detail ? event.clientX : rect.left + rect.width / 2}px`; ring.style.top = `${event.detail ? event.clientY : rect.top + rect.height / 2}px`;
+  document.body.append(ring); setTimeout(() => ring.remove(), 550);
+}, true);
 function updateSoundButton() { const button = $('soundButton'); button.setAttribute('aria-pressed', String(app.soundOn)); button.setAttribute('aria-label', `Turn sound ${app.soundOn ? 'off' : 'on'}`); button.title = `Sound ${app.soundOn ? 'on' : 'off'}`; }
 function updateStats() {
   $('headerBest').textContent = formatNumber(app.stats.bestStreak); $('runsCount').textContent = formatNumber(app.stats.runs);
@@ -508,7 +522,7 @@ function practiceSubmit(response) {
   practice.entries[q.id] = { status: correct ? 'correct' : 'wrong', response: picks, ...(mapping ? { mapping, itemOrder: practice.dragItemOrders[q.id], targetOrder: practice.dragTargetOrders[q.id] } : {}) };
   if (mapping) practice.dragMappings[q.id] = mapping;
   practice.selected = new Set(); savePractice(); renderPractice(); renderPracticeCard();
-  playTone(correct ? 'good' : 'bad'); if (correct) burst();
+  playTone(correct ? 'good' : 'bad'); answerResultFX(correct); if (correct) burst();
   announce(correct ? 'Correct answer.' : `Try again later. Correct answer: ${answerText(q)}.`);
 }
 
@@ -772,7 +786,7 @@ function resolveAnswer(correct, response = '') {
     points = Math.round(base * (1 + Math.min(g.streak - 1, 9) * .12)) + g.wager;
     if (g.mode === 'blitz') points += Math.round(Math.max(0, g.remainingTime) * 3);
     g.score += points;
-    playTone('good'); burst(); if (navigator.vibrate) navigator.vibrate(18);
+    playTone('good'); burst(); answerResultFX(true); if (navigator.vibrate) navigator.vibrate(18);
   } else {
     g.hearts = Math.max(0, g.hearts - 1);
     if (g.activeShield) { g.activeShield = false; toast('Shield saved your streak!'); }
@@ -780,7 +794,7 @@ function resolveAnswer(correct, response = '') {
     g.score = Math.max(0, g.score - g.wager);
     g.missed.push(q);
     if (g.training) g.training.misses.push({ question: q, response: response || 'Skipped' });
-    playTone('bad'); if (navigator.vibrate) navigator.vibrate([25, 35, 25]);
+    playTone('bad'); answerResultFX(false); if (navigator.vibrate) navigator.vibrate([25, 35, 25]);
   }
   g.completed++;
   g.history ||= [];
@@ -896,11 +910,11 @@ function handleMatchClick(button) {
     left.classList.add('is-matched'); right.classList.add('is-matched'); left.disabled = true; right.disabled = true;
     g.attempts++; g.streak++; g.bestStreak = Math.max(g.bestStreak, g.streak); g.correct++; g.score += 70 + Math.min(90, g.streak * 10); g.completed++;
     g.events.push({ t: Math.round(performance.now() - g.startedAt), score: g.score, completed: g.completed, correct: true, responseMs: 0 });
-    playTone('good'); burst(); announce(`Matched. ${g.streak} streak.`);
+    playTone('good'); burst(); answerResultFX(true); announce(`Matched. ${g.streak} streak.`);
     if (selectedQuestion) $('matchFeedback').innerHTML = `<strong>Nice match!</strong>${answerComparison(selectedQuestion)}${explanationHtml(selectedQuestion)}`;
     if (g.matchPairs.every(pair => document.querySelector(`[data-match-side="left"][data-match-id="${pair.q.id}"]`)?.disabled)) setTimeout(() => { if (app.game === g) renderMatchBoard(); }, 2400);
   } else {
-    g.attempts++; g.hearts = Math.max(0, g.hearts - 1); g.streak = 0; playTone('bad');
+    g.attempts++; g.hearts = Math.max(0, g.hearts - 1); g.streak = 0; playTone('bad'); answerResultFX(false);
     g.events.push({ t: Math.round(performance.now() - g.startedAt), score: g.score, completed: g.completed, correct: false, responseMs: 0 });
     left.classList.add('is-error'); right.classList.add('is-error');
     toast('Not a match. Try another connection.'); announce(`Not a match. ${heartsRemaining(g)} remain.`);
@@ -1420,8 +1434,8 @@ function liveRender() {
   if (room.phase === 'reveal' && live.revealKey !== roundKey) {
     live.revealKey = roundKey;
     const mine = room.result?.players?.find(p => p.id === live.playerId);
-    if (mine?.correct) { playTone('good'); burst(); announce(room.mode === 'coop' ? 'Correct! You helped the team.' : `Correct! You earned ${mine.points || 0} points.`); }
-    else { playTone('bad'); announce(`Round complete. ${room.result?.correctAnswers?.join(', ') || 'Answer revealed.'}`); }
+    if (mine?.correct) { playTone('good'); burst(); answerResultFX(true); announce(room.mode === 'coop' ? 'Correct! You helped the team.' : `Correct! You earned ${mine.points || 0} points.`); }
+    else { playTone('bad'); answerResultFX(false); announce(`Round complete. ${room.result?.correctAnswers?.join(', ') || 'Answer revealed.'}`); }
   }
   if (room.phase === 'finished' && live.revealKey !== 'finished') { live.revealKey = 'finished'; playTone('good'); burst(); }
 }
