@@ -1,3 +1,4 @@
+from deepen_explanations import deepen_notes
 from summative3_teaching_notes import apply_teaching_notes
 """Keep conflicting source keys visible without inventing a replacement key."""
 import json
@@ -63,6 +64,7 @@ if __name__ == '__main__':
     annotate_conflicts(data['questions'], notes, audit)
     apply_supplement(data, notes)
     apply_teaching_notes(notes)
+    deepen_notes(data['questions'], notes)
     for filename, value in [('summative3-questions.json', data), ('summative3-explanations.json', notes)]:
         (ROOT / filename).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     write_summary(audit)

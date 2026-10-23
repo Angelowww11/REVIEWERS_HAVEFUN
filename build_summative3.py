@@ -1,3 +1,4 @@
+from deepen_explanations import deepen_notes
 from summative3_teaching_notes import apply_teaching_notes
 """Import the nine saved Canvas reviews without executing their contents."""
 from pathlib import Path
@@ -149,6 +150,7 @@ write_summary(audit)
 data = {'title': 'Summative 3 Networking Review', 'sourceFiles': list(FILES), 'questionCount': len(questions), 'questions': questions}
 apply_supplement(data, notes)
 apply_teaching_notes(notes)
+deepen_notes(data['questions'], notes)
 (ROOT / 'summative3-questions.json').write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 (ROOT / 'summative3-explanations.json').write_text(json.dumps(notes, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 print(json.dumps({k: v for k, v in audit.items() if k not in ('duplicates', 'variantGroups')}, ensure_ascii=False, indent=2))

@@ -17,3 +17,7 @@ Mobile: a horizontal fruit garden dock replaces the tall card covering questions
 Scope: presentation changes in index.html and arcade.css, plus PWA precache version. No question keys, IDs, gameplay scoring, account logic, or saved progress changed.
 
 Visual review performed on desktop home/mode layouts and mobile home/question bank. This is not an end-to-end gameplay test or a full accessibility certification.
+
+## Open mode tiles
+
+The menu now removes outlined card boxes and colored edge strips. Each mode uses a floating illustration against an organic color shape with an open title/caption/action layout. The top leaderboard remains full width.

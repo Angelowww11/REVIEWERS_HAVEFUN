@@ -127,6 +127,9 @@ def derive(question):
     return f"The source pool keys “{answer}.” Use the exact wording and exhibit details to distinguish it from the other choices."
 
 
+from deepen_explanations import deepen_notes
+
 result = {str(question["id"]): derive(question) for question in questions}
+deepen_notes(questions, result)
 (ROOT / "explanations.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-print(f"Wrote {len(result)} short explanations")
+print(f"Wrote {len(result)} expanded explanations")

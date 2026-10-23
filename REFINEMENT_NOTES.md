@@ -28,3 +28,7 @@ This list describes existing code paths retained by the refinement; it is not an
 - Cisco RF reference: https://www.cisco.com/c/en/us/td/docs/wireless/controller/9800/technical-reference/wireless-rf-reference-guide.html
 
 Several source keys are questionable (for example monitoring → RADIUS); notes explain the networking concept and flag the source problem without silently altering the source-based grading. This release does not establish completeness of the entire source PDF; the previous completeness claim remains withdrawn.
+
+## Expanded explanations
+
+`deepen_explanations.py` adds topic reasoning, worked distinctions and common mix-ups across all three decks while retaining longer authored notes and source cautions. Run it after regenerating a deck; the original-pool and Summative 3 Python generators also apply it automatically. These are shared concept walkthroughs combined with each question’s existing specific note, not independent instructor verification of disputed grading keys. No question/choice/answer data is modified.
