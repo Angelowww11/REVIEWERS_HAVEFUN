@@ -21,6 +21,14 @@
     const dialog=document.createElement('dialog');dialog.className='appearance-dialog';dialog.setAttribute('aria-labelledby','appearanceTitle');
     dialog.innerHTML='<form method="dialog"><button class="dialog-close" aria-label="Close appearance">×</button></form><span class="section-kicker">MAKE IT YOURS</span><h2 id="appearanceTitle">Your study space.</h2><p>One familiar layout. Six different moods.</p><div class="theme-picker">'+names.map(n=>`<button type="button" data-theme-choice="${n}" aria-pressed="${document.documentElement.dataset.theme===n}"><i class="swatch swatch-${n}" aria-hidden="true"></i>${n[0].toUpperCase()+n.slice(1)}</button>`).join('')+'</div><label class="motion-setting"><input id="calmMotion" type="checkbox"> Calm mode <small>Pause decorative motion and particles.</small></label>';
     document.body.append(dialog);dialog.querySelector('#calmMotion').checked=document.documentElement.dataset.motion==='calm';
+    const motionButton=document.createElement('button');motionButton.type='button';motionButton.className='menu-motion-button';
+    const syncMenuMotion=()=>{const playing=document.documentElement.dataset.motion!=='calm';motionButton.textContent=playing?'✦ Menu animation on':'▷ Turn on menu animation';motionButton.setAttribute('aria-pressed',String(playing));};
+    motionButton.addEventListener('click',()=>setMotion(document.documentElement.dataset.motion==='calm'?'full':'calm'));
+    document.querySelector('.hero-copy')?.append(motionButton);
+    window.addEventListener('packet:motion',()=>{syncMenuMotion();dialog.querySelector('#calmMotion').checked=document.documentElement.dataset.motion==='calm';});
+    // The user requested restoring decorative motion; keep the OS accessibility preference.
+    if(!read('pp_menu_restored_v44',false)&&!matchMedia('(prefers-reduced-motion: reduce)').matches){setMotion('full');try{localStorage.setItem('pp_menu_restored_v44','true');}catch{}}
+    syncMenuMotion();
     document.getElementById('themeButton').onclick=()=>dialog.showModal();
     dialog.addEventListener('click',e=>{const b=e.target.closest('[data-theme-choice]');if(b)apply(b.dataset.themeChoice);});
     dialog.querySelector('#calmMotion').onchange=e=>setMotion(e.target.checked?'calm':'full');
