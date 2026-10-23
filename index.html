@@ -13,6 +13,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23171c5b'/%3E%3Ccircle cx='18' cy='33' r='7' fill='%23ffb45c'/%3E%3Ccircle cx='46' cy='18' r='7' fill='%23a7f2ed'/%3E%3Ccircle cx='45' cy='47' r='7' fill='%23f58fca'/%3E%3Cpath d='M24 30 40 21M24 36l15 9' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="themes.css">
+  <link rel="stylesheet" href="polish.css">
   <script src="themes.js"></script>
   <script src="app.js" defer></script>
   <script src="account.js" defer></script>
@@ -181,9 +182,9 @@
         <label class="focus-length-label" for="focusLengthSelect">Focus session</label>
         <select id="focusLengthSelect" class="focus-length"><option value="15">15 minutes · quick sprint</option><option value="25" selected>25 minutes · classic focus</option><option value="45">45 minutes · deep focus</option></select>
         <div class="focus-clock-wrap"><span id="focusPhaseLabel" class="focus-phase-label">READY WHEN YOU ARE</span><strong id="focusClock" aria-live="off">25:00</strong><span id="focusStatus" class="focus-status">Stay on this page while you focus.</span></div>
-        <div class="focus-action-row"><button type="button" id="focusToggle" class="button button-primary">Start focusing ↗</button><button type="button" id="focusBreakButton" class="button button-outline">Take a 5 min break</button></div>
+        <div class="focus-reward-progress"><progress id="focusRewardProgress" max="300" value="0" aria-label="Progress to next fruit"></progress><small id="focusRewardText">Next fruit in 05:00 of focus</small></div><div class="focus-action-row"><button type="button" id="focusToggle" class="button button-primary">Start focusing ↗</button><button type="button" id="focusBreakButton" class="button button-outline">Take a 5 min break</button></div>
         <div class="focus-extra-controls"><button type="button" id="focusTiltButton" class="focus-tilt-button" aria-pressed="false">Enable tilt</button><button type="button" id="focusResetButton" class="focus-reset">Reset this session</button></div>
-        <p class="focus-away-note"><span aria-hidden="true">◷</span> The timer pauses when this page is hidden or loses focus.</p>
+        <p class="focus-away-note"><span aria-hidden="true">◷</span> Pauses when you leave; resumes when you return. Breaks keep your remaining focus time.</p>
       </section>
       <section class="focus-garden" aria-label="Your fruit rewards">
         <div class="focus-garden-heading"><span><b id="focusFruitCount">0</b> fruits grown</span><span id="focusTotalText">0 focused minutes</span></div>
@@ -195,7 +196,7 @@
 
   <aside id="focusJarDock" class="focus-jar-dock" aria-label="Focus fruit garden">
     <button type="button" id="focusDockOpen" class="focus-dock-head" aria-label="Open focus timer controls"><span>🍊 Garden</span><strong id="focusDockClock">25:00</strong></button>
-    <canvas id="focusMiniCanvas" class="focus-mini-canvas" aria-label="Tap or tilt to bounce your earned fruit"></canvas>
+    <div class="focus-dock-tools"><button type="button" id="focusDockPause" aria-label="Start or resume timer">▶</button><button type="button" id="focusDockCollapse" aria-expanded="true" aria-label="Expand or minimize fruit jar">−</button></div><canvas id="focusMiniCanvas" class="focus-mini-canvas" aria-label="Tap or tilt to bounce your earned fruit"></canvas>
     <span class="focus-dock-caption"><b id="focusDockFruitCount">0 fruit</b><i>Tap to bounce</i></span>
   </aside>
 

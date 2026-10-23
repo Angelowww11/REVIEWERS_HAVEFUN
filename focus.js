@@ -4,16 +4,23 @@
   const dialog = $('focusDialog'), mainCanvas = $('focusCanvas'), dockCanvas = $('focusMiniCanvas');
   if (!dialog || !mainCanvas || !dockCanvas) return;
   const fruitTypes = ['🍊', '🍓', '🍋', '🍇', '🍎', '🍐', '🍒', '🥝', '🍉', '🫐', '🍍'];
-  const key = new URLSearchParams(location.search).get('deck') === 'ccst' ? 'pp_ccst_notebook_focus_v1' : 'pp_focus_v1';
-  const defaults = { minutes: 25, remaining: 1500, phase: 'focus', running: false, focusedSeconds: 0, totalSeconds: 0, fruit: [] };
+  const deck = new URLSearchParams(location.search).get('deck');
+  const key = deck === 'ccst' ? 'pp_ccst_notebook_focus_v1' : deck === 'summative3' ? 'pp_summative3_focus_v1' : 'pp_focus_v1';
+  const defaults = { minutes: 25, remaining: 1500, phase: 'focus', running: false, focusedSeconds: 0, totalSeconds: 0, fruit: [], focusRemaining: null, sessions: 0 };
   let state = { ...defaults, ...load() }, bodies = [], raf = 0, previousFrame = 0, previousTick = Date.now();
   let resumeWhenVisible = state.running === true;
+  let lastSave = 0;
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   let tiltEnabled = false, gravityX = 0, gravityY = .76;
+  state.minutes = [15,25,45].includes(Number(state.minutes)) ? Number(state.minutes) : 25;
+  for (const field of ['remaining','focusedSeconds','totalSeconds','sessions']) if (!Number.isFinite(state[field]) || state[field] < 0) state[field] = defaults[field];
+  state.phase = state.phase === 'break' ? 'break' : 'focus';
+  state.remaining = Math.min(state.remaining, state.phase === 'break' ? 300 : state.minutes * 60);
   state.running = resumeWhenVisible && !document.hidden; state.fruit = Array.isArray(state.fruit) ? state.fruit.slice(-60) : [];
   if (state.remaining <= 0) { state.running = false; resumeWhenVisible = false; }
   function load() {
     try {
-      const saved = JSON.parse(localStorage.getItem(key) || '{}');
+      const saved = JSON.parse(localStorage.getItem(key) || (deck === 'summative3' ? localStorage.getItem('pp_focus_v1') : null) || '{}');
       if (saved.durationMs || saved.remainingMs !== undefined || saved.fruits) {
         const minutes = [15, 25, 45].reduce((closest, value) => Math.abs(value - Math.round((Number(saved.durationMs) || 25 * 60_000) / 60_000)) < Math.abs(closest - Math.round((Number(saved.durationMs) || 25 * 60_000) / 60_000)) ? value : closest, 25);
         const oldRemaining = Number(saved.phase === 'break' ? saved.breakRemainingMs : saved.remainingMs);
@@ -33,10 +40,17 @@
     if ($('focusDockFruitCount')) $('focusDockFruitCount').textContent = `${state.fruit.length} ${state.fruit.length === 1 ? 'fruit' : 'fruits'}`;
     if ($('focusDockFruitCount')?.nextElementSibling) $('focusDockFruitCount').nextElementSibling.textContent = state.fruit.length ? 'Tap to bounce' : 'Fruit at 5 min';
     if ($('focusTotalText')) $('focusTotalText').textContent = `${Math.floor(state.totalSeconds / 60)} focused minutes`;
-    if ($('focusToggle')) $('focusToggle').textContent = state.running ? 'Pause focus' : state.remaining <= 0 ? 'Start another session ↗' : 'Start focusing ↗';
-    if ($('focusBreakButton')) $('focusBreakButton').disabled = state.running && state.phase === 'break';
+    if ($('focusToggle')) $('focusToggle').textContent = state.running ? 'Pause timer' : state.phase === 'break' ? 'Resume break' : state.remaining <= 0 ? 'Start another session ↗' : 'Start focusing ↗';
+    if ($('focusBreakButton')) { $('focusBreakButton').disabled = false; $('focusBreakButton').textContent = state.phase === 'break' ? 'Back to focus' : 'Take a 5 min break'; }
+    if ($('focusLengthSelect')) $('focusLengthSelect').disabled = state.running || state.phase === 'break';
+    const duration = state.phase === 'break' ? 300 : state.minutes * 60;
+    dialog.style.setProperty('--focus-progress', `${100 * (1 - state.remaining / duration)}%`);
+    const toFruit = 300 - (state.focusedSeconds % 300);
+    if ($('focusRewardProgress')) { $('focusRewardProgress').value = state.focusedSeconds % 300; $('focusRewardText').textContent = `Next fruit in ${clock(toFruit)} of focus · ${state.sessions || 0} sessions complete`; }
+    $('focusJarDock')?.classList.toggle('is-running', state.running);
+    if ($('focusDockPause')) { $('focusDockPause').textContent = state.running ? 'Ⅱ' : '▶'; $('focusDockPause').setAttribute('aria-label', state.running ? 'Pause timer' : 'Start or resume timer'); }
     if ($('focusResetButton')) $('focusResetButton').disabled = state.focusedSeconds === 0 && state.remaining === state.minutes * 60;
-    if ($('focusPhaseLabel')) $('focusPhaseLabel').textContent = state.phase === 'break' ? 'GENTLE BREAK' : state.running ? 'FOCUSING' : 'READY WHEN YOU ARE';
+    if ($('focusPhaseLabel')) $('focusPhaseLabel').textContent = state.remaining <= 0 ? 'SESSION COMPLETE' : state.phase === 'break' ? (state.running ? 'GENTLE BREAK' : 'BREAK PAUSED') : state.running ? 'FOCUSING' : resumeWhenVisible ? 'PAUSED WHILE AWAY' : state.remaining < state.minutes * 60 ? 'FOCUS PAUSED' : 'READY WHEN YOU ARE';
     if ($('focusStatus') && !tiltEnabled) $('focusStatus').textContent = state.running ? state.phase === 'break' ? 'Rest a little. The garden is still yours.' : 'You’re here. Your garden is growing.' : state.remaining <= 0 ? 'Session complete. Lovely work!' : 'Stay on this page while you focus.';
     if ($('focusRewardHint')) $('focusRewardHint').textContent = state.fruit.length ? 'Tap fruit or tilt your device to bounce your garden.' : 'Every 5 focused minutes grows a surprise fruit.';
     $('focusButton')?.classList.toggle('is-focusing', state.running && state.phase === 'focus');
@@ -67,21 +81,26 @@
     fill.addColorStop(0, 'rgba(167,242,237,.13)'); fill.addColorStop(.54, 'rgba(255,255,255,.025)'); fill.addColorStop(1, 'rgba(173,167,255,.11)');
     ctx.fillStyle = fill; ctx.fill();
     ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#a7f2ed';
-    ctx.globalAlpha = .56; ctx.lineWidth = Math.max(1.5, width * .007); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.globalAlpha = .38; ctx.lineWidth = Math.max(1.5, width * .007); ctx.stroke(); ctx.globalAlpha = 1;
     const lidX = width * .30, lidY = height * .105, lidWidth = width * .40, lidHeight = height * .047;
     ctx.beginPath(); ctx.roundRect(lidX, lidY, lidWidth, lidHeight, lidHeight * .38);
     ctx.fillStyle = 'rgba(209,225,255,.17)'; ctx.fill(); ctx.strokeStyle = 'rgba(226,237,255,.5)'; ctx.lineWidth = Math.max(1, width * .007); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(lidX + width * .035, lidY + lidHeight * .28); ctx.lineTo(lidX + lidWidth - width * .035, lidY + lidHeight * .28);
     ctx.strokeStyle = 'rgba(255,255,255,.24)'; ctx.lineWidth = Math.max(1, width * .004); ctx.stroke();
+    // Narrow glass reflections follow the body without obscuring the fruit.
+    ctx.beginPath(); ctx.moveTo(width * .22, height * .32); ctx.bezierCurveTo(width * .20, height * .44, width * .235, height * .67, width * .25, height * .76);
+    ctx.strokeStyle = 'rgba(255,255,255,.19)'; ctx.lineWidth = Math.max(2, width * .012); ctx.lineCap = 'round'; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(width * .78, height * .36); ctx.lineTo(width * .755, height * .55);
+    ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.lineWidth = Math.max(1, width * .006); ctx.stroke();
     ctx.restore();
     return { left: left + width * .06, right: right - width * .06, top: height * .22, bottom: bottom - height * .025 };
   }
   const radiusN = .085;
   function syncBodies() {
-    const count = Math.min(state.fruit.length, 12);
-    while (bodies.length < count) { const i = bodies.length; bodies.push({ fruit: state.fruit[i] || fruitTypes[i % fruitTypes.length], x: .2 + Math.random() * .6, y: .83, vx: (Math.random() - .5) * .6, vy: -Math.random() * .4, spin: Math.random() * Math.PI * 2 }); }
+    const count = Math.min(state.fruit.length, 24);
+    while (bodies.length < count) { const i = bodies.length; bodies.push({ fruit: state.fruit.slice(-24)[i] || fruitTypes[i % fruitTypes.length], x: .2 + Math.random() * .6, y: .83, vx: (Math.random() - .5) * .6, vy: -Math.random() * .4, spin: Math.random() * Math.PI * 2 }); }
     bodies.length = count;
-    bodies.forEach((body, i) => { body.fruit = state.fruit[i] || body.fruit; });
+    bodies.forEach((body, i) => { body.fruit = state.fruit.slice(-24)[i] || body.fruit; });
   }
   function physics(dt) {
     dt = Math.min(.035, Math.max(0, dt)); const damping = .7;
@@ -90,7 +109,7 @@
       if (a.x < radiusN) { a.x = radiusN; a.vx = Math.abs(a.vx) * damping; }
       if (a.x > 1 - radiusN) { a.x = 1 - radiusN; a.vx = -Math.abs(a.vx) * damping; }
       if (a.y < .05 + radiusN) { a.y = .05 + radiusN; a.vy = Math.abs(a.vy) * damping; }
-      if (a.y > .94 - radiusN) { a.y = .94 - radiusN; a.vy = -Math.abs(a.vy) * damping; a.vx *= .985; }
+      if (a.y > .94 - radiusN) { a.y = .94 - radiusN; a.vy = -Math.abs(a.vy) * damping; a.vx *= .94; if (Math.abs(a.vy) < .05) a.vy = 0; if (Math.abs(a.vx) < .008) a.vx = 0; }
       for (let j = 0; j < i; j++) {
         const b = bodies[j], dx = (a.x - b.x) * .82, dy = a.y - b.y, d = Math.hypot(dx, dy) || .001, min = radiusN * 2;
         if (d < min) { const nx = dx / d, ny = dy / d, overlap = (min - d) * .5; a.x += nx * overlap / .82; a.y += ny * overlap; b.x -= nx * overlap / .82; b.y -= ny * overlap;
@@ -118,22 +137,22 @@
     return bodies.some(b => Math.abs(b.vx) > .008 || Math.abs(b.vy) > .008);
   }
   function frame(time = 0) {
-    raf = 0; const dt = previousFrame ? (time - previousFrame) / 1000 : 0; previousFrame = time; syncBodies(); physics(dt);
+    raf = 0; if (document.hidden) { previousFrame = 0; return; } const dt = previousFrame ? (time - previousFrame) / 1000 : 0; previousFrame = time; syncBodies(); physics(dt);
     const mainMoving = draw(mainCanvas), dockMoving = draw(dockCanvas), moving = mainMoving || dockMoving;
-    if (dialog.open || state.running || moving) raf = requestAnimationFrame(frame); else previousFrame = 0;
+    if (moving && !reducedMotion.matches && document.documentElement.dataset.motion !== 'calm') raf = requestAnimationFrame(frame); else previousFrame = 0;
   }
-  function render() { if (!raf) raf = requestAnimationFrame(frame); }
+  function render() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame); }
   function addFruit() {
     const fruit = fruitTypes[Math.floor(Math.random() * fruitTypes.length)]; state.fruit.push(fruit); state.fruit = state.fruit.slice(-60); syncBodies();
     const body = bodies[bodies.length - 1]; if (body) { body.x = .5 + (Math.random() - .5) * .12; body.y = .84; body.vx = (Math.random() - .5) * 1.1; body.vy = -1.7 - Math.random() * .6; }
     save(); updateUI(); render();
   }
   function tick() {
-    const now = Date.now(), elapsed = Math.max(0, Math.min(2, (now - previousTick) / 1000)); previousTick = now; if (!state.running) return;
+    const now = Date.now(), elapsed = Math.max(0, Math.min(state.remaining, 2, (now - previousTick) / 1000)); previousTick = now; if (!state.running) return;
     state.remaining = Math.max(0, state.remaining - elapsed);
     if (state.phase === 'focus') { const old = Math.floor(state.focusedSeconds / 300); state.focusedSeconds += elapsed; state.totalSeconds += elapsed; for (let i = old; i < Math.floor(state.focusedSeconds / 300); i++) addFruit(); }
-    if (!state.remaining) { state.running = false; resumeWhenVisible = false; if (state.phase === 'break') { state.phase = 'focus'; state.remaining = state.minutes * 60; } }
-    save(); updateUI(); render();
+    if (!state.remaining) { state.running = false; resumeWhenVisible = false; if (state.phase === 'break') { state.phase = 'focus'; state.remaining = Number.isFinite(state.focusRemaining) && state.focusRemaining > 0 ? state.focusRemaining : state.minutes * 60; state.focusRemaining = null; } else { state.sessions = (state.sessions || 0) + 1; } }
+    if (now - lastSave > 4000 || !state.running) { save(); lastSave = now; } updateUI(); render();
   }
   function orientation(event) { if (!tiltEnabled) return; if (Number.isFinite(event.gamma)) gravityX = Math.max(-2.4, Math.min(2.4, event.gamma / 28)); if (Number.isFinite(event.beta)) gravityY = Math.max(.6, Math.min(4.6, .76 + (event.beta - 45) / 90)); render(); }
   function setTilt(enabled) { tiltEnabled = enabled; $('focusTiltButton')?.setAttribute('aria-pressed', String(enabled)); if ($('focusTiltButton')) $('focusTiltButton').textContent = enabled ? 'Tilt enabled ✓' : 'Enable tilt'; if (!enabled) { window.removeEventListener('deviceorientation', orientation); gravityX = 0; gravityY = .76; } }
@@ -157,18 +176,23 @@
   $('focusDockOpen')?.addEventListener('click', () => { if (!dialog.open) dialog.showModal(); render(); });
   $('focusClose')?.addEventListener('click', () => dialog.close()); dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
   $('focusToggle')?.addEventListener('click', () => { if (state.remaining <= 0) { state.phase = 'focus'; state.remaining = state.minutes * 60; } state.running = !state.running; resumeWhenVisible = state.running; previousTick = Date.now(); save(); updateUI(); render(); });
-  $('focusBreakButton')?.addEventListener('click', () => { state.phase = 'break'; state.remaining = 300; state.running = true; resumeWhenVisible = true; previousTick = Date.now(); save(); updateUI(); render(); });
-  $('focusResetButton')?.addEventListener('click', () => { state.running = false; resumeWhenVisible = false; state.phase = 'focus'; state.focusedSeconds = 0; state.remaining = state.minutes * 60; save(); updateUI(); render(); });
+  $('focusBreakButton')?.addEventListener('click', () => { if (state.phase === 'break') { state.phase = 'focus'; state.remaining = state.focusRemaining > 0 ? state.focusRemaining : state.minutes * 60; state.focusRemaining = null; } else { state.focusRemaining = state.remaining; state.phase = 'break'; state.remaining = 300; } state.running = true; resumeWhenVisible = true; previousTick = Date.now(); save(); updateUI(); render(); });
+  $('focusResetButton')?.addEventListener('click', () => { state.running = false; resumeWhenVisible = false; state.phase = 'focus'; state.focusRemaining = null; state.remaining = state.minutes * 60; save(); updateUI(); render(); });
   $('focusLengthSelect')?.addEventListener('change', e => { const minutes = Number(e.target.value); state.minutes = [15, 25, 45].includes(minutes) ? minutes : 25; if (state.phase === 'focus' && !state.running) state.remaining = state.minutes * 60; save(); updateUI(); render(); });
+  $('focusDockPause')?.addEventListener('click', () => $('focusToggle').click());
+  $('focusDockCollapse')?.addEventListener('click', () => { const collapsed = $('focusJarDock').classList.toggle('is-collapsed'); $('focusDockCollapse').setAttribute('aria-expanded', String(!collapsed)); $('focusDockCollapse').textContent = collapsed ? '+' : '−'; render(); });
+  [mainCanvas, dockCanvas].forEach(canvas => { canvas.tabIndex = 0; canvas.setAttribute('role','button'); canvas.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const r = canvas.getBoundingClientRect(); bounce({currentTarget:canvas,clientX:r.left+r.width/2,clientY:r.top+r.height/2}); } }); });
   $('focusTiltButton')?.addEventListener('click', toggleTilt);
   [mainCanvas, dockCanvas].forEach(canvas => canvas.addEventListener('pointerdown', bounce, { passive: true }));
   window.addEventListener('resize', render, { passive: true });
-  function pauseForAway() { if (state.running) { state.running = false; resumeWhenVisible = true; save(); updateUI(); } }
+  function pauseForAway() { tick(); cancelAnimationFrame(raf); raf = 0; previousFrame = 0; if (state.running) { state.running = false; resumeWhenVisible = true; save(); updateUI(); } }
   function resumeOnReturn() { if (document.hidden) return; previousTick = Date.now(); if (resumeWhenVisible && state.remaining > 0) { state.running = true; resumeWhenVisible = false; save(); updateUI(); render(); } }
   document.addEventListener('visibilitychange', () => { if (document.hidden) pauseForAway(); else resumeOnReturn(); });
   window.addEventListener('blur', pauseForAway);
   window.addEventListener('focus', resumeOnReturn);
   window.addEventListener('pagehide', () => { if (state.running) { state.running = false; resumeWhenVisible = true; save(); } });
   window.addEventListener('pageshow', resumeOnReturn);
-  window.setInterval(tick, 250); updateUI(); render();
+  new ResizeObserver(render).observe(dialog);
+  window.addEventListener('packet:theme', render);
+  window.setInterval(tick, 1000); updateUI(); render();
 })();
