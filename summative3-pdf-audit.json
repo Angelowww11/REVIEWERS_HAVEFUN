@@ -5,7 +5,9 @@
   "questionOccurrencesPages1to23": 224,
   "summaryOccurrencesPages24to26": 36,
   "newQuestionIds": [
-    210
+    210,
+    211,
+    212
   ],
   "sourceDisagreements": [
     {
@@ -33,7 +35,8 @@
     "Supplicant item page 18 truncates access to acces; existing #42 retains the full spelling and same correct answer.",
     "Different choice sets remain separate; supports/suppports spelling alone is not a new question.",
     "Four occurrences had no yellow highlight detected; existing MHTML labels were retained.",
-    "This comparison checks source agreement, not independent technical certification of every source answer."
+    "This comparison checks source agreement, not independent technical certification of every source answer.",
+    "Correction: the initial matching method searched known bank stems and could not establish absence of additional PDF questions. User identified two omissions on PDF page 22; both now added. Recorded occurrence counts are matched occurrences, not proof of total PDF coverage."
   ],
   "occurrences": [
     {
@@ -2870,5 +2873,6 @@
         87
       ]
     }
-  ]
+  ],
+  "completenessStatus": "Not established: initial existing-stem matching missed two additional PDF questions, now added as 211 and 212."
 }

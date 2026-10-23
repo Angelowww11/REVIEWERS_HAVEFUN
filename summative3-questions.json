@@ -12,7 +12,7 @@
     "Seatwork 3_ 1TSY2627_IT0015_TC33_TX33-17.mhtml",
     "SUMMATIVE 3.pdf"
   ],
-  "questionCount": 210,
+  "questionCount": 212,
   "questions": [
     {
       "id": 1,
@@ -9516,6 +9516,52 @@
       ],
       "answerKeyWarning": "The supplied answer is False, while the PDF highlights True.",
       "answerKeyOrigin": "User-supplied answer; PDF disagreement retained"
+    },
+    {
+      "id": 211,
+      "sourceFile": "Summative 3 · PDF supplement",
+      "type": "multiple_choice_question",
+      "question": "Which of the following IEEE standards provides the basis for implementing most modern WLANs?",
+      "questionHtml": "<p>Which of the following IEEE standards provides the basis for implementing most modern WLANs?</p>",
+      "options": [
+        "IEEE 802.11",
+        "IEEE 802.9",
+        "IEEE 802.1Q",
+        "IEEE 802.1d"
+      ],
+      "correctAnswers": [
+        "IEEE 802.11"
+      ],
+      "sources": [
+        {
+          "sourceFile": "SUMMATIVE 3.pdf",
+          "page": 22
+        }
+      ],
+      "answerKeyOrigin": "PDF highlighted answer, checked against IEEE / Cisco documentation"
+    },
+    {
+      "id": 212,
+      "sourceFile": "Summative 3 · PDF supplement",
+      "type": "multiple_choice_question",
+      "question": "In wireless ad-hoc network _________",
+      "questionHtml": "<p>In wireless ad-hoc network _________</p>",
+      "options": [
+        "access point is not required",
+        "all nodes are access points",
+        "access point is must",
+        "nodes are not required"
+      ],
+      "correctAnswers": [
+        "access point is not required"
+      ],
+      "sources": [
+        {
+          "sourceFile": "SUMMATIVE 3.pdf",
+          "page": 22
+        }
+      ],
+      "answerKeyOrigin": "PDF highlighted answer, checked against IEEE / Cisco documentation"
     }
   ]
 }

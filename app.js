@@ -388,7 +388,7 @@ function renderBank() {
 const practice = { index: 0, entries: {}, selected: new Set(), groupDrafts: {}, groupChoiceOrders: {}, shuffleChoices: false, correctFirst: false, choiceOrder: {}, dragMappings: {}, dragItemOrders: {}, dragTargetOrders: {} };
 function restorePractice() {
   const saved = readJSON(deckStorageKey('pp_practice_v1'), null);
-  const appendedSummativeQuestion = deckId === 'summative3' && saved?.count === 209 && app.questions.length === 210;
+  const appendedSummativeQuestion = deckId === 'summative3' && [209, 210].includes(saved?.count) && app.questions.length === 212;
   if (!saved || saved.version !== practiceStateVersion || (saved.count !== app.questions.length && !appendedSummativeQuestion)) return;
   practice.index = Number.isInteger(saved.index) ? Math.max(0, Math.min(app.questions.length - 1, saved.index)) : 0;
   practice.shuffleChoices = saved.shuffleChoices === true;

@@ -2,7 +2,7 @@
   "questions": [
     {
       "id": 210,
-      "sourceFile": "Summative 3 \u00b7 PDF supplement",
+      "sourceFile": "Summative 3 · PDF supplement",
       "type": "true_false_question",
       "question": "A QoS feature of WLAN Router varies.",
       "questionHtml": "<p><em>The supplied answer and PDF highlight disagree. This item follows your supplied answer.</em></p><p>A QoS feature of WLAN Router varies.</p>",
@@ -26,9 +26,57 @@
       ],
       "answerKeyWarning": "The supplied answer is False, while the PDF highlights True.",
       "answerKeyOrigin": "User-supplied answer; PDF disagreement retained"
+    },
+    {
+      "id": 211,
+      "sourceFile": "Summative 3 · PDF supplement",
+      "type": "multiple_choice_question",
+      "question": "Which of the following IEEE standards provides the basis for implementing most modern WLANs?",
+      "questionHtml": "<p>Which of the following IEEE standards provides the basis for implementing most modern WLANs?</p>",
+      "options": [
+        "IEEE 802.11",
+        "IEEE 802.9",
+        "IEEE 802.1Q",
+        "IEEE 802.1d"
+      ],
+      "correctAnswers": [
+        "IEEE 802.11"
+      ],
+      "sources": [
+        {
+          "sourceFile": "SUMMATIVE 3.pdf",
+          "page": 22
+        }
+      ],
+      "answerKeyOrigin": "PDF highlighted answer, checked against IEEE / Cisco documentation"
+    },
+    {
+      "id": 212,
+      "sourceFile": "Summative 3 · PDF supplement",
+      "type": "multiple_choice_question",
+      "question": "In wireless ad-hoc network _________",
+      "questionHtml": "<p>In wireless ad-hoc network _________</p>",
+      "options": [
+        "access point is not required",
+        "all nodes are access points",
+        "access point is must",
+        "nodes are not required"
+      ],
+      "correctAnswers": [
+        "access point is not required"
+      ],
+      "sources": [
+        {
+          "sourceFile": "SUMMATIVE 3.pdf",
+          "page": 22
+        }
+      ],
+      "answerKeyOrigin": "PDF highlighted answer, checked against IEEE / Cisco documentation"
     }
   ],
   "explanations": {
-    "210": "Study key: False, as you specified.\nSource disagreement: SUMMATIVE 3.pdf, page 13, question 146 highlights True for the same statement; your screenshot labels it question 39 and you supplied False. The wording does not specify what varies, so this is a disputed study key rather than an independently verified technical conclusion.\nConcept: Wireless QoS prioritizes traffic such as voice and video; WMM is a common wireless QoS mechanism."
+    "210": "Study key: False, as you specified.\nSource disagreement: SUMMATIVE 3.pdf, page 13, question 146 highlights True for the same statement; your screenshot labels it question 39 and you supplied False. The wording does not specify what varies, so this is a disputed study key rather than an independently verified technical conclusion.\nConcept: Wireless QoS prioritizes traffic such as voice and video; WMM is a common wireless QoS mechanism.",
+    "211": "IEEE 802.11 is the family of standards for wireless LANs. IEEE 802.1Q covers VLAN tagging; 802.1D covers bridging and spanning tree.",
+    "212": "In an ad-hoc wireless network, devices communicate directly with one another without an access point. Infrastructure mode uses an access point."
   }
 }
