@@ -9,9 +9,10 @@
     "Q7.mhtml",
     "Q8.mhtml",
     "Q9.mhtml",
-    "Seatwork 3_ 1TSY2627_IT0015_TC33_TX33-17.mhtml"
+    "Seatwork 3_ 1TSY2627_IT0015_TC33_TX33-17.mhtml",
+    "SUMMATIVE 3.pdf"
   ],
-  "questionCount": 209,
+  "questionCount": 210,
   "questions": [
     {
       "id": 1,
@@ -9488,6 +9489,33 @@
           "position": 13
         }
       ]
+    },
+    {
+      "id": 210,
+      "sourceFile": "Summative 3 · PDF supplement",
+      "type": "true_false_question",
+      "question": "A QoS feature of WLAN Router varies.",
+      "questionHtml": "<p><em>The supplied answer and PDF highlight disagree. This item follows your supplied answer.</em></p><p>A QoS feature of WLAN Router varies.</p>",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correctAnswers": [
+        "False"
+      ],
+      "sources": [
+        {
+          "sourceFile": "SUMMATIVE 3.pdf",
+          "position": 146,
+          "page": 13
+        },
+        {
+          "sourceFile": "User-supplied screenshot",
+          "position": 39
+        }
+      ],
+      "answerKeyWarning": "The supplied answer is False, while the PDF highlights True.",
+      "answerKeyOrigin": "User-supplied answer; PDF disagreement retained"
     }
   ]
 }

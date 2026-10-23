@@ -4,6 +4,25 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 
+def apply_supplement(data, notes):
+    """Append reviewed additions without changing existing question IDs."""
+    path = ROOT / 'summative3-supplement.json'
+    if not path.exists():
+        return
+    supplement = json.loads(path.read_text(encoding='utf-8'))
+    by_id = {q['id']: q for q in data['questions']}
+    for question in supplement['questions']:
+        if question['id'] in by_id:
+            if by_id[question['id']]['question'] != question['question']:
+                raise ValueError('Supplement ID collides with another question')
+            by_id[question['id']].update(question)
+        else:
+            data['questions'].append(question)
+    notes.update(supplement['explanations'])
+    data['questionCount'] = len(data['questions'])
+    if 'SUMMATIVE 3.pdf' not in data['sourceFiles']:
+        data['sourceFiles'].append('SUMMATIVE 3.pdf')
+
 def annotate_conflicts(questions, notes, audit):
     by_id = {q['id']: q for q in questions}
     for left_id, right_id in audit['answerConflicts']:
@@ -29,6 +48,10 @@ Two partial final questions were recovered from complete copies in other files. 
 One source-key conflict is retained and flagged: the slow WLAN / dual-band router question is keyed as firmware update in one source version and splitting traffic between 2.4 and 5 GHz in another. The import preserves both labeled keys and does not claim to resolve that disagreement.
 
 The deck has its own practice saves, ranked progress, leaderboards, and live rooms. Training offers 20, 30, or the entire deck. Run `python build_summative3.py` with the original files in `../QUESTION POOLS` to regenerate it; downloaded exhibits are cached by a hash of their source path, with no signed source URLs published.
+
+## PDF follow-up
+
+All 26 pages of `SUMMATIVE 3.pdf` were compared with the bank: 224 question occurrences on pages 1–23 and 36 repeated study-summary occurrences on pages 24–26. One missing statement was added as stable ID 210, bringing the playable deck to **210 questions**. Its answer is **False per the user's explicit instruction**, while page 13, question 146 highlights **True**; the explanation records that disagreement. The PDF also repeats both conflicting WLAN keys for IDs 110 and 168. Other questions, choice variants and visible highlighted keys were already represented; a truncated `acces` on page 18 maps to the existing supplicant question 42. Four occurrences without detectable yellow highlights keep their MHTML labels. This is a source comparison, not a claim that every source answer is technically correct. See `summative3-pdf-audit.json` for the comparison and `summative3-supplement.json` for the reproducible addition.
 '''
     (ROOT / 'SUMMATIVE3_IMPORT_NOTES.md').write_text(content, encoding='utf-8')
 
@@ -37,6 +60,7 @@ if __name__ == '__main__':
     notes = json.loads((ROOT / 'summative3-explanations.json').read_text(encoding='utf-8'))
     audit = json.loads((ROOT / 'summative3-import-audit.json').read_text(encoding='utf-8'))
     annotate_conflicts(data['questions'], notes, audit)
+    apply_supplement(data, notes)
     for filename, value in [('summative3-questions.json', data), ('summative3-explanations.json', notes)]:
         (ROOT / filename).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     write_summary(audit)

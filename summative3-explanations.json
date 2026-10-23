@@ -207,5 +207,6 @@
   "206": "Source answer: wireless wide-area network. Revisit the conditions in the question and compare each choice with this answer.",
   "207": "Source answer: Split the traffic between the 2.4 GHz and 5 GHz frequency bands.. Revisit the conditions in the question and compare each choice with this answer.",
   "208": "Source answer: It is used to encrypt the messages between the WLC and the RADIUS server.. Revisit the conditions in the question and compare each choice with this answer.",
-  "209": "Source answer: GLBP. Revisit the conditions in the question and compare each choice with this answer."
+  "209": "Source answer: GLBP. Revisit the conditions in the question and compare each choice with this answer.",
+  "210": "Study key: False, as you specified.\nSource disagreement: SUMMATIVE 3.pdf, page 13, question 146 highlights True for the same statement; your screenshot labels it question 39 and you supplied False. The wording does not specify what varies, so this is a disputed study key rather than an independently verified technical conclusion.\nConcept: Wireless QoS prioritizes traffic such as voice and video; WMM is a common wireless QoS mechanism."
 }

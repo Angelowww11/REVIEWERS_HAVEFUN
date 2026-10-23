@@ -1,0 +1,2874 @@
+{
+  "source": "SUMMATIVE 3.pdf",
+  "pagesReviewed": 26,
+  "method": "Read both page columns in order; compare normalized question stems, available choices and yellow highlighted answers against existing records. Visually inspect ambiguous items. Summary pages do not define new choice sets.",
+  "questionOccurrencesPages1to23": 224,
+  "summaryOccurrencesPages24to26": 36,
+  "newQuestionIds": [
+    210
+  ],
+  "sourceDisagreements": [
+    {
+      "ids": [
+        110,
+        168
+      ],
+      "pages": [
+        9,
+        13
+      ],
+      "detail": "PDF also contains both conflicting WLAN answer keys."
+    },
+    {
+      "ids": [
+        210
+      ],
+      "pages": [
+        13
+      ],
+      "detail": "PDF highlights True; user explicitly supplied False. User answer retained with warning."
+    }
+  ],
+  "reviewNotes": [
+    "Supplicant item page 18 truncates access to acces; existing #42 retains the full spelling and same correct answer.",
+    "Different choice sets remain separate; supports/suppports spelling alone is not a new question.",
+    "Four occurrences had no yellow highlight detected; existing MHTML labels were retained.",
+    "This comparison checks source agreement, not independent technical certification of every source answer."
+  ],
+  "occurrences": [
+    {
+      "page": 1,
+      "ids": [
+        28,
+        181
+      ],
+      "stem": "Which feature or configuration on a switch makes it vulnerable to VLAN double-tagging attacks?",
+      "highlighted": "thenativevlanofthetrunkingportbeingthesameasauservlan",
+      "alignedIds": [
+        28,
+        181
+      ]
+    },
+    {
+      "page": 1,
+      "ids": [
+        2
+      ],
+      "stem": "Which access control component, implementation, or protocol restricts LAN access through publicly accessible switch ports?",
+      "highlighted": "8021x",
+      "alignedIds": [
+        2
+      ]
+    },
+    {
+      "page": 1,
+      "ids": [
+        132
+      ],
+      "stem": "AAA components are Authentication, Authorization, and Accuracy.",
+      "highlighted": "false",
+      "alignedIds": [
+        132
+      ]
+    },
+    {
+      "page": 1,
+      "ids": [
+        79
+      ],
+      "stem": "GLBP is a Cisco-proprietary FHRP that protects data traffic from a failed router or circuit",
+      "highlighted": "true",
+      "alignedIds": [
+        79
+      ]
+    },
+    {
+      "page": 1,
+      "ids": [
+        8
+      ],
+      "stem": "This command shows information about the reliability of the port channel.",
+      "highlighted": "showinterfacesportchannel1",
+      "alignedIds": [
+        8
+      ]
+    },
+    {
+      "page": 1,
+      "ids": [
+        37
+      ],
+      "stem": "Which one is a Cisco product that focuses on endpoint security solutions?",
+      "highlighted": "nacappliance",
+      "alignedIds": [
+        37
+      ]
+    },
+    {
+      "page": 1,
+      "ids": [
+        22
+      ],
+      "stem": "Which FHRP implementation is a nonproprietary protocol which relies on ICMP to provide IPv4 redundancy?",
+      "highlighted": "irdp",
+      "alignedIds": [
+        22
+      ]
+    },
+    {
+      "page": 1,
+      "ids": [
+        13
+      ],
+      "stem": "Data Breach is an attack in which an organization\u2019s data servers or hosts are compromised to steal confidential information.",
+      "highlighted": "true",
+      "alignedIds": [
+        13
+      ]
+    },
+    {
+      "page": 1,
+      "ids": [
+        149
+      ],
+      "stem": "Which FHRP implementation is Cisco-proprietary and permits only one router in a group to forward IPv6 packets?",
+      "highlighted": "hsrpforipv6",
+      "alignedIds": [
+        149
+      ]
+    },
+    {
+      "page": 1,
+      "ids": [
+        130
+      ],
+      "stem": "What is the step 2 of sequence of stages that occur during the HSRP failover process.",
+      "highlighted": "thestandbyrouterstopsseeinghellomessagesfromtheforwardingrouter",
+      "alignedIds": [
+        130
+      ]
+    },
+    {
+      "page": 1,
+      "ids": [
+        176
+      ],
+      "stem": "Which protocol advertises a virtual IP address to facilitate transparent failover of a Cisco routing device?",
+      "highlighted": "fhrp",
+      "alignedIds": [
+        176
+      ]
+    },
+    {
+      "page": 1,
+      "ids": [
+        31
+      ],
+      "stem": "Which of the following is needed to be enable back the role of active in HSRP?",
+      "highlighted": "preempt",
+      "alignedIds": [
+        31
+      ]
+    },
+    {
+      "page": 2,
+      "ids": [
+        18
+      ],
+      "stem": "Which access control component, implementation, or protocol is implemented either locally or as a server-based solution?",
+      "highlighted": "authentication",
+      "alignedIds": [
+        18
+      ]
+    },
+    {
+      "page": 2,
+      "ids": [
+        81
+      ],
+      "stem": "Which protocol is the Cisco proprietary implementation of FHRP?",
+      "highlighted": "hsrp",
+      "alignedIds": [
+        81
+      ]
+    },
+    {
+      "page": 2,
+      "ids": [
+        80
+      ],
+      "stem": "A network administrator would like to ensure that router R1 is always elected the active router for an HSRP group. Which set of commands would ensure the required results?",
+      "highlighted": "r1configifipaddress19216811002552552550r1configifstandby1ip19216811r1configifstandby1priority255r1configifstandby1preemptr1configifnoshutdown",
+      "alignedIds": [
+        80
+      ]
+    },
+    {
+      "page": 2,
+      "ids": [
+        34
+      ],
+      "stem": "Which one is a protocol that is used by AAA to authenticate users against a central database of usernames and password?",
+      "highlighted": "tacacs",
+      "alignedIds": [
+        34
+      ]
+    },
+    {
+      "page": 2,
+      "ids": [
+        64
+      ],
+      "stem": "Next-Generation Firewall or NGFW provides stateful packet inspection, application visibility and control.",
+      "highlighted": "true",
+      "alignedIds": [
+        64
+      ]
+    },
+    {
+      "page": 2,
+      "ids": [
+        59
+      ],
+      "stem": "Which Layer 2 attack will result in legitimate users not getting valid IP addresses?",
+      "highlighted": "dhcpstarvation",
+      "alignedIds": [
+        59
+      ]
+    },
+    {
+      "page": 2,
+      "ids": [
+        25
+      ],
+      "stem": "Which protocol should be used to mitigate the vulnerability of using Telnet to remotely manage network devices?",
+      "highlighted": "ssh",
+      "alignedIds": [
+        25
+      ]
+    },
+    {
+      "page": 2,
+      "ids": [
+        46
+      ],
+      "stem": "Which one is a HSRP state for a router?",
+      "highlighted": "learn",
+      "alignedIds": [
+        46
+      ]
+    },
+    {
+      "page": 2,
+      "ids": [
+        69
+      ],
+      "stem": "DDoS is an attack in which an organization\u2019s data servers or hosts are compromised to steal confidential information.",
+      "highlighted": "false",
+      "alignedIds": [
+        69
+      ]
+    },
+    {
+      "page": 2,
+      "ids": [
+        1
+      ],
+      "stem": "Which type of VLAN-hopping attack may be prevented by designating an unused VLAN as the native VLAN?",
+      "highlighted": "vlandoubletagging",
+      "alignedIds": [
+        1
+      ]
+    },
+    {
+      "page": 2,
+      "ids": [
+        184
+      ],
+      "stem": "Which access control component, implementation, or protocol audits what users actions are performed on the network?",
+      "highlighted": "accounting",
+      "alignedIds": [
+        184
+      ]
+    },
+    {
+      "page": 3,
+      "ids": [
+        145
+      ],
+      "stem": "What mitigation plan is best for thwarting a DoS attack that is creating a MAC address table overflow?",
+      "highlighted": "enableportsecurity",
+      "alignedIds": [
+        145
+      ]
+    },
+    {
+      "page": 3,
+      "ids": [
+        131
+      ],
+      "stem": "What is the purpose of HSRP?",
+      "highlighted": "itprovidesacontinuousnetworkconnectionwhenarouterfails",
+      "alignedIds": [
+        131
+      ]
+    },
+    {
+      "page": 3,
+      "ids": [
+        32
+      ],
+      "stem": "Which nonproprietary protocol provides router redundancy for a group of routers which support IPv4 LANs?",
+      "highlighted": "vrrpv2",
+      "alignedIds": [
+        32
+      ]
+    },
+    {
+      "page": 3,
+      "ids": [
+        39
+      ],
+      "stem": "Which standards-based First Hop Redundancy Protocol is a Cisco supported alternative to Hot Standby Router Protocol?",
+      "highlighted": "vrrp",
+      "alignedIds": [
+        39
+      ]
+    },
+    {
+      "page": 3,
+      "ids": [
+        21
+      ],
+      "stem": "Which FHRP implementation is a nonproprietary IPv4-only election protocol which has one master router per group?",
+      "highlighted": "vrrpv2",
+      "alignedIds": [
+        21
+      ]
+    },
+    {
+      "page": 3,
+      "ids": [
+        70
+      ],
+      "stem": "Initial is an HRSP State meaning that the router is a candidate to become the next active rotuer and sends periodic hello messages.",
+      "highlighted": "false",
+      "alignedIds": [
+        70
+      ]
+    },
+    {
+      "page": 3,
+      "ids": [
+        177
+      ],
+      "stem": "Refer to the exhibit. A network administrator configured routers R1 and R2 as part of HSRP group 1. After the routers have been reloaded, a user on Host1 complained of lack of connectivity to the Internet The network administrator issued the show standby brief command on both routers to verify the HSRP operations. In addition, the administrator observed the ARP table on Host1. Which entry should be seen in the ARP table on Host1 in order to gain connectivity to the Internet?",
+      "highlighted": "thevirtualipaddressandthevirtualmacaddressforthehsrpgroup1",
+      "alignedIds": [
+        177
+      ]
+    },
+    {
+      "page": 3,
+      "ids": [
+        68
+      ],
+      "stem": "Which one Cisco solution help prevent DHCP starvation attacks?",
+      "highlighted": "",
+      "alignedIds": []
+    },
+    {
+      "page": 3,
+      "ids": [
+        60,
+        183
+      ],
+      "stem": "Which one is a HSRP state for a router?",
+      "highlighted": "listen",
+      "alignedIds": [
+        60,
+        183
+      ]
+    },
+    {
+      "page": 3,
+      "ids": [
+        11
+      ],
+      "stem": "Which FHRP implementation is a Cisco-proprietary protocol that suppports IPv4 load sharing?",
+      "highlighted": "glbp",
+      "alignedIds": [
+        11
+      ]
+    },
+    {
+      "page": 4,
+      "ids": [
+        74
+      ],
+      "stem": "HSRP a non-proprietary election protocol that dynamically assigns responsibility for one or more virtual routers to the VRRP routers on an IPv4 LAN.",
+      "highlighted": "false",
+      "alignedIds": [
+        74
+      ]
+    },
+    {
+      "page": 4,
+      "ids": [
+        178
+      ],
+      "stem": "Which one is the description for VRRP?",
+      "highlighted": "anopenstandardfhrpthatprovidesredundancythroughuseofavirtualroutersmasterandoneormorebackups",
+      "alignedIds": [
+        178
+      ]
+    },
+    {
+      "page": 4,
+      "ids": [
+        209
+      ],
+      "stem": "Which FHRP implementation is a Cisco-proprietary protocol that suppports IPv4 load sharing?",
+      "highlighted": "glbp",
+      "alignedIds": [
+        209
+      ]
+    },
+    {
+      "page": 4,
+      "ids": [
+        67
+      ],
+      "stem": "Which one is a requirement for an HSRP group?",
+      "highlighted": "oneormorestandbyrouters",
+      "alignedIds": [
+        67
+      ]
+    },
+    {
+      "page": 4,
+      "ids": [
+        62
+      ],
+      "stem": "What is the description of Accounting in AAA?",
+      "highlighted": "recordwhatusersdoandwhattheyaccess",
+      "alignedIds": [
+        62
+      ]
+    },
+    {
+      "page": 4,
+      "ids": [
+        19
+      ],
+      "stem": "What represents a best practice concerning discovery protocols such as CDP and LLDP on network devices?",
+      "highlighted": "disablebothprotocolsonallinterfaceswheretheyarenotrequired",
+      "alignedIds": [
+        19
+      ]
+    },
+    {
+      "page": 4,
+      "ids": [
+        137
+      ],
+      "stem": "Which access control component, implementation, or protocol collects and reports usage data?",
+      "highlighted": "accounting",
+      "alignedIds": [
+        137
+      ]
+    },
+    {
+      "page": 4,
+      "ids": [
+        5
+      ],
+      "stem": "Which access control component, implementation, or protocol controls what users can do on the network?",
+      "highlighted": "authorization",
+      "alignedIds": [
+        5
+      ]
+    },
+    {
+      "page": 4,
+      "ids": [
+        187
+      ],
+      "stem": "Which component of AAA allows an administrator to track individuals who access network resources and any changes that are made to those resources?",
+      "highlighted": "accounting",
+      "alignedIds": [
+        187
+      ]
+    },
+    {
+      "page": 4,
+      "ids": [
+        133
+      ],
+      "stem": "Refer to the exhibit. Which is used in the topology?",
+      "highlighted": "etherchannel",
+      "alignedIds": [
+        133
+      ]
+    },
+    {
+      "page": 5,
+      "ids": [
+        16
+      ],
+      "stem": "Data Breach is a coordinated attack from many devices, called zombies, with the intention of degrading or halting public access to an organization\u2019s website and resources.",
+      "highlighted": "false",
+      "alignedIds": [
+        16
+      ]
+    },
+    {
+      "page": 5,
+      "ids": [
+        38
+      ],
+      "stem": "Next-Generation Firewall or NGFW includes AAA services.",
+      "highlighted": "false",
+      "alignedIds": [
+        38
+      ]
+    },
+    {
+      "page": 5,
+      "ids": [
+        65
+      ],
+      "stem": "Which one is a technique for mitigating VLAN attacks?",
+      "highlighted": "disabledtp",
+      "alignedIds": [
+        65
+      ]
+    },
+    {
+      "page": 5,
+      "ids": [
+        27
+      ],
+      "stem": "What is new in HSRPv2?",
+      "highlighted": "agreaternumberinhsrpgroupfield",
+      "alignedIds": [
+        27
+      ]
+    },
+    {
+      "page": 5,
+      "ids": [
+        29
+      ],
+      "stem": "This command shows the list of ports that are involved in the port channel and the time since the ports were bundled.",
+      "highlighted": "showetherchannelportchannel",
+      "alignedIds": [
+        29
+      ]
+    },
+    {
+      "page": 5,
+      "ids": [
+        57
+      ],
+      "stem": "Which one command can be used to enable BPDU guard on a switch?",
+      "highlighted": "s1configifspanningtreebpduguardenable",
+      "alignedIds": [
+        57
+      ]
+    },
+    {
+      "page": 5,
+      "ids": [
+        71
+      ],
+      "stem": "Refer to the exhibit. A network engineer is troubleshooting host connectivity on a LAN that uses a first hop redundancy protocol. Which IPv4 gateway address should be configured on the host?",
+      "highlighted": "1921682100",
+      "alignedIds": [
+        71
+      ]
+    },
+    {
+      "page": 5,
+      "ids": [
+        51
+      ],
+      "stem": "Which access control component, implementation, or protocol logs EXEC and configuration commands configured by a user?",
+      "highlighted": "accounting",
+      "alignedIds": [
+        51
+      ]
+    },
+    {
+      "page": 5,
+      "ids": [
+        9
+      ],
+      "stem": "Virtual Private Network include AAA services.",
+      "highlighted": "false",
+      "alignedIds": [
+        9
+      ]
+    },
+    {
+      "page": 5,
+      "ids": [
+        72
+      ],
+      "stem": "In FHRP terminology, what represents a set of routers that present the illusion of a single router to hosts?",
+      "highlighted": "virtualrouter",
+      "alignedIds": [
+        72
+      ]
+    },
+    {
+      "page": 5,
+      "ids": [
+        67
+      ],
+      "stem": "Which one is a requirement for an HSRP group?",
+      "highlighted": "oneormorestandbyrouters",
+      "alignedIds": [
+        67
+      ]
+    },
+    {
+      "page": 6,
+      "ids": [
+        45
+      ],
+      "stem": "Which access control component, implementation, or protocol controls who is permitted to access a network?",
+      "highlighted": "authentication",
+      "alignedIds": [
+        45
+      ]
+    },
+    {
+      "page": 6,
+      "ids": [
+        185
+      ],
+      "stem": "As part of the new security policy, all switches on the network are configured to automatically learn MAC addresses for each port. All running configurations are saved at the start and close of every business day. A severe thunderstorm causes an extended power outage several hours after the close of business. When the switches are brought back online, the dynamically learned MAC addresses are retained. Which port security configuration enabled this?",
+      "highlighted": "stickysecuremacaddresses",
+      "alignedIds": [
+        185
+      ]
+    },
+    {
+      "page": 6,
+      "ids": [
+        144
+      ],
+      "stem": "A network administrator needs to configure port security on a switch. Which Statement is true?",
+      "highlighted": "whendynamicmacaddresslearningisenabledonaninterfacetheswitchcanlearnnewaddressesuptothemaximumdefined",
+      "alignedIds": [
+        144
+      ]
+    },
+    {
+      "page": 6,
+      "ids": [
+        153
+      ],
+      "stem": "Refer to the exhibit. The following commands are executed on interface fa0/1 of 2950Switch. 2950Switch(config-if)#switchport port-security 2950Switch(config-if)#switchport port-security mac-address sticky The Ethernet frame that is shown arrives on interface fa0/1. What functions will occur when this frame is received by 2950Switch?",
+      "highlighted": "",
+      "alignedIds": []
+    },
+    {
+      "page": 6,
+      "ids": [
+        30
+      ],
+      "stem": "What is the description of Authorization in AAA?",
+      "highlighted": "determineswhatresourcesuserscanaccessortheoperationstheyareallowedtoperform",
+      "alignedIds": [
+        30
+      ]
+    },
+    {
+      "page": 6,
+      "ids": [
+        189
+      ],
+      "stem": "Refer to the exhibit. A junior network administrator was given the task of configuring port security on SwitchA to allow only PC_A to access the switched network through port fa0/1. If any other device is detected, the port is to drop frames from this device. The administrator configured the interface and tested it with successful pings from PC_A to RouterA, and then observes the output from these two show commands. Which change is necessary for SwitchA to meet the requirements?",
+      "highlighted": "portsecurityneedstobeconfiguredtoallowonlyonelearnedmacaddress",
+      "alignedIds": [
+        189
+      ]
+    },
+    {
+      "page": 6,
+      "ids": [
+        66
+      ],
+      "stem": "Which set of commands is recommended to prevent the use of a hub in the access layer?",
+      "highlighted": "switchconfigifswitchportmodeaccessswitchconfigifswitchportportsecuritymaximum1",
+      "alignedIds": [
+        66
+      ]
+    },
+    {
+      "page": 7,
+      "ids": [
+        204
+      ],
+      "stem": "Refer to the exhibit. PC1 and PC2 should be able to obtain IP address assignments from the DHCP server. How many ports among switches should be assigned as trusted ports as part of the DHCP snooping configuration?",
+      "highlighted": "7",
+      "alignedIds": [
+        204
+      ]
+    },
+    {
+      "page": 7,
+      "ids": [
+        76
+      ],
+      "stem": "What security benefit is gained from enabling BPDU guard on PortFast enabled interfaces?",
+      "highlighted": "preventingrogueswitchesfrombeingaddedtothenetwork",
+      "alignedIds": [
+        76
+      ]
+    },
+    {
+      "page": 7,
+      "ids": [
+        62
+      ],
+      "stem": "What is the description of Accounting in AAA?",
+      "highlighted": "recordwhatusersdoandwhattheyaccess",
+      "alignedIds": [
+        62
+      ]
+    },
+    {
+      "page": 7,
+      "ids": [
+        180
+      ],
+      "stem": "Refer to the exhibit. Port Fa0/2 has already been configured appropriately. The IP phone and PC work properly. Which switch configuration would be most appropriate for port Fa0/2 if the network administrator has the following goals? No one is allowed to disconnect the IP phone or the PC and connect some other wired device. If a different device is connected, port Fa0/2 is shut down. The switch should automatically detect the MAC address of the IP phone and the PC and add those addresses to the running configuration.",
+      "highlighted": "swaconfigifswitchportportsecurityswaconfigifswitchportportsecuritymaximum2swaconfigifswitchportportsecuritymacaddresssticky",
+      "alignedIds": [
+        180
+      ]
+    },
+    {
+      "page": 7,
+      "ids": [
+        23
+      ],
+      "stem": "FHRP provide alternate default gateways in switched networks where two or more routers are connected to the same VLANs.",
+      "highlighted": "true",
+      "alignedIds": [
+        23
+      ]
+    },
+    {
+      "page": 7,
+      "ids": [
+        46
+      ],
+      "stem": "Which one is a HSRP state for a router?",
+      "highlighted": "learn",
+      "alignedIds": [
+        46
+      ]
+    },
+    {
+      "page": 7,
+      "ids": [
+        28,
+        181
+      ],
+      "stem": "Which feature or configuration on a switch makes it vulnerable to VLAN double-tagging attacks?",
+      "highlighted": "thenativevlanofthetrunkingportbeingthesameasauservlan",
+      "alignedIds": [
+        28,
+        181
+      ]
+    },
+    {
+      "page": 8,
+      "ids": [
+        78
+      ],
+      "stem": "By default, how many MAC addresses are permitted to be learned on a switch port with port security enabled?",
+      "highlighted": "1",
+      "alignedIds": [
+        78
+      ]
+    },
+    {
+      "page": 8,
+      "ids": [
+        79
+      ],
+      "stem": "GLBP is a Cisco-proprietary FHRP that protects data traffic from a failed router or circuit",
+      "highlighted": "true",
+      "alignedIds": [
+        79
+      ]
+    },
+    {
+      "page": 8,
+      "ids": [
+        26
+      ],
+      "stem": "Which one is a HSRP state for a router?",
+      "highlighted": "speak",
+      "alignedIds": [
+        26
+      ]
+    },
+    {
+      "page": 8,
+      "ids": [
+        192
+      ],
+      "stem": "The active and standby HSRP routers send hello packets to the HSRP group multicast address every 3 seconds by default.",
+      "highlighted": "true",
+      "alignedIds": [
+        192
+      ]
+    },
+    {
+      "page": 8,
+      "ids": [
+        135
+      ],
+      "stem": "VPN or Virtual Private Network provides stateful packet inspection, application visibility and control.",
+      "highlighted": "false",
+      "alignedIds": [
+        135
+      ]
+    },
+    {
+      "page": 8,
+      "ids": [
+        141
+      ],
+      "stem": "A network administrator enters the following commands on the switch SW1. SW1(config)# interface range fa0/5 \u2013 10 SW1(config-if)# ip dhcp snooping limit rate 6 What is the effect after these commands are entered?",
+      "highlighted": "fastethernetports5through10canreceiveupto6dhcpdiscoverymessagespersecond",
+      "alignedIds": [
+        141
+      ]
+    },
+    {
+      "page": 8,
+      "ids": [
+        83
+      ],
+      "stem": "Which one is a Cisco product that focuses on endpoint security solutions?",
+      "highlighted": "emailsecurityappliance",
+      "alignedIds": [
+        83
+      ]
+    },
+    {
+      "page": 8,
+      "ids": [
+        7
+      ],
+      "stem": "This command is used to check what port channel are configured on a switch.",
+      "highlighted": "showetherchannelsummary",
+      "alignedIds": [
+        7
+      ]
+    },
+    {
+      "page": 8,
+      "ids": [
+        40
+      ],
+      "stem": "Which one Cisco solution help prevent DHCP starvation attacks?",
+      "highlighted": "portsecurity",
+      "alignedIds": [
+        40
+      ]
+    },
+    {
+      "page": 8,
+      "ids": [
+        147
+      ],
+      "stem": "Refer to the exhibit. What can be determined about port security from the information that is shown?",
+      "highlighted": "theportviolationmodeisthedefaultforanyportthathasportsecurityenabled",
+      "alignedIds": [
+        147
+      ]
+    },
+    {
+      "page": 9,
+      "ids": [
+        20
+      ],
+      "stem": "VRRPv2 is a Cisco-proprietary FHRP that is designed to allow for transparent failover of a first-hop IPv4 device.",
+      "highlighted": "false",
+      "alignedIds": [
+        20
+      ]
+    },
+    {
+      "page": 9,
+      "ids": [
+        6
+      ],
+      "stem": "Which statement is true regarding the use of PAgP to create EtherChannels?",
+      "highlighted": "itisciscoproprietary",
+      "alignedIds": [
+        6
+      ]
+    },
+    {
+      "page": 9,
+      "ids": [
+        1
+      ],
+      "stem": "Which type of VLAN-hopping attack may be prevented by designating an unused VLAN as the native VLAN?",
+      "highlighted": "vlandoubletagging",
+      "alignedIds": [
+        1
+      ]
+    },
+    {
+      "page": 9,
+      "ids": [
+        179
+      ],
+      "stem": "Network Access Control or NAC includes AAA services.",
+      "highlighted": "true",
+      "alignedIds": [
+        179
+      ]
+    },
+    {
+      "page": 9,
+      "ids": [
+        149
+      ],
+      "stem": "Which FHRP implementation is Cisco-proprietary and permits only one router in a group to forward IPv6 packets?",
+      "highlighted": "hsrpforipv6",
+      "alignedIds": [
+        149
+      ]
+    },
+    {
+      "page": 9,
+      "ids": [
+        55
+      ],
+      "stem": "Refer to the exhibit. Port security has been configured on the Fa 0/12 interface of switch S1. What action will occur when PC1 is attached to switch S1 with the applied configuration?",
+      "highlighted": "framesfrompc1willcausetheinterfacetoshutdownimmediatelyandalogentrywillbemade",
+      "alignedIds": [
+        55
+      ]
+    },
+    {
+      "page": 9,
+      "ids": [
+        24
+      ],
+      "stem": "Which feature on a switch makes it vulnerable to VLAN hopping attacks?",
+      "highlighted": "theautomatictrunkingportfeatureenabledforallportsbydefault",
+      "alignedIds": [
+        24
+      ]
+    },
+    {
+      "page": 9,
+      "ids": [
+        81
+      ],
+      "stem": "Which protocol is the Cisco proprietary implementation of FHRP?",
+      "highlighted": "hsrp",
+      "alignedIds": [
+        81
+      ]
+    },
+    {
+      "page": 9,
+      "ids": [
+        110,
+        168
+      ],
+      "stem": "A technician is troubleshooting a slow WLAN that consists of 802.11b and 802.11g devices . A new 802.11n/ac dual-band router has been deployed on the network to replace the old 802.11g router. What can the technician do to address the slow wireless speed?",
+      "highlighted": "splitthewirelesstrafficbetweenthe80211n24ghzbandandthe5ghzband",
+      "alignedIds": [
+        168
+      ]
+    },
+    {
+      "page": 10,
+      "ids": [
+        157
+      ],
+      "stem": "Which type of wireless network uses transmitters to cover a medium-sized network, usually up to 300 feet (91.4 meters)?",
+      "highlighted": "wirelesslocalareanetwork",
+      "alignedIds": [
+        157
+      ]
+    },
+    {
+      "page": 10,
+      "ids": [
+        102
+      ],
+      "stem": "Which of the following answers apply to the IEEE 802.11g wireless standard?",
+      "highlighted": "maximumdatasignalingrateof54mbps",
+      "alignedIds": [
+        102
+      ]
+    },
+    {
+      "page": 10,
+      "ids": [
+        171
+      ],
+      "stem": "A network administrator deploys a wireless router in a small law firm. Employee laptops join the WLAN and receive IP addresses in the 10.0.10.0/24 network. Which service is used on the wireless router to allow the employee laptops to access the internet?",
+      "highlighted": "nat",
+      "alignedIds": [
+        171
+      ]
+    },
+    {
+      "page": 10,
+      "ids": [
+        91
+      ],
+      "stem": "Wi-Fi Alliance \u2013 Promotes the growth and acceptance of WLANs. It is an association of vendors whose objective is to improve the interoperability of products that are based on the 802.11 standard",
+      "highlighted": "true",
+      "alignedIds": [
+        91
+      ]
+    },
+    {
+      "page": 10,
+      "ids": [
+        166
+      ],
+      "stem": "Which one parameter would need to be changed if best practices are being implemented for a home wireless AP?",
+      "highlighted": "ssid",
+      "alignedIds": [
+        166
+      ]
+    },
+    {
+      "page": 10,
+      "ids": [
+        199
+      ],
+      "stem": "The Cisco Wireless Controller (WLC) series devices provide a single solution to configure, manage and support corporate wireless networks, regardless of their size and locations.",
+      "highlighted": "true",
+      "alignedIds": [
+        199
+      ]
+    },
+    {
+      "page": 10,
+      "ids": [
+        163
+      ],
+      "stem": "Which is a method that is used by a wireless NIC to discover an AP?",
+      "highlighted": "transmittingaproberequest",
+      "alignedIds": [
+        163
+      ]
+    },
+    {
+      "page": 10,
+      "ids": [
+        202
+      ],
+      "stem": "A network administrator is working to improve WLAN performance on a dual-band wireless router. What is a simple way to achieve a split-the-traffic result?",
+      "highlighted": "makesurethatdifferentssidsareusedforthe24ghzand5ghzbands",
+      "alignedIds": [
+        202
+      ]
+    },
+    {
+      "page": 10,
+      "ids": [
+        123
+      ],
+      "stem": "The Network Summary page in Cisco WLC is a dashboard that provides a quick overview of configured wireless networks, associated access points (APs), and active clients.",
+      "highlighted": "true",
+      "alignedIds": [
+        123
+      ]
+    },
+    {
+      "page": 10,
+      "ids": [
+        170
+      ],
+      "stem": "Which wireless network topology would be used by network engineers to provide a wireless network for an entire college building?",
+      "highlighted": "infrastructure",
+      "alignedIds": [
+        170
+      ]
+    },
+    {
+      "page": 10,
+      "ids": [
+        84
+      ],
+      "stem": "Which WAN topology is most appropriate for a centrally located server farm with several satellite branches?",
+      "highlighted": "hubandspoke",
+      "alignedIds": [
+        84
+      ]
+    },
+    {
+      "page": 10,
+      "ids": [
+        205
+      ],
+      "stem": "A technician is configuring the channel on a wireless router to either 1, 6, or 11. What is the purpose of adjusting the channel?",
+      "highlighted": "toavoidinterferencefromnearbywirelessdevices",
+      "alignedIds": [
+        205
+      ]
+    },
+    {
+      "page": 11,
+      "ids": [
+        96
+      ],
+      "stem": "On a Cisco 3504 WLC Summary page ( Advanced > Summary ), which tab allows a network administrator to access and configure a WLAN for a specific security option such as WPA2?",
+      "highlighted": "wlans",
+      "alignedIds": [
+        96
+      ]
+    },
+    {
+      "page": 11,
+      "ids": [
+        174
+      ],
+      "stem": "Which one is a characteristic of IEEE 802.11b?",
+      "highlighted": "maximumdatasignalingrateof11mbps",
+      "alignedIds": [
+        174
+      ]
+    },
+    {
+      "page": 11,
+      "ids": [
+        108
+      ],
+      "stem": "Which one is a broadband wireless technology?",
+      "highlighted": "municipalwifi",
+      "alignedIds": [
+        108
+      ]
+    },
+    {
+      "page": 11,
+      "ids": [
+        201
+      ],
+      "stem": "Which multiple access technique is used by IEEE 802.11 standard for wireless LAN?",
+      "highlighted": "csmaca",
+      "alignedIds": [
+        201
+      ]
+    },
+    {
+      "page": 11,
+      "ids": [
+        195
+      ],
+      "stem": "You can configure your WLAN Router through web browser.",
+      "highlighted": "true",
+      "alignedIds": [
+        195
+      ]
+    },
+    {
+      "page": 11,
+      "ids": [
+        122
+      ],
+      "stem": "Which of the following are characteristic features of the IEEE 802.11n wireless standard?",
+      "highlighted": "24ghzfrequencyband",
+      "alignedIds": [
+        122
+      ]
+    },
+    {
+      "page": 11,
+      "ids": [
+        127
+      ],
+      "stem": "Which service can be used on a wireless router to prioritize network traffic among different types of applications so that voice and video data are prioritized over email and web data?",
+      "highlighted": "qos",
+      "alignedIds": [
+        127
+      ]
+    },
+    {
+      "page": 11,
+      "ids": [
+        193
+      ],
+      "stem": "Which is characteristic of satellite internet connection?",
+      "highlighted": "theyarefrequentlyusedbyruraluserswithoutaccesstootherhighspeedconnections",
+      "alignedIds": [
+        193
+      ]
+    },
+    {
+      "page": 11,
+      "ids": [
+        95,
+        172
+      ],
+      "stem": ". A network administrator of a college is configuring the WLAN user authentication process. Wireless users are required to enter username and password credentials that will be verified by a server. Which server would provide such service?",
+      "highlighted": "radius",
+      "alignedIds": [
+        95,
+        172
+      ]
+    },
+    {
+      "page": 11,
+      "ids": [
+        93
+      ],
+      "stem": "Which of the following answers describe features of the IEEE 802.11ac wireless standard?",
+      "highlighted": "50ghzfrequencyband",
+      "alignedIds": [
+        93
+      ]
+    },
+    {
+      "page": 11,
+      "ids": [
+        94
+      ],
+      "stem": "Which of the following answers apply to the IEEE 802.11a wireless standard?",
+      "highlighted": "50ghzfrequencyband",
+      "alignedIds": [
+        94
+      ]
+    },
+    {
+      "page": 11,
+      "ids": [
+        117
+      ],
+      "stem": "Controller-based APs \u2013 Also known as lightweight APs (LAPs). Use Lightweight Access Point Protocol (LWAPP) to communicate with a LWAN controller (WLC). Each LAP is automatically configured and managed by the WLC.",
+      "highlighted": "true",
+      "alignedIds": [
+        117
+      ]
+    },
+    {
+      "page": 12,
+      "ids": [
+        98
+      ],
+      "stem": "Which one is a characteristic of IEEE 802.11b?",
+      "highlighted": "24ghzfrequencyrange",
+      "alignedIds": [
+        98
+      ]
+    },
+    {
+      "page": 12,
+      "ids": [
+        113
+      ],
+      "stem": "A wireless network interface controller can work in _______",
+      "highlighted": "bothinfrastructuremodeandadhocmode",
+      "alignedIds": [
+        113
+      ]
+    },
+    {
+      "page": 12,
+      "ids": [
+        92
+      ],
+      "stem": "Which step is required before creating a new WLAN on a Cisco 3500 series WLC?",
+      "highlighted": "createanewvlaninterface",
+      "alignedIds": [
+        92
+      ]
+    },
+    {
+      "page": 12,
+      "ids": [
+        124
+      ],
+      "stem": "Which type of wireless network commonly uses Bluetooth or ZigBee devices?",
+      "highlighted": "wirelesspersonalareanetwork",
+      "alignedIds": [
+        124
+      ]
+    },
+    {
+      "page": 12,
+      "ids": [
+        198
+      ],
+      "stem": "Which one is a broadband wireless technology?",
+      "highlighted": "",
+      "alignedIds": []
+    },
+    {
+      "page": 12,
+      "ids": [
+        89
+      ],
+      "stem": "A laptop cannot connect to a wireless access point. Which troubleshooting step should be taken first?",
+      "highlighted": "ensurethatthewirelessssidischosen",
+      "alignedIds": [
+        89
+      ]
+    },
+    {
+      "page": 12,
+      "ids": [
+        164
+      ],
+      "stem": "A technician is about to install and configure a wireless network at a small branch office. What is the first security measure the technician should apply immediately upon powering up the wireless router?",
+      "highlighted": "changethedefaultusernameandpasswordofthewirelessrouter",
+      "alignedIds": [
+        164
+      ]
+    },
+    {
+      "page": 12,
+      "ids": [
+        161
+      ],
+      "stem": "What type of wireless antenna is best suited for providing coverage in large open spaces, such as hallways or large conference rooms?",
+      "highlighted": "omnidirectional",
+      "alignedIds": [
+        161
+      ]
+    },
+    {
+      "page": 12,
+      "ids": [
+        156
+      ],
+      "stem": "Which is characteristic of satellite internet connection?",
+      "highlighted": "theiruploadspeedisabout10percentoftheirdownloadspeed",
+      "alignedIds": [
+        156
+      ]
+    },
+    {
+      "page": 12,
+      "ids": [
+        154
+      ],
+      "stem": "Wireless LAN Controllers have Layer 2 switch ports and virtual interfaces that are created in software and are very similar to VLAN interfaces.",
+      "highlighted": "true",
+      "alignedIds": [
+        154
+      ]
+    },
+    {
+      "page": 12,
+      "ids": [
+        197
+      ],
+      "stem": "Which type of wireless network uses transmitters to provide wireless service over a large urban region?",
+      "highlighted": "wirelessmetropolitanareanetwork",
+      "alignedIds": [
+        197
+      ]
+    },
+    {
+      "page": 12,
+      "ids": [
+        90
+      ],
+      "stem": "Which one is a broadband wireless technology?",
+      "highlighted": "wimax",
+      "alignedIds": [
+        90
+      ]
+    },
+    {
+      "page": 13,
+      "ids": [
+        110,
+        168
+      ],
+      "stem": "A technician is troubleshooting a slow WLAN that consists of 802.11b and 802.11g devices . A new 802.11n/ac dual-band router has been deployed on the network to replace the old 802.11g router. What can the technician do to address the slow wireless speed?",
+      "highlighted": "updatethefirmwareonthenewrouter",
+      "alignedIds": [
+        110
+      ]
+    },
+    {
+      "page": 13,
+      "ids": [
+        200
+      ],
+      "stem": "Which is characteristic of satellite internet connection?",
+      "highlighted": "atheyareusuallyatleast10timesfasterthananalogmodemconnections",
+      "alignedIds": [
+        200
+      ]
+    },
+    {
+      "page": 13,
+      "ids": [
+        112
+      ],
+      "stem": "Which one parameter would need to be changed if best practices are being implemented for a home wireless AP?",
+      "highlighted": "appassword",
+      "alignedIds": [
+        112
+      ]
+    },
+    {
+      "page": 13,
+      "ids": [
+        105
+      ],
+      "stem": "The company handbook states that employees cannot have microwave ovens in their offices. Instead, all employees must use the microwave ovens located in the employee cafeteria. What wireless security risk is the company trying to avoid?",
+      "highlighted": "accidentalinterference",
+      "alignedIds": [
+        105
+      ]
+    },
+    {
+      "page": 13,
+      "ids": [
+        173
+      ],
+      "stem": "Which of the following answers apply to the IEEE 802.11g wireless standard?",
+      "highlighted": "24ghzfrequencyrange",
+      "alignedIds": [
+        173
+      ]
+    },
+    {
+      "page": 13,
+      "ids": [
+        160
+      ],
+      "stem": "Which type of wireless network often makes use of devices mounted on buildings?",
+      "highlighted": "wirelessmetropolitanareanetwork",
+      "alignedIds": [
+        160
+      ]
+    },
+    {
+      "page": 13,
+      "ids": [
+        165
+      ],
+      "stem": "Autonomous APs \u2013 Standalone devices configured through a command line interface or GUI. Each autonomous AP acts independently of the others and is configured and managed manually by an administrator.",
+      "highlighted": "true",
+      "alignedIds": [
+        165
+      ]
+    },
+    {
+      "page": 13,
+      "ids": [
+        88
+      ],
+      "stem": "What is the function provided by CAPWAP protocol in a corporate wireless network?",
+      "highlighted": "capwapprovidestheencapsulationandforwardingofwirelessusertrafficbetweenanaccesspointandawirelesslancontroller",
+      "alignedIds": [
+        88
+      ]
+    },
+    {
+      "page": 13,
+      "ids": [],
+      "stem": "A QoS feature of WLAN Router varies.",
+      "highlighted": "true",
+      "alignedIds": []
+    },
+    {
+      "page": 13,
+      "ids": [
+        92
+      ],
+      "stem": "Which step is required before creating a new WLAN on a Cisco 3500 series WLC?",
+      "highlighted": "createanewvlaninterface",
+      "alignedIds": [
+        92
+      ]
+    },
+    {
+      "page": 13,
+      "ids": [
+        110,
+        168
+      ],
+      "stem": "A technician is troubleshooting a slow WLAN that consists of 802.11b and 802.11g devices . A new 802.11n/ac dual-band router has been deployed on the network to replace the old 802.11g router. What can the technician do to address the slow wireless speed?",
+      "highlighted": "updatethefirmwareonthenewrouter",
+      "alignedIds": [
+        110
+      ]
+    },
+    {
+      "page": 14,
+      "ids": [
+        115
+      ],
+      "stem": "Which type of wireless network is suitable for use in a home or office?",
+      "highlighted": "wirelesslocalareanetwork",
+      "alignedIds": [
+        115
+      ]
+    },
+    {
+      "page": 14,
+      "ids": [
+        139
+      ],
+      "stem": "Which one is a protocol that is used by AAA to authenticate users against a central database of usernames and password?",
+      "highlighted": "radius",
+      "alignedIds": [
+        139
+      ]
+    },
+    {
+      "page": 14,
+      "ids": [
+        129
+      ],
+      "stem": "VRRPv2 is a non-proprietary election protocol that dynamically assigns responsibility for one or more virtual routers to the VRRP routers on an IPv4 LAN.",
+      "highlighted": "true",
+      "alignedIds": [
+        129
+      ]
+    },
+    {
+      "page": 14,
+      "ids": [
+        175
+      ],
+      "stem": "Which authentication method stores usernames and passwords in the router and is ideal for small networks?",
+      "highlighted": "localaaa",
+      "alignedIds": [
+        175
+      ]
+    },
+    {
+      "page": 14,
+      "ids": [
+        17
+      ],
+      "stem": "Which FHRP implementation is a Cisco-proprietary protocol that suppports IPv6 load balancing?",
+      "highlighted": "glbpforipv6",
+      "alignedIds": [
+        17
+      ]
+    },
+    {
+      "page": 14,
+      "ids": [
+        136
+      ],
+      "stem": "Which FHRP implementation is a nonproprietary IPv4-only election protocol with limited scalability?",
+      "highlighted": "vrrpv2",
+      "alignedIds": [
+        136
+      ]
+    },
+    {
+      "page": 14,
+      "ids": [
+        73
+      ],
+      "stem": "Which value to use in HSRP protocol election process?",
+      "highlighted": "priority",
+      "alignedIds": [
+        73
+      ]
+    },
+    {
+      "page": 14,
+      "ids": [
+        150
+      ],
+      "stem": "Standby is an HRSP State meaning that the router is a candidate to become the next active rotuer and sends periodic hello messages.",
+      "highlighted": "true",
+      "alignedIds": [
+        150
+      ]
+    },
+    {
+      "page": 14,
+      "ids": [
+        36
+      ],
+      "stem": "Which access control component, implementation, or protocol indicates success or failure of a client-requested service with a PASS or FAIL message?",
+      "highlighted": "authorization",
+      "alignedIds": [
+        36
+      ]
+    },
+    {
+      "page": 14,
+      "ids": [
+        203
+      ],
+      "stem": "What is the step 4 of sequence of stages that occur during the HSRP failover process.",
+      "highlighted": "thenewforwardingrouterassumesboththeipandmacaddressesofthevirtualrouter",
+      "alignedIds": [
+        203
+      ]
+    },
+    {
+      "page": 14,
+      "ids": [
+        15
+      ],
+      "stem": "Refer to the exhibit. What activity is the router doing?",
+      "highlighted": "therouteriscurrentlyforwardingpackets",
+      "alignedIds": [
+        15
+      ]
+    },
+    {
+      "page": 15,
+      "ids": [
+        58
+      ],
+      "stem": "Which one is a requirement for an HSRP group?",
+      "highlighted": "exactlyoneactiverouter",
+      "alignedIds": [
+        58
+      ]
+    },
+    {
+      "page": 15,
+      "ids": [
+        3
+      ],
+      "stem": "What is the step 3 of sequence of stages that occur during the HSRP failover process.",
+      "highlighted": "thestandbyrouterassumestheroleoftheforwardingrouter",
+      "alignedIds": [
+        3
+      ]
+    },
+    {
+      "page": 15,
+      "ids": [
+        130
+      ],
+      "stem": "What is the step 2 of sequence of stages that occur during the HSRP failover process.",
+      "highlighted": "thestandbyrouterstopsseeinghellomessagesfromtheforwardingrouter",
+      "alignedIds": [
+        130
+      ]
+    },
+    {
+      "page": 15,
+      "ids": [
+        182
+      ],
+      "stem": "HSRP is a Cisco-proprietary FHRP that is designed to allow for transparent failover of a first-hop IPv4 device.",
+      "highlighted": "true",
+      "alignedIds": [
+        182
+      ]
+    },
+    {
+      "page": 15,
+      "ids": [
+        146
+      ],
+      "stem": "What is the description of Authentication in AAA?",
+      "highlighted": "provesthatusersarewhotheysaytheyare",
+      "alignedIds": [
+        146
+      ]
+    },
+    {
+      "page": 15,
+      "ids": [
+        44
+      ],
+      "stem": "Which one is the description of GLBP?",
+      "highlighted": "aciscoproprietaryfhrpthatprovidesloadsharinginadditiontoredundancy",
+      "alignedIds": [
+        44
+      ]
+    },
+    {
+      "page": 15,
+      "ids": [
+        27
+      ],
+      "stem": "What is new in HSRPv2?",
+      "highlighted": "agreaternumberinhsrpgroupfield",
+      "alignedIds": [
+        27
+      ]
+    },
+    {
+      "page": 15,
+      "ids": [
+        53,
+        152
+      ],
+      "stem": "Which command correctly verify whether port security has been configured on port FastEthernet 0/12 on a switch?",
+      "highlighted": "sw1showportsecurityinterfacefastethernet012",
+      "alignedIds": [
+        53
+      ]
+    },
+    {
+      "page": 15,
+      "ids": [
+        52
+      ],
+      "stem": "What is the step 1 of sequence of stages that occur during the HSRP failover process.",
+      "highlighted": "theforwardingrouterfails",
+      "alignedIds": [
+        52
+      ]
+    },
+    {
+      "page": 15,
+      "ids": [
+        4
+      ],
+      "stem": "Which one is a technique for mitigating VLAN attacks?",
+      "highlighted": "enabletrunkingmanually",
+      "alignedIds": [
+        4
+      ]
+    },
+    {
+      "page": 15,
+      "ids": [
+        142
+      ],
+      "stem": "Select the action that results from executing these commands: Switch(config-if)# switchport port-security Switch(config-if)# switchport port-security mac-address sticky",
+      "highlighted": "adynamicallylearnedmacaddressissavedintherunningconfigurationfile",
+      "alignedIds": [
+        142
+      ]
+    },
+    {
+      "page": 16,
+      "ids": [
+        191
+      ],
+      "stem": "Which one command can be used to enable BPDU guard on a switch?",
+      "highlighted": "s1configspanningtreeportfastbpduguarddefault",
+      "alignedIds": [
+        191
+      ]
+    },
+    {
+      "page": 16,
+      "ids": [
+        12
+      ],
+      "stem": "Which access control component, implementation, or protocol is based on device roles of supplicant, authenticator, and authentication server?",
+      "highlighted": "8021x",
+      "alignedIds": [
+        12
+      ]
+    },
+    {
+      "page": 16,
+      "ids": [
+        143
+      ],
+      "stem": "A network administrator is configuring DAI on a switch with the command ip arp inspection validate src-mac. What is the purpose of this configuration command?",
+      "highlighted": "itchecksthesourcemacaddressintheethernetheaderagainstthesendermacaddressinthearpbody",
+      "alignedIds": [
+        143
+      ]
+    },
+    {
+      "page": 16,
+      "ids": [
+        186
+      ],
+      "stem": "A network administrator is configuring port security on a Cisco switch. The company security policy specifies that when a violation occurs, packets with unknown source addresses should be dropped and no notification should be sent. Which violation mode should be configured on the interfaces?",
+      "highlighted": "protect",
+      "alignedIds": [
+        186
+      ]
+    },
+    {
+      "page": 16,
+      "ids": [
+        82
+      ],
+      "stem": "Refer to the exhibit. The following commands are executed on interface fa0/1 of 2950Switch. 2950Switch(config-if)#switchport port-security 2950Switch(config-if)#switchport port-security mac-address sticky The Ethernet frame that is shown arrives on interface fa0/1. What functions will occur when this frame is received by 2950Switch?",
+      "highlighted": "allframesarrivingon2950switchwithadestinationof000000aaaaaawillbeforwardedoutfa01",
+      "alignedIds": [
+        82
+      ]
+    },
+    {
+      "page": 16,
+      "ids": [
+        109
+      ],
+      "stem": "A network engineer is troubleshooting a newly deployed wireless network that is using the latest 802.11 standards. When users access high bandwidth services such as streaming video, the wireless network performance is poor. To improve performance the network engineer decides to configure a 5 Ghz frequency band SSID and train users to use that SSID for streaming media services. Why might this solution improve the wireless network performance for that type of service?",
+      "highlighted": "the5ghzbandhasmorechannelsandislesscrowdedthanthe24ghzbandwhichmakesitmoresuitedtostreamingmultimedia",
+      "alignedIds": [
+        109
+      ]
+    },
+    {
+      "page": 16,
+      "ids": [
+        163
+      ],
+      "stem": "Which is a method that is used by a wireless NIC to discover an AP?",
+      "highlighted": "transmittingaproberequest",
+      "alignedIds": [
+        163
+      ]
+    },
+    {
+      "page": 17,
+      "ids": [
+        102
+      ],
+      "stem": "Which of the following answers apply to the IEEE 802.11g wireless standard?",
+      "highlighted": "maximumdatasignalingrateof54mbps",
+      "alignedIds": [
+        102
+      ]
+    },
+    {
+      "page": 17,
+      "ids": [
+        99
+      ],
+      "stem": "Mostly ________ is used in wireless LAN.",
+      "highlighted": "orthogonalfrequencydivisionmultiplexing",
+      "alignedIds": [
+        99
+      ]
+    },
+    {
+      "page": 17,
+      "ids": [
+        208
+      ],
+      "stem": "A network administrator is configuring a RADIUS server connection on a Cisco 3500 series WLC. The configuration requires a shared secret password. What is the purpose for the shared secret password?",
+      "highlighted": "itisusedtoencryptthemessagesbetweenthewlcandtheradiusserver",
+      "alignedIds": [
+        208
+      ]
+    },
+    {
+      "page": 17,
+      "ids": [
+        128
+      ],
+      "stem": "Which type of wireless network is suitable for national and global communications?",
+      "highlighted": "wirelesswideareanetwork",
+      "alignedIds": [
+        128
+      ]
+    },
+    {
+      "page": 17,
+      "ids": [
+        101
+      ],
+      "stem": "Multiple Input / Multiple Output (MIMO) is a wireless technology that allows for significant increase in data throughput due to the use of multiple antennas and multiple data streams.",
+      "highlighted": "true",
+      "alignedIds": [
+        101
+      ]
+    },
+    {
+      "page": 17,
+      "ids": [
+        159
+      ],
+      "stem": "What is an advantage of SSID cloaking?",
+      "highlighted": "clientswillhavetomanuallyidentifythessidtoconnecttothenetwork",
+      "alignedIds": [
+        159
+      ]
+    },
+    {
+      "page": 17,
+      "ids": [
+        103
+      ],
+      "stem": "Which statement is true about access points?",
+      "highlighted": "mostaccesspointsprovidewifiandbluetoothconnectivity",
+      "alignedIds": [
+        103
+      ]
+    },
+    {
+      "page": 17,
+      "ids": [
+        171
+      ],
+      "stem": "A network administrator deploys a wireless router in a small law firm. Employee laptops join the WLAN and receive IP addresses in the 10.0.10.0/24 network. Which service is used on the wireless router to allow the employee laptops to access the internet?",
+      "highlighted": "nat",
+      "alignedIds": [
+        171
+      ]
+    },
+    {
+      "page": 17,
+      "ids": [
+        121
+      ],
+      "stem": "Which one IEEE 802.11 wireless standards operate only in the 5 GHz range?",
+      "highlighted": "80211a",
+      "alignedIds": [
+        121
+      ]
+    },
+    {
+      "page": 17,
+      "ids": [
+        173
+      ],
+      "stem": "Which of the following answers apply to the IEEE 802.11g wireless standard?",
+      "highlighted": "24ghzfrequencyrange",
+      "alignedIds": [
+        173
+      ]
+    },
+    {
+      "page": 17,
+      "ids": [
+        114
+      ],
+      "stem": "While attending a conference, participants are using laptops for network connectivity. When a guest speaker attempts to connect to the network, the laptop fails to display any available wireless networks. The access point must be operating in which mode?",
+      "highlighted": "active",
+      "alignedIds": [
+        114
+      ]
+    },
+    {
+      "page": 18,
+      "ids": [
+        104
+      ],
+      "stem": "On a Cisco 3504 WLC dashboard, which option provides access to the full menu of features?",
+      "highlighted": "advanced",
+      "alignedIds": [
+        104
+      ]
+    },
+    {
+      "page": 18,
+      "ids": [
+        155
+      ],
+      "stem": "What is the access point (AP) in a wireless LAN?",
+      "highlighted": "devicethatallowswirelessdevicestoconnecttoawirednetwork",
+      "alignedIds": [
+        155
+      ]
+    },
+    {
+      "page": 18,
+      "ids": [
+        116
+      ],
+      "stem": "Institute of Electrical and Electronics Engineers (IEEE) \u2013 Specifies how a radio frequency is modulated to carry information. Maintains the standards for local and metropolitan area networks (MAN) with the IEEE 802 LAN/MAN family of standards.",
+      "highlighted": "true",
+      "alignedIds": [
+        116
+      ]
+    },
+    {
+      "page": 18,
+      "ids": [
+        169
+      ],
+      "stem": "Which type of management frame may regularly be broadcast by an AP?",
+      "highlighted": "beacon",
+      "alignedIds": [
+        169
+      ]
+    },
+    {
+      "page": 18,
+      "ids": [
+        118
+      ],
+      "stem": "Which one parameter would need to be changed if best practices are being implemented for a home wireless AP?",
+      "highlighted": "wirelessnetworkpassword",
+      "alignedIds": [
+        118
+      ]
+    },
+    {
+      "page": 18,
+      "ids": [
+        103
+      ],
+      "stem": "Which statement is true about access points?",
+      "highlighted": "mostaccesspointsprovidewifiandbluetoothconnectivity",
+      "alignedIds": [
+        103
+      ]
+    },
+    {
+      "page": 18,
+      "ids": [
+        85
+      ],
+      "stem": "What is a wireless security mode that requires a RADIUS server to authenticate wireless users?",
+      "highlighted": "enterprise",
+      "alignedIds": [
+        85
+      ]
+    },
+    {
+      "page": 18,
+      "ids": [
+        111
+      ],
+      "stem": "In wireless network an extended service set is a set of ________",
+      "highlighted": "connectedbasicservicesets",
+      "alignedIds": [
+        111
+      ]
+    },
+    {
+      "page": 18,
+      "ids": [
+        26
+      ],
+      "stem": "Which one is a HSRP state for a router?",
+      "highlighted": "speak",
+      "alignedIds": [
+        26
+      ]
+    },
+    {
+      "page": 18,
+      "ids": [
+        139
+      ],
+      "stem": "Which one is a protocol that is used by AAA to authenticate users against a central database of usernames and password?",
+      "highlighted": "radius",
+      "alignedIds": [
+        139
+      ]
+    },
+    {
+      "page": 18,
+      "ids": [],
+      "stem": "What device is considered a supplicant during the 802.1X authentication process?",
+      "highlighted": "theclientthatisrequestingauthentication",
+      "alignedIds": []
+    },
+    {
+      "page": 18,
+      "ids": [
+        48
+      ],
+      "stem": "Which access control component, implementation, or protocol is based upon usernames and passwords?",
+      "highlighted": "authentication",
+      "alignedIds": [
+        48
+      ]
+    },
+    {
+      "page": 19,
+      "ids": [
+        192
+      ],
+      "stem": "The active and standby HSRP routers send hello packets to the HSRP group multicast address every 3 seconds by default.",
+      "highlighted": "true",
+      "alignedIds": [
+        192
+      ]
+    },
+    {
+      "page": 19,
+      "ids": [
+        24
+      ],
+      "stem": "Which feature on a switch makes it vulnerable to VLAN hopping attacks?",
+      "highlighted": "theautomatictrunkingportfeatureenabledforallportsbydefaultshowetherchannelsummary",
+      "alignedIds": [
+        24
+      ]
+    },
+    {
+      "page": 19,
+      "ids": [
+        54
+      ],
+      "stem": "VPN or Virtual Private Network provides a secure connection to remote users across a public network and into the enterprise network.",
+      "highlighted": "true",
+      "alignedIds": [
+        54
+      ]
+    },
+    {
+      "page": 19,
+      "ids": [
+        50
+      ],
+      "stem": "This command shows information about the status of a port that is involved in the Etherchannel.",
+      "highlighted": "showinterfacesfa02etherchannel",
+      "alignedIds": [
+        50
+      ]
+    },
+    {
+      "page": 19,
+      "ids": [
+        10
+      ],
+      "stem": "Which component of AAA is used to determine which resources a user can access and which operations the user is allowed to perform?",
+      "highlighted": "authorization",
+      "alignedIds": [
+        10
+      ]
+    },
+    {
+      "page": 19,
+      "ids": [
+        190
+      ],
+      "stem": "Which option is the default switch port port-security violation mode?",
+      "highlighted": "shutdowndhcpsnooping",
+      "alignedIds": [
+        190
+      ]
+    },
+    {
+      "page": 19,
+      "ids": [
+        43
+      ],
+      "stem": "DDoS is a coordinated attack from many devices, called zombies, with the intention of degrading or halting public access to an organization\u2019s website and resources.",
+      "highlighted": "true",
+      "alignedIds": [
+        43
+      ]
+    },
+    {
+      "page": 19,
+      "ids": [
+        49
+      ],
+      "stem": "In the 802.1X standard, the client attempting to access the network is referred to as the supplicant.",
+      "highlighted": "true",
+      "alignedIds": [
+        49
+      ]
+    },
+    {
+      "page": 19,
+      "ids": [
+        50
+      ],
+      "stem": "This command shows information about the status of a port that is involved in the Etherchannel.",
+      "highlighted": "",
+      "alignedIds": []
+    },
+    {
+      "page": 20,
+      "ids": [
+        61
+      ],
+      "stem": "Refer to the exhibit. The Fa0/2 interface on switch S1 has been configured with the switchport port-security mac-address 0023.189d.6456 command and a workstation has been connected. What could be the reason that the Fa0/2 interface is shutdown?",
+      "highlighted": "themacaddressofpc1thatconnectstothefa02interfaceisnottheconfiguredmacaddress",
+      "alignedIds": [
+        61
+      ]
+    },
+    {
+      "page": 20,
+      "ids": [
+        151
+      ],
+      "stem": "Which one is a technique for mitigating VLAN attacks?",
+      "highlighted": "setthenativevlantoanunusedvlan",
+      "alignedIds": [
+        151
+      ]
+    },
+    {
+      "page": 20,
+      "ids": [
+        47
+      ],
+      "stem": "VRRPv2 is a Cisco-proprietary FHRP that protects data traffic from a failed router or circuit",
+      "highlighted": "false",
+      "alignedIds": [
+        47
+      ]
+    },
+    {
+      "page": 20,
+      "ids": [
+        148
+      ],
+      "stem": "A network administrator needs to configure port security on a switch. Which Statement is true?",
+      "highlighted": "thestickylearningfeatureallowstheadditionofdynamicallylearnedaddressestotherunningconfiguration",
+      "alignedIds": [
+        148
+      ]
+    },
+    {
+      "page": 20,
+      "ids": [
+        60,
+        183
+      ],
+      "stem": "Which one is a HSRP state for a router?",
+      "highlighted": "listen",
+      "alignedIds": [
+        60,
+        183
+      ]
+    },
+    {
+      "page": 20,
+      "ids": [
+        100
+      ],
+      "stem": "International Telecommunication Union (ITU) \u2013 Regulates the allocation of radio spectrum and satellite orbits.",
+      "highlighted": "true",
+      "alignedIds": [
+        100
+      ]
+    },
+    {
+      "page": 20,
+      "ids": [
+        206
+      ],
+      "stem": "Which type of wireless network uses transmitters to provide coverage over an extensive geographic area?",
+      "highlighted": "wirelesswideareanetwork",
+      "alignedIds": [
+        206
+      ]
+    },
+    {
+      "page": 20,
+      "ids": [
+        125
+      ],
+      "stem": "Which type of wireless network is based on the 802.11 standard and a 2.4-GHz or 5-GHz radio frequency?",
+      "highlighted": "wirelesslocalareanetwork",
+      "alignedIds": [
+        125
+      ]
+    },
+    {
+      "page": 20,
+      "ids": [
+        120
+      ],
+      "stem": "The IEEE 802.11g standard is backwards compatible with?",
+      "highlighted": "80211b",
+      "alignedIds": [
+        120
+      ]
+    },
+    {
+      "page": 20,
+      "ids": [
+        126
+      ],
+      "stem": "Which of the following are characteristic features of the IEEE 802.11n wireless standard?",
+      "highlighted": "maximumdatasignalingrateofupto600mbps",
+      "alignedIds": [
+        126
+      ]
+    },
+    {
+      "page": 20,
+      "ids": [
+        97
+      ],
+      "stem": "Which protocol can be used to monitor the network?",
+      "highlighted": "radius",
+      "alignedIds": [
+        97
+      ]
+    },
+    {
+      "page": 21,
+      "ids": [
+        95,
+        172
+      ],
+      "stem": ". A network administrator of a college is configuring the WLAN user authentication process. Wireless users are required to enter username and password credentials that will be verified by a server. Which server would provide such service?",
+      "highlighted": "radius",
+      "alignedIds": [
+        95,
+        172
+      ]
+    },
+    {
+      "page": 21,
+      "ids": [
+        167
+      ],
+      "stem": "What happens when an 802.11a node broadcasts within the range of an 802.11g access point?",
+      "highlighted": "thenodetransmitsbuttheaccesspointisunabletoreceive",
+      "alignedIds": [
+        167
+      ]
+    },
+    {
+      "page": 21,
+      "ids": [
+        194
+      ],
+      "stem": "Which type of wireless network is suitable for providing wireless access to a city or district?",
+      "highlighted": "wirelessmetropolitanareanetwork",
+      "alignedIds": [
+        194
+      ]
+    },
+    {
+      "page": 21,
+      "ids": [
+        87
+      ],
+      "stem": "Omnidirectional \u2013 focus the radio signal in a specific direction.",
+      "highlighted": "false",
+      "alignedIds": [
+        87
+      ]
+    },
+    {
+      "page": 21,
+      "ids": [
+        134
+      ],
+      "stem": "Which statement describes the behavior of a switch when the MAC address table is full?",
+      "highlighted": "ittreatsframesasunknownunicastandfloodsallincomingframestoallportswithinthelocalvlan",
+      "alignedIds": [
+        134
+      ]
+    },
+    {
+      "page": 21,
+      "ids": [
+        4
+      ],
+      "stem": "Which one is a technique for mitigating VLAN attacks?",
+      "highlighted": "enabletrunkingmanually",
+      "alignedIds": [
+        4
+      ]
+    },
+    {
+      "page": 21,
+      "ids": [
+        33
+      ],
+      "stem": "Which one is the description of HSRP?",
+      "highlighted": "aciscoproprietaryfhrpthatprovidesredundancythroughuseofanactivedeviceandstandbydevice",
+      "alignedIds": [
+        33
+      ]
+    },
+    {
+      "page": 21,
+      "ids": [
+        119
+      ],
+      "stem": "In wireless distribution system __________",
+      "highlighted": "multipleaccesspointareinterconnectedwitheachother",
+      "alignedIds": [
+        119
+      ]
+    },
+    {
+      "page": 21,
+      "ids": [
+        207
+      ],
+      "stem": "A company has recently implemented an 802.11n wireless network. Some users are complaining that the wireless network is too slow. Which solution is the best method to enhance the performance of the wireless network?",
+      "highlighted": "splitthetrafficbetweenthe24ghzand5ghzfrequencybands",
+      "alignedIds": [
+        207
+      ]
+    },
+    {
+      "page": 21,
+      "ids": [
+        158
+      ],
+      "stem": "A network administrator is required to upgrade wireless access to end users in a building. To provide data rates up to 1.3 Gb/s and still be backward compatible with older devices, which wireless standard should be implemented?",
+      "highlighted": "80211ac",
+      "alignedIds": [
+        158
+      ]
+    },
+    {
+      "page": 21,
+      "ids": [
+        86
+      ],
+      "stem": "Which device allows users to connect to the network using a single or double radio?",
+      "highlighted": "accesspointieee80211",
+      "alignedIds": [
+        86
+      ]
+    },
+    {
+      "page": 22,
+      "ids": [
+        107
+      ],
+      "stem": "Bob has set up a Wi-Fi network for his caf\u00e9 that works well within the indoor area, but works poorly on the patio. What\u2019s the least expensive option for making Wi-Fi work for the patio customers?",
+      "highlighted": "replacethefactoryantennasonthewirelessaccesspoint",
+      "alignedIds": [
+        107
+      ]
+    },
+    {
+      "page": 22,
+      "ids": [
+        41
+      ],
+      "stem": "What is the result of a DHCP starvation attack?",
+      "highlighted": "legitimateclientsareunabletoleaseipaddresses",
+      "alignedIds": [
+        41
+      ]
+    },
+    {
+      "page": 22,
+      "ids": [
+        63
+      ],
+      "stem": "Refer to the exhibit. A junior network administrator was given the task of configuring port security on SwitchA to allow only PC_A to access the switched network through port fa0/1. If any other device is detected, the port is to drop frames from this device. The administrator configured the interface and tested it with successful pings from PC_A to RouterA, and then observes the output from these two show commands. Which change is necessary for SwitchA to meet the requirements?",
+      "highlighted": "portsecurityneedstobeconfiguredtoshutdowntheinterfaceintheeventofaviolation",
+      "alignedIds": [
+        63
+      ]
+    },
+    {
+      "page": 22,
+      "ids": [
+        75
+      ],
+      "stem": "The network administrator normally establishes a Telnet session with the switch from host A. The administrator\u2019s attempt to establish a connect via Telnet to the switch from host B fails, but pings from host B to other two hosts are successful. What is the issue for this problem?",
+      "highlighted": "theswitchneedsanappropriatedefaultgatewayassignedaccesspointisnotrequired",
+      "alignedIds": [
+        75
+      ]
+    },
+    {
+      "page": 22,
+      "ids": [
+        162
+      ],
+      "stem": "Which of the following are characteristic features of the IEEE 802.11n wireless standard?",
+      "highlighted": "multipleinputmultipleoutputmimo",
+      "alignedIds": [
+        162
+      ]
+    },
+    {
+      "page": 23,
+      "ids": [
+        106
+      ],
+      "stem": "Which type of wireless network uses low powered transmitters for a short-range network, usually 20 to 30 ft. (6 to 9 meters)?",
+      "highlighted": "wirelesspersonalareanetwork",
+      "alignedIds": [
+        106
+      ]
+    },
+    {
+      "page": 23,
+      "ids": [
+        140
+      ],
+      "stem": "An IT security specialist enables port security on a switch port of a Cisco switch. What is the default violation mode in use until the switch port is configured to use a different violation mode?",
+      "highlighted": "shutdown",
+      "alignedIds": [
+        140
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        79
+      ],
+      "stem": "GLBP is a Cisco-proprietary FHRP that protects data traffic from a failed router or circuit",
+      "highlighted": "true",
+      "alignedIds": [
+        79
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        13
+      ],
+      "stem": "Data Breach is an attack in which an organization\u2019s data servers or hosts are compromised to steal confidential information.",
+      "highlighted": "true",
+      "alignedIds": [
+        13
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        64
+      ],
+      "stem": "Next-Generation Firewall or NGFW provides stateful packet inspection, application visibility and control.",
+      "highlighted": "true",
+      "alignedIds": [
+        64
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        69
+      ],
+      "stem": "DDoS is an attack in which an organization\u2019s data servers or hosts are compromised to steal confidential information.",
+      "highlighted": "false",
+      "alignedIds": [
+        69
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        70
+      ],
+      "stem": "Initial is an HRSP State meaning that the router is a candidate to become the next active rotuer and sends periodic hello messages.",
+      "highlighted": "false",
+      "alignedIds": [
+        70
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        74
+      ],
+      "stem": "HSRP a non-proprietary election protocol that dynamically assigns responsibility for one or more virtual routers to the VRRP routers on an IPv4 LAN.",
+      "highlighted": "false",
+      "alignedIds": [
+        74
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        16
+      ],
+      "stem": "Data Breach is a coordinated attack from many devices, called zombies, with the intention of degrading or halting public access to an organization\u2019s website and resources.",
+      "highlighted": "false",
+      "alignedIds": [
+        16
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        38
+      ],
+      "stem": "Next-Generation Firewall or NGFW includes AAA services.",
+      "highlighted": "false",
+      "alignedIds": [
+        38
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        9
+      ],
+      "stem": "Virtual Private Network include AAA services.",
+      "highlighted": "false",
+      "alignedIds": [
+        9
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        23
+      ],
+      "stem": "FHRP provide alternate default gateways in switched networks where two or more routers are connected to the same VLANs.",
+      "highlighted": "true",
+      "alignedIds": [
+        23
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        79
+      ],
+      "stem": "GLBP is a Cisco-proprietary FHRP that protects data traffic from a failed router or circuit",
+      "highlighted": "true",
+      "alignedIds": [
+        79
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        135
+      ],
+      "stem": "VPN or Virtual Private Network provides stateful packet inspection, application visibility and control.",
+      "highlighted": "false",
+      "alignedIds": [
+        135
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [],
+      "stem": "Which one Cisco solution help prevent DHCP starvation attacks?",
+      "highlighted": "",
+      "alignedIds": []
+    },
+    {
+      "page": 24,
+      "ids": [
+        20
+      ],
+      "stem": "VRRPv2 is a Cisco-proprietary FHRP that is designed to allow for transparent failover of a first-hop IPv4 device.",
+      "highlighted": "false",
+      "alignedIds": [
+        20
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        179
+      ],
+      "stem": "Network Access Control or NAC includes AAA services.",
+      "highlighted": "true",
+      "alignedIds": [
+        179
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [
+        91
+      ],
+      "stem": "Wi-Fi Alliance \u2013 Promotes the growth and acceptance of WLANs. It is an association of vendors whose objective is to improve the interoperability of products that are based on the 802.11 standard",
+      "highlighted": "",
+      "alignedIds": []
+    },
+    {
+      "page": 24,
+      "ids": [
+        123
+      ],
+      "stem": "The Network Summary page in Cisco WLC is a dashboard that provides a quick overview of configured wireless networks, associated access points (APs), and active clients.",
+      "highlighted": "true",
+      "alignedIds": [
+        123
+      ]
+    },
+    {
+      "page": 24,
+      "ids": [],
+      "stem": "Which one is a characteristic of IEEE 802.11b?",
+      "highlighted": "24ghzfrequencyrangemaximumdatasignalingrateof11mbps",
+      "alignedIds": []
+    },
+    {
+      "page": 25,
+      "ids": [
+        195
+      ],
+      "stem": "You can configure your WLAN Router through web browser.",
+      "highlighted": "true",
+      "alignedIds": [
+        195
+      ]
+    },
+    {
+      "page": 25,
+      "ids": [
+        165
+      ],
+      "stem": "Autonomous APs \u2013 Standalone devices configured through a command line interface or GUI. Each autonomous AP acts independently of the others and is configured and managed manually by an administrator.",
+      "highlighted": "true",
+      "alignedIds": [
+        165
+      ]
+    },
+    {
+      "page": 25,
+      "ids": [],
+      "stem": "Which one is a protocol that is used by AAA to authenticate users against a central database of usernames and password?",
+      "highlighted": "tacacs",
+      "alignedIds": []
+    },
+    {
+      "page": 25,
+      "ids": [
+        129
+      ],
+      "stem": "VRRPv2 is a non-proprietary election protocol that dynamically assigns responsibility for one or more virtual routers to the VRRP routers on an IPv4 LAN.",
+      "highlighted": "true",
+      "alignedIds": [
+        129
+      ]
+    },
+    {
+      "page": 25,
+      "ids": [
+        150
+      ],
+      "stem": "Standby is an HRSP State meaning that the router is a candidate to become the next active rotuer and sends periodic hello messages.",
+      "highlighted": "true1theforwardingrouterfails2thestandbyrouterstopsseeinghellomessagesfromtheforwardingrouter3thestandbyrouterassumestheroleoftheforwardingrouter4thenewforwardingrouterassumesboththeipandmacaddressesofthevirtualrouter",
+      "alignedIds": [
+        150
+      ]
+    },
+    {
+      "page": 25,
+      "ids": [
+        182
+      ],
+      "stem": "HSRP is a Cisco-proprietary FHRP that is designed to allow for transparent failover of a first-hop IPv4 device.",
+      "highlighted": "true",
+      "alignedIds": [
+        182
+      ]
+    },
+    {
+      "page": 25,
+      "ids": [],
+      "stem": "Refer to the exhibit. The following commands are executed on interface fa0/1 of 2950Switch. 2950Switch(config-if)#switchport port-security 2950Switch(config-if)#switchport port-security mac-address sticky The Ethernet frame that is shown arrives on interface fa0/1. What functions will occur when this frame is received by 2950Switch?",
+      "highlighted": "allframesarrivingon2950switchwithadestinationof000000aaaaaawillbeforwardedoutfa01onlyhostawillbeallowedtotransmitframesonfa01",
+      "alignedIds": []
+    },
+    {
+      "page": 25,
+      "ids": [],
+      "stem": "Which of the following answers apply to the IEEE 802.11g wireless standard?",
+      "highlighted": "maximumdatasignalingrateof54mbps24ghzfrequencyrange",
+      "alignedIds": []
+    },
+    {
+      "page": 25,
+      "ids": [
+        101
+      ],
+      "stem": "Multiple Input / Multiple Output (MIMO) is a wireless technology that allows for significant increase in data throughput due to the use of multiple antennas and multiple data streams.",
+      "highlighted": "true",
+      "alignedIds": [
+        101
+      ]
+    },
+    {
+      "page": 25,
+      "ids": [
+        116
+      ],
+      "stem": "Institute of Electrical and Electronics Engineers (IEEE) \u2013 Specifies how a radio frequency is modulated to carry information. Maintains the standards for local and metropolitan area networks (MAN) with the IEEE 802 LAN/MAN family of standards.",
+      "highlighted": "true",
+      "alignedIds": [
+        116
+      ]
+    },
+    {
+      "page": 25,
+      "ids": [
+        192
+      ],
+      "stem": "The active and standby HSRP routers send hello packets to the HSRP group multicast address every 3 seconds by default.",
+      "highlighted": "trueenabletrunkingmanuallydisabledtpsetthenativevlantoanunusedvlan",
+      "alignedIds": [
+        192
+      ]
+    },
+    {
+      "page": 26,
+      "ids": [
+        54
+      ],
+      "stem": "VPN or Virtual Private Network provides a secure connection to remote users across a public network and into the enterprise network.",
+      "highlighted": "true",
+      "alignedIds": [
+        54
+      ]
+    },
+    {
+      "page": 26,
+      "ids": [
+        43
+      ],
+      "stem": "DDoS is a coordinated attack from many devices, called zombies, with the intention of degrading or halting public access to an organization\u2019s website and resources.",
+      "highlighted": "true",
+      "alignedIds": [
+        43
+      ]
+    },
+    {
+      "page": 26,
+      "ids": [
+        49
+      ],
+      "stem": "In the 802.1X standard, the client attempting to access the network is referred to as the supplicant.",
+      "highlighted": "true",
+      "alignedIds": [
+        49
+      ]
+    },
+    {
+      "page": 26,
+      "ids": [
+        47
+      ],
+      "stem": "VRRPv2 is a Cisco-proprietary FHRP that protects data traffic from a failed router or circuit",
+      "highlighted": "false",
+      "alignedIds": [
+        47
+      ]
+    },
+    {
+      "page": 26,
+      "ids": [],
+      "stem": "A network administrator needs to configure port security on a switch. Which Statement is true?",
+      "highlighted": "whendynamicmacaddresslearningisenabledonaninterfacetheswitchcanlearnnewaddressesuptothemaximumdefinedthestickylearningfeatureallowstheadditionofdynamicallylearnedaddressestotherunningconfiguration",
+      "alignedIds": []
+    },
+    {
+      "page": 26,
+      "ids": [
+        100
+      ],
+      "stem": "International Telecommunication Union (ITU) \u2013 Regulates the allocation of radio spectrum and satellite orbits.",
+      "highlighted": "true",
+      "alignedIds": [
+        100
+      ]
+    },
+    {
+      "page": 26,
+      "ids": [
+        87
+      ],
+      "stem": "Omnidirectional \u2013 focus the radio signal in a specific direction.",
+      "highlighted": "false",
+      "alignedIds": [
+        87
+      ]
+    }
+  ]
+}

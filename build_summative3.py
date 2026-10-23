@@ -10,7 +10,7 @@ import hashlib
 import json
 import re
 import unicodedata
-from summative3_review_notes import annotate_conflicts, write_summary
+from summative3_review_notes import annotate_conflicts, write_summary, apply_supplement
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT.parent / 'QUESTION POOLS'
@@ -145,6 +145,8 @@ if audit['missingAnswers'] or audit['missingAssets']:
     raise ValueError('Import needs review; see summative3-import-audit.json')
 annotate_conflicts(questions, notes, audit)
 write_summary(audit)
-(ROOT / 'summative3-questions.json').write_text(json.dumps({'title': 'Summative 3 Networking Review', 'sourceFiles': FILES, 'questionCount': len(questions), 'questions': questions}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+data = {'title': 'Summative 3 Networking Review', 'sourceFiles': list(FILES), 'questionCount': len(questions), 'questions': questions}
+apply_supplement(data, notes)
+(ROOT / 'summative3-questions.json').write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 (ROOT / 'summative3-explanations.json').write_text(json.dumps(notes, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 print(json.dumps({k: v for k, v in audit.items() if k not in ('duplicates', 'variantGroups')}, ensure_ascii=False, indent=2))
