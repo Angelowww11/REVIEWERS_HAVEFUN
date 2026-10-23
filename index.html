@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="themes.css">
   <link rel="stylesheet" href="polish.css">
+  <link rel="stylesheet" href="arcade.css">
   <script src="themes.js"></script>
   <script src="app.js" defer></script>
   <script src="account.js" defer></script>
@@ -66,25 +67,21 @@
             </div>
             <details class="career-badge"><summary><span class="career-badge-mark" aria-hidden="true">✦</span><span><small>YOUR TITLE</small><strong id="careerBadgeTitle">Noob</strong><em id="careerBadgeProgress">0 lifetime points</em></span><span class="career-badge-more">See badges ↓</span></summary><div id="badgeLadder" class="badge-ladder"></div></details>
           </div>
-          <div class="hero-stage" aria-label="Illustration of connected networking cards">
+          <div class="hero-stage" aria-label="Animated networking arcade illustration"><div class="arcade-panel-label" aria-hidden="true"><span><i></i> PACKET PLAYGROUND</span><b>▶ READY TO PLAY</b></div>
             <div class="stage-glow"></div>
             <svg class="stage-lines" viewBox="0 0 500 450" fill="none" aria-hidden="true"><path d="M94 202 229 91l156 94M95 205l153 150 137-167M229 91l19 264" stroke="currentColor" stroke-width="3" stroke-dasharray="7 11" stroke-linecap="round"/></svg>
             <div class="stage-node stage-node-a"><span>01</span><strong>VLANs</strong><i></i></div>
             <div class="stage-node stage-node-b"><span>02</span><strong>STP</strong><i></i></div>
             <div class="stage-node stage-node-c"><span>03</span><strong>Routing</strong><i></i></div>
             <div class="stage-node stage-node-d"><span>04</span><strong>DHCP</strong><i></i></div>
-            <div class="stage-center"><span class="mini-label">YOUR MISSION</span><strong>Connect<br>the dots.</strong><span class="center-arrow" aria-hidden="true">↗</span></div>
+            <div class="stage-center"><svg class="packet-mascot" viewBox="0 0 160 120" fill="none" aria-hidden="true"><ellipse cx="80" cy="108" rx="48" ry="6" fill="currentColor" opacity=".12"/><g class="packet-body"><path d="M42 38 30 22M118 38l12-16" stroke="var(--secondary)" stroke-width="5" stroke-linecap="round"/><circle cx="28" cy="20" r="6" fill="var(--accent)"/><circle cx="132" cy="20" r="6" fill="var(--accent)"/><rect x="26" y="33" width="108" height="66" rx="23" fill="var(--secondary)"/><rect x="34" y="41" width="92" height="50" rx="17" fill="var(--page)"/><g class="packet-eyes" fill="var(--secondary)"><rect x="51" y="54" width="12" height="16" rx="6"/><rect x="97" y="54" width="12" height="16" rx="6"/></g><path d="M70 74q10 9 20 0" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/><path d="M18 60 8 54M142 60l10-6" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/></g></svg><span class="mini-label">SMALL STEPS. BIG STREAKS.</span><strong>Stay curious.<br>Level up.</strong></div><div class="arcade-panel-foot" aria-hidden="true"><span>● LEARN</span><span>✦ PLAY</span><span>↗ REPEAT</span></div>
           </div>
         </div>
 
         <section id="savedRuns" class="saved-runs" aria-label="Continue saved runs" hidden></section>
-        <section class="home-leaders" aria-labelledby="homeLeadersTitle">
-          <div class="home-leaders-heading"><div><span class="section-kicker">THE SCOREBOARD</span><h2 id="homeLeadersTitle">Who’s leading<span class="title-period">?</span></h2></div><button type="button" id="homeLeaderboardLink" class="small-button">Full leaderboard ↗</button></div>
-          <div id="homeLeadersModes" class="home-leaders-modes" role="group" aria-label="Preview leaderboard mode"></div>
-          <div class="home-leaders-body"><div class="home-leaders-feature"><span id="homeLeadersModeLabel" class="home-leaders-mode-label">ALL QUESTIONS</span><div id="homeLeadersList" class="home-leaders-list" aria-live="polite">Loading top scores…</div></div><div class="home-leaders-chart"><div class="home-chart-title"><strong>Score race</strong><span>Top 3</span></div><div id="homeLeadersChart" class="home-chart-bars" aria-label="Top three score comparison"></div></div></div>
-        </section>
 
-        <div class="section-heading"><div><span class="section-kicker">SOLO PLAY</span><h2>Choose a mode</h2></div></div>
+
+        <div class="home-hub"><section class="home-play" aria-labelledby="modeHeading"><div class="section-heading"><div><span class="section-kicker">PICK YOUR NEXT CHALLENGE</span><h2 id="modeHeading">Let’s play<span class="title-period">.</span></h2></div><span class="mode-section-note">One deck. Your way to learn.</span></div>
         <div class="mode-grid">
           <button type="button" class="mode-card mode-all" data-mode="all"><span class="mode-card-top"><span class="mode-icon" aria-hidden="true">▦</span><span class="mode-card-status">RANKED</span></span><span class="mode-visual visual-stack" aria-hidden="true"><i></i><i></i><i></i></span><span class="mode-card-copy"><strong>All questions</strong><small>Every card, original order</small></span><span class="mode-card-bottom"><em>Full deck</em><span>Play ↗</span></span></button>
           <button type="button" class="mode-card mode-shuffle" data-mode="shuffle"><span class="mode-card-top"><span class="mode-icon" aria-hidden="true">⤨</span><span class="mode-card-status">RANKED</span></span><span class="mode-visual visual-shuffle" aria-hidden="true"><i>↗</i><i>↘</i><i>↖</i></span><span class="mode-card-copy"><strong>Shuffle run</strong><small>A fresh route through the deck</small></span><span class="mode-card-bottom"><em>Full deck</em><span>Play ↗</span></span></button>
@@ -94,6 +91,13 @@
           <button type="button" class="mode-card mode-typing" data-mode="typing"><span class="mode-card-top"><span class="mode-icon" aria-hidden="true">⌨</span><span class="mode-card-status is-practice">PRACTICE</span></span><span class="mode-visual visual-typing" aria-hidden="true"><i>A</i><i>B</i><i>↵</i></span><span class="mode-card-copy"><strong>Type it out</strong><small>Answer without choices</small></span><span class="mode-card-bottom"><em>20 questions</em><span>Play ↗</span></span></button>
           <button type="button" class="mode-card mode-training" data-mode="training"><span class="mode-card-top"><span class="mode-icon" aria-hidden="true">◎</span><span class="mode-card-status is-practice">MASTERY</span></span><span class="mode-visual visual-training" aria-hidden="true"><i>1</i><i>↻</i><i>✓</i></span><span class="mode-card-copy"><strong>Training loop</strong><small>Retry misses until every answer sticks</small></span><span class="mode-card-bottom"><em>20, 30 or 99 questions</em><span>Train ↗</span></span></button>
           <button type="button" class="mode-card mode-practice" data-mode="practice"><span class="mode-card-top"><span class="mode-icon" aria-hidden="true">↳</span><span class="mode-card-status is-practice">SAVE & RESUME</span></span><span class="mode-visual visual-practice" aria-hidden="true"><i>1</i><i>2</i><i>3</i></span><span class="mode-card-copy"><strong>Practice path</strong><small>Fixed order, your pace</small></span><span class="mode-card-bottom"><em id="practiceCardProgress">Start at #1</em><span>Open ↗</span></span></button>
+        </div>
+        </section>
+        <section class="home-leaders" aria-labelledby="homeLeadersTitle">
+          <div class="home-leaders-heading"><div><span class="section-kicker">THE SCOREBOARD</span><h2 id="homeLeadersTitle">Who’s leading<span class="title-period">?</span></h2></div><button type="button" id="homeLeaderboardLink" class="small-button">Full leaderboard ↗</button></div>
+          <div id="homeLeadersModes" class="home-leaders-modes" role="group" aria-label="Preview leaderboard mode"></div>
+          <div class="home-leaders-body"><div class="home-leaders-feature"><span id="homeLeadersModeLabel" class="home-leaders-mode-label">ALL QUESTIONS</span><div id="homeLeadersList" class="home-leaders-list" aria-live="polite">Loading top scores…</div></div><div class="home-leaders-chart"><div class="home-chart-title"><strong>Score race</strong><span>Top 3</span></div><div id="homeLeadersChart" class="home-chart-bars" aria-label="Top three score comparison"></div></div></div>
+        </section>
         </div>
       </section>
 
