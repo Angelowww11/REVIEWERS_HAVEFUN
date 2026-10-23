@@ -75,3 +75,7 @@ body:before{background-size:30px 30px;opacity:.2}.ambient-a{width:460px;height:6
 .home-view .mode-practice:is(:hover,:focus-visible,:active):before{transform:rotate(0deg) scale(12);background:color-mix(in srgb,var(--secondary) 17%,var(--surface))}
 @media(prefers-reduced-motion:reduce){.home-view .mode-card:before{transition:none}}
 [data-motion=calm] .home-view .mode-card:before{transition:none}
+
+.home-view .mode-card:is(:hover,:focus-visible,:active):before{transition-duration:2.5s,2.5s}
+@media(prefers-reduced-motion:reduce){.home-view .mode-card:is(:hover,:focus-visible,:active):before{transition:none}}
+[data-motion=calm] .home-view .mode-card:is(:hover,:focus-visible,:active):before{transition:none}
