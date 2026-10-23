@@ -70,7 +70,7 @@ body:before{background-size:30px 30px;opacity:.2}.ambient-a{width:460px;height:6
 @media(max-width:650px){.home-view .mode-practice{min-height:177px;padding:18px}.home-view .mode-practice .mode-card-copy{max-width:60%;margin-top:14px}.home-view .mode-practice .mode-card-copy strong{font-size:23px}.home-view .mode-practice .mode-card-copy small{font-size:11px}.home-view .mode-practice .mode-card-bottom{max-width:100%;margin-top:13px}.home-view .mode-practice .mode-visual{right:0;top:57px;width:115px;transform:scale(.9)}.home-view .mode-practice:hover .mode-visual{transform:translateY(-4px) scale(.9)}.home-view .mode-practice:before{width:150px;height:135px;right:0;top:14px}}
 /* The illustration's color pool grows into the entire tile on interaction. */
 .home-view .mode-card{overflow:hidden;border-radius:24px}
-.home-view .mode-card:before{transform-origin:center;transition:transform .55s cubic-bezier(.22,.8,.25,1),background-color .3s;pointer-events:none}
+.home-view .mode-card:before{transform-origin:center;transition:transform 1.2s cubic-bezier(.22,.8,.25,1),background-color .7s;pointer-events:none}
 .home-view .mode-card:is(:hover,:focus-visible,:active):before{transform:rotate(0deg) scale(7);background:color-mix(in srgb,var(--mode-accent) 25%,var(--surface));border:0;box-shadow:none}
 .home-view .mode-practice:is(:hover,:focus-visible,:active):before{transform:rotate(0deg) scale(12);background:color-mix(in srgb,var(--secondary) 17%,var(--surface))}
 @media(prefers-reduced-motion:reduce){.home-view .mode-card:before{transition:none}}
