@@ -1,4 +1,4 @@
-PACKET PARTY - POCKET SEARCH 1.1.1
+PACKET PARTY - POCKET SEARCH 1.2.0
 
 Desktop Chrome, Microsoft Edge and Brave (Manifest V3).
 

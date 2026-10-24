@@ -18,20 +18,18 @@
   function mount() {
   const host = document.createElement('div');
   host.setAttribute('data-packet-party-pocket', '');
-  host.style.cssText = 'all:initial!important;position:fixed!important;right:20px!important;bottom:20px!important;z-index:2147483647!important;display:none!important;color-scheme:dark!important;';
+  host.style.cssText = 'all:initial!important;position:fixed!important;right:20px!important;bottom:20px!important;z-index:2147483647!important;display:none!important;color-scheme:light!important;';
   const root = host.attachShadow({mode: 'open'});
   root.innerHTML = `<style>
-    :host{font:14px/1.4 system-ui,sans-serif}*{box-sizing:border-box}
-    button{font:inherit;cursor:pointer;border:0}button:focus-visible{outline:3px solid #a7f2ed;outline-offset:3px}
-    .shell{font:14px/1.4 system-ui,sans-serif;width:min(360px,calc(100vw - 32px));height:min(440px,calc(100dvh - 48px));display:flex;flex-direction:column;background:#222c45;border-radius:18px;box-shadow:0 18px 70px #0006;overflow:hidden;border:1px solid #ffffff25}
-    .handle{display:flex;align-items:center;gap:8px;min-height:40px;padding:3px 7px 3px 12px;color:#f4f4ff;touch-action:none;cursor:grab;user-select:none}
-    .handle:active{cursor:grabbing}.handle strong{flex:1;font-size:13px;letter-spacing:.2px}.handle span{color:#a7f2ed}
-    .handle button{width:34px;height:34px;background:transparent;border-radius:11px;color:inherit;font-size:20px}.handle button:hover{background:#ffffff16}
-    iframe{flex:1;width:100%;min-height:0;border:0;background:#1d263b;color-scheme:dark}
-    .launcher{width:52px;height:52px;display:grid;place-items:center;border-radius:17px;background:#ffb45c;color:#202b44;box-shadow:0 8px 28px #0005;transition:transform .2s}
-    .launcher:hover{transform:translateY(-3px)}.launcher svg{width:32px;height:32px}.launcher:before{content:'';position:absolute;inset:-5px;border:1px solid #ffb45c55;border-radius:22px;pointer-events:none}
-    [hidden]{display:none!important}@media(prefers-reduced-motion:reduce){*{transition:none!important}}
-  </style><section class="shell" aria-label="Packet Party floating question box"><div class="handle"><span aria-hidden="true">✦</span><strong>Packet Party <small style="font-size:10px;opacity:.65">· &#96; to toggle</small></strong><button class="minimize" aria-label="Minimize to floating square" title="Minimize">−</button><button class="close" aria-label="Hide question box" title="Hide · backtick to reopen">×</button></div><iframe title="Packet Party question input and answers"></iframe></section><button class="launcher" aria-label="Open Packet Party search" title="Packet Party search · backtick to toggle" hidden><svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="m11 21 17-11M12 24l15 7" stroke="currentColor" stroke-width="3"/><circle cx="9" cy="23" r="6" fill="currentColor"/><circle cx="30" cy="9" r="6" fill="currentColor"/><circle cx="30" cy="32" r="6" fill="currentColor"/></svg></button>`;
+    :host{font:14px/1.4 Arial,Helvetica,sans-serif}*{box-sizing:border-box}
+    button{font:inherit;cursor:pointer;color:#222;background:#fff;border:1px solid #aaa;border-radius:3px}button:focus-visible{outline:2px solid #333;outline-offset:2px}
+    .shell{font:14px/1.4 Arial,Helvetica,sans-serif;width:min(360px,calc(100vw - 32px));height:min(440px,calc(100dvh - 48px));display:flex;flex-direction:column;background:#fff;border-radius:4px;overflow:hidden;border:1px solid #aaa}
+    .handle{display:flex;align-items:center;gap:8px;min-height:40px;padding:3px 7px 3px 12px;color:#222;background:#f7f7f7;border-bottom:1px solid #ddd;touch-action:none;cursor:grab;user-select:none}
+    .handle:active{cursor:grabbing}.handle strong{flex:1;font-size:13px;font-weight:600}.handle button{width:30px;height:30px;padding:0;font-size:20px}.handle button:hover{background:#eee}
+    iframe{flex:1;width:100%;min-height:0;border:0;background:#fff;color-scheme:light}
+    .launcher{width:46px;height:46px;display:grid;place-items:center;background:#fff;color:#222}.launcher:hover{background:#eee}.launcher svg{width:24px;height:24px}
+    [hidden]{display:none!important}
+  </style><section class="shell" aria-label="Packet Party floating question box"><div class="handle"><strong>Pocket Search <small style="font-size:10px;opacity:.65">· &#96; to toggle</small></strong><button class="minimize" aria-label="Minimize to floating square" title="Minimize">−</button><button class="close" aria-label="Hide question box" title="Hide · backtick to reopen">×</button></div><iframe title="Packet Party question input and answers"></iframe></section><button class="launcher" aria-label="Open Packet Party search" title="Packet Party search · backtick to toggle" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg></button>`;
   const shell = root.querySelector('.shell'), launcher = root.querySelector('.launcher');
   const iframe = root.querySelector('iframe'), handle = root.querySelector('.handle');
   iframe.src = chrome.runtime.getURL('panel.html');
