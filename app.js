@@ -33,7 +33,7 @@ const quotes = [
 ];
 const app = {
   questions: [], explanations: {}, mode: 'shuffle', view: 'home', game: null, bankLimit: 16,
-  bankAll: false, bankRevealAll: false, bankRevealed: new Set(), importedGhost: null,
+  bankAll: false, bankRevealAll: false, bankRevealed: new Set(), bankHidden: new Set(), explanationsVisible: readJSON('pp_explanations_visible', true), importedGhost: null,
   favorites: new Set(readJSON(deckStorageKey('pp_favorites'), [])),
   stats: readJSON(deckStorageKey('pp_stats'), { runs: 0, correct: 0, bestStreak: 0, bestScore: 0 }),
   soundOn: readJSON('pp_sound', false), timer: null, toastTimer: null, audio: null
@@ -219,8 +219,19 @@ function explanationHtml(q) {
     const list = block.items.length ? `<${block.kind === 'steps' ? 'ol' : 'ul'}>${block.items.map(text => `<li>${escapeHTML(text)}</li>`).join('')}</${block.kind === 'steps' ? 'ol' : 'ul'}>` : '';
     return `<section class="explanation-section ${block.kind === 'idea' ? 'is-key-idea' : ''}">${block.title ? `<h4>${escapeHTML(block.title)}</h4>` : ''}${paragraphs}${list}</section>`;
   }).join('');
-  return `<div class="feedback-explanation"><div class="explanation-title">${q.answerKeyWarning ? "Study note · source disagreement" : "Understand the answer"}</div><div class="explanation-content">${content}</div></div>`;
+  return `<details class="feedback-explanation" ${app.explanationsVisible ? 'open' : ''}><summary class="explanation-title">${q.answerKeyWarning ? "Explanation · source disagreement" : "Explanation"}<span class="explanation-toggle-state" aria-hidden="true"></span></summary><div class="explanation-content">${content}</div></details>`;
 }
+function setExplanationsVisible(visible) {
+  app.explanationsVisible = Boolean(visible);
+  writeJSON('pp_explanations_visible', app.explanationsVisible);
+  document.querySelectorAll('details.feedback-explanation').forEach(panel => { if (panel.open !== app.explanationsVisible) panel.open = app.explanationsVisible; });
+  const button = $('bankExplanationToggle');
+  if (button) { button.textContent = app.explanationsVisible ? 'Hide explanations' : 'Show explanations'; button.setAttribute('aria-pressed', String(app.explanationsVisible)); }
+}
+document.addEventListener('toggle', event => {
+  const panel = event.target;
+  if (panel.matches?.('details.feedback-explanation') && panel.open !== app.explanationsVisible) setExplanationsVisible(panel.open);
+}, true);
 function answerComparison(q, response = '') {
   return `<div class="answer-comparison">${response ? `<div><span>Your answer</span><strong>${escapeHTML(response)}</strong></div>` : ''}<div><span>Correct answer</span><strong>${escapeHTML(answerText(q))}</strong></div></div>`;
 }
@@ -389,10 +400,12 @@ function renderBank() {
   $('bankShowAll').textContent = app.bankAll ? 'Show fewer' : `Show all ${app.questions.length} questions`;
   $('bankShowAll').setAttribute('aria-pressed', String(app.bankAll));
   $('bankMore').hidden = app.bankAll || visible.length >= matches.length;
+  $('bankExplanationToggle').textContent = app.explanationsVisible ? 'Hide explanations' : 'Show explanations';
+  $('bankExplanationToggle').setAttribute('aria-pressed', String(app.explanationsVisible));
   $('revealAllButton').textContent = app.bankRevealAll ? 'Hide answers' : 'Reveal answers';
   $('revealAllButton').setAttribute('aria-pressed', String(app.bankRevealAll));
   $('bankList').innerHTML = visible.length ? visible.map(q => {
-    const revealed = app.bankRevealAll || app.bankRevealed.has(q.id);
+    const revealed = (app.bankRevealAll || app.bankRevealed.has(q.id)) && !app.bankHidden.has(q.id);
     const options = q.type === 'short_answer_question' || isTrueFalseGroup(q) ? [] : q.options || [];
     const statements = isTrueFalseGroup(q) ? `<ol class="tf-bank-list">${q.statements.map((statement, index) => `<li>${escapeHTML(statement)}${revealed ? `<strong>${escapeHTML(q.correctAnswers[index])}</strong>` : '<span>True / False</span>'}</li>`).join('')}</ol>` : '';
     return `<article class="bank-question" data-id="${q.id}"><div class="bank-q-top"><span class="bank-number">#${q.id}</span><span class="chip chip-source">${escapeHTML(sourceName(q))}</span><span class="chip">${escapeHTML(typeName(q))}</span><button type="button" class="star-button ${app.favorites.has(q.id) ? 'is-starred' : ''}" data-bank-action="star" aria-label="${app.favorites.has(q.id) ? 'Remove star from' : 'Star'} question ${q.id}" aria-pressed="${app.favorites.has(q.id)}">★</button></div><div class="bank-prompt">${safeQuestionHTML(q)}</div>${statements}${options.length ? `<div class="bank-choices">${options.map((option, index) => `<div class="bank-choice ${revealed && isCorrectOption(q, option) ? 'is-answer' : ''}"><i>${String.fromCharCode(65 + index)}</i><span>${escapeHTML(option)}</span></div>`).join('')}</div>` : ''}<div class="bank-actions"><button type="button" class="bank-reveal" data-bank-action="reveal">${revealed ? 'Hide answer' : 'Reveal answer'}</button>${revealed && !isTrueFalseGroup(q) ? `<span class="bank-answer-note">✓ ${escapeHTML(answerText(q))}</span>` : ''}</div>${revealed ? `<div class="bank-explanation">${explanationHtml(q)}</div>` : ''}</article>`;
@@ -1147,8 +1160,9 @@ function attachEvents() {
     try { const record = JSON.parse(await file.text()); if (!validGhost(record)) throw new Error('Invalid ghost file'); app.importedGhost = record; $('ghostFileName').textContent = `${file.name} · ${modeInfo[record.mode].name}`; $('ghostToggle').checked = true; toast('Ghost imported.'); }
     catch { app.importedGhost = null; $('ghostFileName').textContent = 'Could not read that ghost file'; toast('That file is not a Packet Party ghost.'); }
   });
-  for (const id of ['bankSearch', 'bankSource', 'bankType']) $(id).addEventListener(id === 'bankSearch' ? 'input' : 'change', () => { app.bankLimit = 16; app.bankAll = false; renderBank(); });
-  $('revealAllButton').addEventListener('click', () => { app.bankRevealAll = !app.bankRevealAll; renderBank(); });
+  for (const id of ['bankSearch', 'bankSource', 'bankType']) $(id).addEventListener(id === 'bankSearch' ? 'input' : 'change', () => { app.bankLimit = 16; app.bankAll = false; if (id === 'bankSearch') { app.bankRevealAll = Boolean($('bankSearch').value.trim()); app.bankHidden.clear(); } renderBank(); });
+  $('revealAllButton').addEventListener('click', () => { app.bankRevealAll = !app.bankRevealAll; app.bankRevealed.clear(); app.bankHidden.clear(); renderBank(); });
+  $('bankExplanationToggle').addEventListener('click', () => setExplanationsVisible(!app.explanationsVisible));
   $('bankShowAll').addEventListener('click', () => {
     app.bankAll = !app.bankAll; app.bankLimit = 16;
     if (app.bankAll) { $('bankSearch').value = ''; $('bankSource').value = 'all'; $('bankType').value = 'all'; }
@@ -1160,7 +1174,7 @@ function attachEvents() {
     const button = event.target.closest('[data-bank-action]'); if (!button) return;
     const id = +button.closest('[data-id]').dataset.id;
     if (button.dataset.bankAction === 'star') { if (app.favorites.has(id)) app.favorites.delete(id); else app.favorites.add(id); writeJSON(deckStorageKey('pp_favorites'), [...app.favorites]); }
-    else { if (app.bankRevealed.has(id)) app.bankRevealed.delete(id); else app.bankRevealed.add(id); }
+    else { const shown = (app.bankRevealAll || app.bankRevealed.has(id)) && !app.bankHidden.has(id); if (shown) { app.bankHidden.add(id); app.bankRevealed.delete(id); } else { app.bankHidden.delete(id); app.bankRevealed.add(id); } }
     renderBank();
   });
   $('leaveGame').addEventListener('click', () => { clearInterval(app.timer); app.timer = null; setView('home'); app.game = null; });
