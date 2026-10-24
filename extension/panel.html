@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Packet Party — Pocket search</title><link rel="stylesheet" href="panel.css"><script src="panel.js" defer></script></head>
 <body style="font:inherit"><main>
-  <header><div class="eyebrow">YOUR POCKET QUESTION BANK</div><h1>Find it. Get it. <span>Remember it.</span></h1></header>
-  <form id="searchForm" role="search"><label for="query">Paste a question or a few keywords</label><div class="query-wrap"><textarea id="query" rows="3" maxlength="10000" placeholder="e.g. Which IEEE standard is used for WLANs?" spellcheck="false" autofocus></textarea><button id="clear" type="button" aria-label="Clear search" title="Clear">×</button></div>
-    <div class="filters"><select id="deck" aria-label="Question bank"><option value="all">All question banks</option><option value="pools">Original pools · 198</option><option value="ccst">CCST certification · 99</option><option value="summative3">Summative 3 · 212</option></select><button class="search-button" type="submit">Search ↗</button></div>
+  <form id="searchForm" role="search"><label for="query">Your question</label><div class="query-wrap"><textarea id="query" rows="2" maxlength="10000" placeholder="Type or paste your question here…" spellcheck="false" autofocus></textarea><button id="clear" type="button" aria-label="Clear question" title="Clear">×</button></div>
+    <div class="filters"><select id="deck" aria-label="Question bank"><option value="all">All question banks</option><option value="pools">Original pools · 198</option><option value="ccst">CCST certification · 99</option><option value="summative3">Summative 3 · 212</option></select><button class="search-button" type="submit">Find answer ↗</button></div>
   </form>
   <div class="preferences"><label><input type="checkbox" id="answers" checked> Show answers</label><label><input type="checkbox" id="explanations"> Open explanations</label></div>
   <p class="status" id="status" role="status" aria-live="polite">Loading your question banks…</p>
-  <section id="results" aria-label="Matching questions"></section>
+  <div class="result-scroll" id="resultScroll"><section id="results" aria-label="Matching questions"></section>
   <button type="button" class="more" id="more" hidden>Show more matches</button>
+  </div>
   <footer><span id="bankCount">Offline search</span><a href="https://packet-party-angelowww11s-projects.vercel.app/" target="_blank" rel="noopener noreferrer">Open Packet Party ↗</a></footer>
 </main></body></html>

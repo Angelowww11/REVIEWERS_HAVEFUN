@@ -17,19 +17,13 @@
       else { try { localStorage.setItem('pp_pocket_preview',JSON.stringify(prefs)); } catch {} }
     }, 250);
   }
-  function highlight(text) {
-    const terms = [...new Set(normalize($('query').value).split(' ').filter(t=>t.length>2 && !stop.has(t)))].slice(0,20);
-    if (!terms.length) return escape(text);
-    // Match literal query words only; never interpret pasted text as HTML or a regex.
-    const pattern = new RegExp(`(${terms.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')})`,'giu');
-    return String(text).split(pattern).map((part,i)=>i%2 ? `<mark>${escape(part)}</mark>` : escape(part)).join('');
-  }
+  const highlight = escape;
   function search() {
     clearTimeout(timer); persist(); limit = 20; revealed.clear();
     const raw = $('query').value.trim(), query = normalize(raw);
     if (!query) {
-      matches = []; $('status').textContent = `${bank.length} questions ready · search stays on this device`;
-      $('results').innerHTML = '<div class="empty"><span class="orbit" aria-hidden="true">✦</span><strong>Your study sidekick.</strong>Paste a whole question, part of a statement, or a networking term. Correct answers appear beside the original choices.</div>';
+      matches = []; $('status').textContent = `${bank.length} questions · ready`;
+      $('results').innerHTML = '<div class="empty"><strong>Your answer goes here.</strong>Paste a question above. Matching questions and their correct answers appear here.</div>';
       $('more').hidden = true; return;
     }
     const tokens = [...new Set(query.split(' ').filter(t=>!stop.has(t)))];
@@ -47,6 +41,7 @@
       return {q,score,qualifies};
     }).filter(r=>r.qualifies).sort((a,b)=>b.score-a.score || a.q.id-b.q.id).map(r=>r.q);
     $('status').textContent = matches.length ? `${matches.length} matching question${matches.length===1?'':'s'} · closest wording first` : 'No matching question in the selected bank.';
+    $('resultScroll').scrollTop = 0;
     render();
   }
   function render() {
@@ -67,24 +62,29 @@
     }).join('')}</ol>`;
     const answer = show && !group && !matching ? `<div class="answer-summary"><strong>✓ CORRECT ANSWER${q.answers.length>1?'S':''}</strong>${q.answers.map(a=>`<p>${escape(a)}</p>`).join('')}</div>` : '';
     const explanation = show && q.explanation ? `<details class="explanation" ${$('explanations').checked?'open':''}><summary>Explanation & memory cues</summary>${q.explanation.split(/\n\s*\n/).map(p=>`<p>${escape(p)}</p>`).join('')}${q.statementNotes.map((note,i)=>`<p><b>Statement ${i+1}:</b> ${escape(note)}</p>`).join('')}</details>` : '';
-    return `<article class="result"><div class="meta"><span>${escape(labels[q.deck])} · #${q.id}</span><span>${type}</span></div><div class="prompt">${highlight(q.question)}</div>${images}${choices}${answer}<button type="button" class="reveal" data-reveal="${key}">${show?'Hide answer':'Show answer'}</button>${explanation}</article>`;
+    const choiceDetails = !group && !matching && q.options.length ? `<details class="choice-details"><summary>See choices (${q.options.length})</summary>${choices}</details>` : choices;
+    return `<article class="result"><div class="meta"><span>${escape(labels[q.deck])} · #${q.id}</span><span>${type}</span></div><div class="prompt">${highlight(q.question)}</div>${images}${answer}${choiceDetails}<button type="button" class="reveal" data-reveal="${key}">${show?'Hide answer':'Show answer'}</button>${explanation}</article>`;
   }
   $('searchForm').addEventListener('submit',event=>{event.preventDefault();search();});
   $('query').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(search,180);});
   $('query').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();search();}});
   $('clear').onclick = ()=>{$('query').value='';search();$('query').focus();};
   $('deck').onchange = search;
-  for (const id of ['answers','explanations']) $(id).onchange = ()=>{persist();revealed.clear();render();};
+  for (const id of ['answers','explanations']) $(id).onchange = ()=>{persist();revealed.clear();if($('query').value.trim())render();else search();};
   $('more').onclick = ()=>{limit+=20;render();};
   $('results').addEventListener('click',event=>{
     const button=event.target.closest('[data-reveal]');if(!button)return;
     const key=button.dataset.reveal;revealed.set(key,!(revealed.has(key)?revealed.get(key):$('answers').checked));
-    const position=scrollY;render();scrollTo({top:position,behavior:'instant'});
+    const position=$('resultScroll').scrollTop;render();$('resultScroll').scrollTop=position;
   });
-  // Prevent the host page's number-key quiz shortcuts from seeing panel input.
   document.addEventListener('keydown',event=>{
+    if(!event.repeat && !event.isComposing && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && (event.key==='`' || event.code==='Backquote' && event.key==='Dead') && extension) {
+      event.preventDefault();event.stopImmediatePropagation();
+      if(parent!==window)parent.postMessage({type:'pp-pocket-toggle'},'*');
+      else if(new URLSearchParams(location.search).has('standalone'))window.close();
+    }
     if(event.key==='Escape'&&extension&&parent!==window) parent.postMessage({type:'pp-pocket-minimize'},'*');
-  });
+  },true);
   window.addEventListener('message',event=>{
     if(event.source===parent && event.data?.type==='pp-pocket-focus') $('query').focus({preventScroll:true});
   });
@@ -97,7 +97,7 @@
       $('answers').checked=prefs.answers!==false;$('explanations').checked=prefs.explanations===true;
       const response=await fetch(asset('bank-data.json'));if(!response.ok)throw Error('bank');
       bank=(await response.json()).questions.map(q=>({...q,_stem:normalize(q.question),_stemTokens:new Set(normalize(q.question+' '+q.statements.join(' ')+' '+q.pairs.map(p=>p.target).join(' ')).split(' ')),_tokens:new Set(normalize([q.question,...q.options,...q.statements,...q.answers,...q.pairs.map(p=>p.target)].join(' ')).split(' '))}));
-      $('bankCount').textContent=`${bank.length} questions · offline bank v1.0.0`;
+      $('bankCount').textContent=`${bank.length} questions · offline v1.1.0`;
       search();
     }catch{
       $('status').textContent='Could not load the bundled bank. Reload the extension from your browser’s Extensions page.';

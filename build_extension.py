@@ -22,6 +22,7 @@ class Prompt(HTMLParser):
 
 def build():
     questions, exhibits = [], set()
+    version = json.loads((EXT / 'manifest.json').read_text(encoding='utf-8'))['version']
     for deck, qfile, efile in [('pools','questions.json','explanations.json'),('ccst','ccst-questions.json','ccst-explanations.json'),('summative3','summative3-questions.json','summative3-explanations.json')]:
         data = json.loads((ROOT / qfile).read_text(encoding='utf-8'))
         explanations = json.loads((ROOT / efile).read_text(encoding='utf-8'))
@@ -30,7 +31,7 @@ def build():
             text = '\n'.join(re.sub(r'\s+', ' ', line).strip() for line in ''.join(prompt.text).splitlines() if line.strip())
             questions.append({'id':q['id'],'deck':deck,'type':q['type'],'question':text or q['question'],'options':q.get('options',[]),'answers':q['correctAnswers'],'statements':q.get('statements',[]),'pairs':q.get('dragPairs',[]),'statementNotes':q.get('statementExplanations',[]),'explanation':explanations.get(str(q['id']),''),'images':list(dict.fromkeys(prompt.images))})
             exhibits.update(prompt.images)
-    (EXT / 'bank-data.json').write_text(json.dumps({'version':'1.0.0','questions':questions},ensure_ascii=False,separators=(',',':')),encoding='utf-8')
+    (EXT / 'bank-data.json').write_text(json.dumps({'version':version,'questions':questions},ensure_ascii=False,separators=(',',':')),encoding='utf-8')
     for path in sorted(exhibits):
         destination = EXT / path
         destination.parent.mkdir(parents=True,exist_ok=True)
