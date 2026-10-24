@@ -22,7 +22,7 @@ Keep your networking question bank beside you. Press the backtick key on a regul
 
 Includes 509 cards: 198 original question-pool cards, 99 CCST certification cards, and 212 Summative 3 cards. Grouped True/False and matching questions show their answers individually. Separate source variants remain visible when saved answer keys disagree.
 
-Search works locally against the bundled bank, without an account or AI service. The extension stores your last question and display preferences on your device. It does not scrape page text or automatically read your clipboard. Questions are a release snapshot; later bank updates require a new extension version.
+Search works locally against the bundled bank, without an account or AI service. The extension stores your last question and display preferences on your device. Optional Search copied text imports a selected passage only when the user copies it on a webpage. It does not scan other page text or monitor the system clipboard. The box supports dragging, resizing, saved dimensions and Reset. Questions are a release snapshot; later bank updates require a new extension version.
 
 Minimize to a floating square, or hide/reopen with backtick. The requested backtick shortcut also works in webpage text fields and embedded question frames. Showing/hiding preserves the panel state. Per-tab drafts are saved in extension session storage. Browser settings/store pages and some viewers block webpage injection; the toolbar opens a small separate window there.
 
@@ -30,10 +30,10 @@ Minimize to a floating square, or hide/reopen with backtick. The requested backt
 
 Single purpose: search supplied networking study questions and display their saved answers and explanations in a small user-controlled panel.
 
-- HTTP/HTTPS content scripts and host access: listen for the requested backtick shortcut on regular webpages and their frames; repair listeners when tabs activate, pages finish loading or the extension starts. Background access checks current tab URLs only to select eligible pages. URLs and page text are not saved or transmitted. The panel and question bank load only when opened.
+- HTTP/HTTPS content scripts and host access: listen for the requested backtick shortcut on regular webpages and their frames; repair listeners when tabs activate, pages finish loading or the extension starts. Background access checks current tab URLs only to select eligible pages. URLs are not saved or transmitted. Explicit copied selections are imported locally and saved as the search query only when the copy-to-search setting is enabled; other page text is not scanned. The panel and question bank load only when opened.
 - `activeTab`: temporary access for the explicit toolbar action.
 - `scripting`: initialize/toggle the panel when the toolbar action runs.
-- `storage`: last pasted query, chosen bank and answer/explanation display preferences in local extension storage; per-tab drafts in session storage, removed when their tab closes.
+- `storage`: last pasted query, chosen bank and answer/explanation display preferences in local extension storage; per-tab drafts in session storage, removed when their tab closes; saved panel dimensions and the copy-to-search setting.
 - `web_accessible_resources`: the extension-origin panel document can be embedded as the isolated floating iframe.
 - No remote code, network AI, account access, clipboard-read permission or analytics in the extension. External links only navigate when clicked.
 

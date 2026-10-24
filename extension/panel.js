@@ -9,6 +9,7 @@
   let prefs = {query:'',deck:'all',answers:true,explanations:false};
   const revealed = new Map();
   const extension = typeof chrome !== 'undefined' && !!chrome.runtime?.id;
+  $('autoCopyLabel').hidden=!extension;
   if (extension && parent === window) $('query').focus({preventScroll:true});
   const asset = file => extension ? chrome.runtime.getURL(file) : file;
   function flushSave() {
@@ -92,14 +93,12 @@
     const key=button.dataset.reveal;revealed.set(key,!(revealed.has(key)?revealed.get(key):$('answers').checked));
     const position=$('resultScroll').scrollTop;render();$('resultScroll').scrollTop=position;
   });
-  document.addEventListener('keydown',event=>{
-    if(!event.isComposing && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && (event.key==='`' || event.code==='Backquote') && extension) {
-      event.preventDefault();event.stopImmediatePropagation();
-      if(event.repeat)return;
+  if(extension)PocketShortcut.install({toggle(){
       saveBeforeLeaving();
       if(parent!==window)parent.postMessage({type:'pp-pocket-toggle'},'*');
       else if(new URLSearchParams(location.search).has('standalone'))window.close();
-    }
+  }});
+  document.addEventListener('keydown',event=>{
     if(event.key==='Escape'&&extension&&parent!==window) {saveBeforeLeaving();parent.postMessage({type:'pp-pocket-minimize'},'*');}
   },true);
   window.addEventListener('message',event=>{
@@ -107,11 +106,20 @@
     if(event.data?.type==='pp-pocket-focus') $('query').focus({preventScroll:true});
     if(event.data?.type==='pp-pocket-hidden')saveBeforeLeaving();
     if(event.data?.type==='pp-pocket-ping' && extension && parent!==window)parent.postMessage({type:'pp-pocket-pong',nonce:event.data.nonce},'*');
+    if(event.data?.type==='pp-pocket-import'&&extension&&typeof event.data.text==='string'){
+      edited=true;$('query').value=event.data.text.trim().slice(0,10000);persist();
+      if(bank.length)search();
+      if(!document.hidden)$('query').focus({preventScroll:true});
+      parent.postMessage({type:'pp-pocket-imported',requestId:event.data.requestId},'*');
+    }
   });
+  $('autoCopy').onchange=()=>{if(extension)chrome.storage.local.set({pocketAutoCopy:$('autoCopy').checked}).catch(()=>{});};
+  if(extension)chrome.storage.onChanged.addListener((changes,area)=>{if(area==='local'&&changes.pocketAutoCopy)$('autoCopy').checked=changes.pocketAutoCopy.newValue!==false;});
   (async()=>{
     try {
       if(extension) {
-        prefs={...prefs,...(await chrome.storage.local.get('pocketPreferences')).pocketPreferences};
+        const saved=await chrome.storage.local.get(['pocketPreferences','pocketAutoCopy']);
+        prefs={...prefs,...saved.pocketPreferences};$('autoCopy').checked=saved.pocketAutoCopy!==false;
         try {
           const context=await chrome.runtime.sendMessage({type:'pp-pocket-context'});
           if(Number.isInteger(context?.tabId)&&chrome.storage.session){

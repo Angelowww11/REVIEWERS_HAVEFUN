@@ -1,4 +1,4 @@
-PACKET PARTY - POCKET SEARCH 1.2.1
+PACKET PARTY - POCKET SEARCH 1.3.0
 
 Desktop Chrome, Microsoft Edge and Brave (Manifest V3).
 
@@ -30,6 +30,12 @@ The toolbar icon and Ctrl+Shift+Y (Command+Shift+Y on Mac) also show/hide it.
 Showing/hiding keeps the extension running and preserves the question/results.
 Each tab keeps its own question draft for the current browser session.
 Returning to a tab repairs missing listeners, removed panels and unloaded frames.
+The shortcut shows/hides after the key is released, before focus moves.
+Copy selected text on a regular webpage to open the box and search automatically.
+Uncheck Search copied text in the box to pause automatic import. This observes
+webpage copy actions only; it does not monitor your system clipboard.
+Drag the bottom-right corner to resize, or enter W/H values in the bottom bar.
+Your chosen size is saved; Reset restores 360 x 440.
 Results update as you type; Enter searches immediately.
 Use the bank filter to choose Original pools, CCST, Summative 3, or all three.
 Correct choices glow by default. Show/hide answers and expand explanations.
@@ -55,9 +61,12 @@ PRIVACY / PERMISSIONS
 activeTab + scripting: show the floating panel on the tab you explicitly open it on.
 HTTP/HTTPS content-script and host access: listen for backtick in pages/frames
 and repair the listener when switching tabs, loading a page or updating.
-The question box is created only when opened; no page text is extracted.
+The question box is created only when opened or selected text is copied with
+Search copied text enabled. Other page text is not scanned.
 storage: remember your last pasted query, bank and answer/explanation settings.
-No page scraping, automatic clipboard reads, tracking, remote AI or account login.
+No background clipboard monitoring, tracking, remote AI or account login.
+When Search copied text is enabled, a webpage copy action reads only the copied
+selection and searches it locally. Page text is not scanned automatically.
 Searches run locally against the bundled bank and work without internet.
 Clear search to remove the saved query; uninstall to remove all extension storage.
 Open Packet Party follows a normal external link only when you click it.

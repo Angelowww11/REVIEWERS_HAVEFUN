@@ -10,7 +10,7 @@ async function ensureTop(tabId) {
       if(answer?.ok&&answer.version===VERSION)return true;
     }catch{}
     try {
-      await chrome.scripting.executeScript({target:{tabId,allFrames:true},files:['floating.js']});
+      await chrome.scripting.executeScript({target:{tabId,allFrames:true},files:['hotkey.js','floating.js']});
       return true;
     }catch{return false;}
   })();
@@ -49,6 +49,13 @@ chrome.runtime.onMessage.addListener((message,sender,respond)=>{
   }
   if(message?.type==='pp-pocket-toggle-top'&&Number.isInteger(sender.tab?.id)) {
     toggleTab(sender.tab.id).then(ok=>respond({ok}),()=>respond({ok:false}));return true;
+  }
+  if(message?.type==='pp-pocket-copy'&&Number.isInteger(sender.tab?.id)&&typeof message.text==='string') {
+    const tabId=sender.tab.id,text=message.text.trim().slice(0,10000);
+    (async()=>{
+      if(!text||(await chrome.storage.local.get('pocketAutoCopy')).pocketAutoCopy===false||!await ensureTop(tabId))return false;
+      return Boolean((await chrome.tabs.sendMessage(tabId,{type:'pp-pocket-import',text},{frameId:0}))?.ok);
+    })().then(ok=>respond({ok}),()=>respond({ok:false}));return true;
   }
 });
 chrome.tabs.onRemoved.addListener(tabId=>{
