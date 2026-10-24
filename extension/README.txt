@@ -1,4 +1,4 @@
-PACKET PARTY - POCKET SEARCH 1.3.0
+PACKET PARTY - POCKET SEARCH 1.3.1
 
 Desktop Chrome, Microsoft Edge and Brave (Manifest V3).
 
@@ -31,7 +31,9 @@ Showing/hiding keeps the extension running and preserves the question/results.
 Each tab keeps its own question draft for the current browser session.
 Returning to a tab repairs missing listeners, removed panels and unloaded frames.
 The shortcut shows/hides after the key is released, before focus moves.
-Copy selected text on a regular webpage to open the box and search automatically.
+Copy selected webpage text to replace the question and search automatically.
+This also updates the question while hidden/minimized, without opening the box
+or moving keyboard focus. Show the box to see the latest copied question.
 Uncheck Search copied text in the box to pause automatic import. This observes
 webpage copy actions only; it does not monitor your system clipboard.
 Drag the bottom-right corner to resize, or enter W/H values in the bottom bar.
@@ -61,8 +63,9 @@ PRIVACY / PERMISSIONS
 activeTab + scripting: show the floating panel on the tab you explicitly open it on.
 HTTP/HTTPS content-script and host access: listen for backtick in pages/frames
 and repair the listener when switching tabs, loading a page or updating.
-The question box is created only when opened or selected text is copied with
-Search copied text enabled. Other page text is not scanned.
+The panel may load invisibly after a copy, but only shows when you show it.
+Selected text is imported when Search copied text is enabled, including while
+hidden/minimized. Other page text is not scanned.
 storage: remember your last pasted query, bank and answer/explanation settings.
 No background clipboard monitoring, tracking, remote AI or account login.
 When Search copied text is enabled, a webpage copy action reads only the copied

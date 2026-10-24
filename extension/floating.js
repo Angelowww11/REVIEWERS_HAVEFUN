@@ -60,7 +60,7 @@
     if (message?.type === 'pp-pocket-show-hide') respond({ok:toggle(),version});
     if (message?.type === 'pp-pocket-import' && typeof message.text==='string') {
       if(!controller)controller=mount();
-      controller.importText(message.text);respond({ok:true});
+      respond({ok:controller.importText(message.text)===true});
     }
   };
   runtime.onMessage.addListener(onMessage);
@@ -121,7 +121,8 @@
       if(!sizeEdited&&Number.isFinite(size?.width)&&Number.isFinite(size?.height))preferredSize={width:Math.max(260,Math.min(2000,size.width)),height:Math.max(280,Math.min(2000,size.height))};
       applySize();clamp();
     }).catch(()=>{});
-    function deliverText(){if(pendingText)send({type:'pp-pocket-import',...pendingText});}
+    function isShowing(){return visible&&expanded&&host.isConnected&&!document.hidden;}
+    function deliverText(){if(pendingText)send({type:'pp-pocket-import',...pendingText,focus:isShowing()});}
     function place(left,top) {
       const r = host.getBoundingClientRect();
       host.style.setProperty('right','auto','important'); host.style.setProperty('bottom','auto','important');
@@ -243,6 +244,6 @@
     });
     root.querySelector('.reset-size').onclick=()=>{preferredSize={width:360,height:440};applySize(true);clamp();};
     iframe.src=frameURL;attach();applySize();
-    return {connected:()=>host.isConnected,show:()=>show(),toggle:()=>{if(visible&&expanded)hide();else show();},importText(text){pendingText={text:text.trim().slice(0,10000),requestId:++importSequence};show();deliverText();},recover:recoverPanel,suspend,destroy(){suspend();mountCleanups.splice(0).forEach(cleanup=>cleanup());host.remove();focusSink.remove();}};
+    return {connected:()=>host.isConnected,isShowing,show:()=>show(),toggle:()=>{if(visible&&expanded)hide();else show();},importText(text){pendingText={text:text.trim().slice(0,10000),requestId:++importSequence};deliverText();return true;},recover:recoverPanel,suspend,destroy(){suspend();mountCleanups.splice(0).forEach(cleanup=>cleanup());host.remove();focusSink.remove();}};
   }
 })();

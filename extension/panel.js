@@ -109,7 +109,7 @@
     if(event.data?.type==='pp-pocket-import'&&extension&&typeof event.data.text==='string'){
       edited=true;$('query').value=event.data.text.trim().slice(0,10000);persist();
       if(bank.length)search();
-      if(!document.hidden)$('query').focus({preventScroll:true});
+      if(event.data.focus!==false&&!document.hidden)$('query').focus({preventScroll:true});
       parent.postMessage({type:'pp-pocket-imported',requestId:event.data.requestId},'*');
     }
   });
