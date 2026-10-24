@@ -33,7 +33,7 @@ const quotes = [
 ];
 const app = {
   questions: [], explanations: {}, mode: 'shuffle', view: 'home', game: null, bankLimit: 16,
-  bankAll: false, bankRevealAll: false, bankRevealed: new Set(), bankHidden: new Set(), explanationsVisible: readJSON('pp_explanations_visible', true), importedGhost: null,
+  hideAnswers: readJSON('pp_hide_answers', false) === true, bankAll: false, bankRevealAll: false, bankRevealed: new Set(), bankHidden: new Set(), explanationsVisible: readJSON('pp_explanations_visible', true), importedGhost: null,
   favorites: new Set(readJSON(deckStorageKey('pp_favorites'), [])),
   stats: readJSON(deckStorageKey('pp_stats'), { runs: 0, correct: 0, bestStreak: 0, bestScore: 0 }),
   soundOn: readJSON('pp_sound', false), timer: null, toastTimer: null, audio: null
@@ -224,6 +224,7 @@ function explanationHtml(q) {
 function setExplanationsVisible(visible) {
   app.explanationsVisible = Boolean(visible);
   writeJSON('pp_explanations_visible', app.explanationsVisible);
+  window.dispatchEvent(new CustomEvent('packet:explanations', { detail: { visible: app.explanationsVisible } }));
   document.querySelectorAll('details.feedback-explanation').forEach(panel => { if (panel.open !== app.explanationsVisible) panel.open = app.explanationsVisible; });
   const button = $('bankExplanationToggle');
   if (button) { button.textContent = app.explanationsVisible ? 'Hide explanations' : 'Show explanations'; button.setAttribute('aria-pressed', String(app.explanationsVisible)); }
@@ -232,6 +233,13 @@ document.addEventListener('toggle', event => {
   const panel = event.target;
   if (panel.matches?.('details.feedback-explanation') && panel.open !== app.explanationsVisible) setExplanationsVisible(panel.open);
 }, true);
+window.addEventListener('packet:study-settings', event => {
+  app.hideAnswers = event.detail.hideAnswers === true;
+  app.bankRevealAll = !app.hideAnswers && Boolean($('bankSearch')?.value.trim());
+  app.bankRevealed.clear(); app.bankHidden.clear();
+  setExplanationsVisible(event.detail.explanationsVisible !== false);
+  if (app.view === 'bank') renderBank();
+});
 function answerComparison(q, response = '') {
   return `<div class="answer-comparison">${response ? `<div><span>Your answer</span><strong>${escapeHTML(response)}</strong></div>` : ''}<div><span>Correct answer</span><strong>${escapeHTML(answerText(q))}</strong></div></div>`;
 }
@@ -1160,7 +1168,7 @@ function attachEvents() {
     try { const record = JSON.parse(await file.text()); if (!validGhost(record)) throw new Error('Invalid ghost file'); app.importedGhost = record; $('ghostFileName').textContent = `${file.name} · ${modeInfo[record.mode].name}`; $('ghostToggle').checked = true; toast('Ghost imported.'); }
     catch { app.importedGhost = null; $('ghostFileName').textContent = 'Could not read that ghost file'; toast('That file is not a Packet Party ghost.'); }
   });
-  for (const id of ['bankSearch', 'bankSource', 'bankType']) $(id).addEventListener(id === 'bankSearch' ? 'input' : 'change', () => { app.bankLimit = 16; app.bankAll = false; if (id === 'bankSearch') { app.bankRevealAll = Boolean($('bankSearch').value.trim()); app.bankHidden.clear(); } renderBank(); });
+  for (const id of ['bankSearch', 'bankSource', 'bankType']) $(id).addEventListener(id === 'bankSearch' ? 'input' : 'change', () => { app.bankLimit = 16; app.bankAll = false; if (id === 'bankSearch') { app.bankRevealAll = !app.hideAnswers && Boolean($('bankSearch').value.trim()); app.bankHidden.clear(); } renderBank(); });
   $('revealAllButton').addEventListener('click', () => { app.bankRevealAll = !app.bankRevealAll; app.bankRevealed.clear(); app.bankHidden.clear(); renderBank(); });
   $('bankExplanationToggle').addEventListener('click', () => setExplanationsVisible(!app.explanationsVisible));
   $('bankShowAll').addEventListener('click', () => {
