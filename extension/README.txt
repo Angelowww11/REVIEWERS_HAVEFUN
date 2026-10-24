@@ -1,6 +1,12 @@
-PACKET PARTY - POCKET SEARCH 1.1.0
+PACKET PARTY - POCKET SEARCH 1.1.1
 
 Desktop Chrome, Microsoft Edge and Brave (Manifest V3).
+
+PUBLIC DOWNLOAD + BROWSER-SPECIFIC GUIDE
+https://packet-party-angelowww11s-projects.vercel.app/get-extension
+
+NO-INSTALL ONLINE VERSION
+https://packet-party-angelowww11s-projects.vercel.app/pocket
 
 INSTALL
 1. Extract the ZIP. Keep the extracted folder in a permanent location.
@@ -58,3 +64,6 @@ Add-ons listing. Desktop browser extensions are separate from the mobile PWA.
 SOURCE / UPDATES
 https://github.com/Angelowww11/REVIEWERS_HAVEFUN
 https://packet-party-angelowww11s-projects.vercel.app/extension.html
+
+PRIVACY
+https://packet-party-angelowww11s-projects.vercel.app/extension-privacy.html

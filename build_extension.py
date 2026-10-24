@@ -42,13 +42,16 @@ def build():
         for size in [16,32,48,128]: icon.resize((size,size),Image.Resampling.LANCZOS).save(EXT / f'icons/{size}.png')
     (ROOT / 'downloads').mkdir(exist_ok=True)
     archive = ROOT / 'downloads/packet-party-pocket-search.zip'
-    with ZipFile(archive,'w',ZIP_DEFLATED) as zipped:
-        for path in sorted(EXT.rglob('*')):
-            if path.is_file():
-                info_path = 'packet-party-pocket-search/' + path.relative_to(EXT).as_posix()
-                from zipfile import ZipInfo
-                entry = ZipInfo(info_path,date_time=(2026,10,24,0,0,0)); entry.compress_type=ZIP_DEFLATED
-                zipped.writestr(entry,path.read_bytes())
+    store_archive = ROOT / 'downloads/packet-party-pocket-search-store.zip'
+    # The public ZIP has a friendly folder; store uploads need manifest.json at root.
+    for target, prefix in [(archive, 'packet-party-pocket-search/'), (store_archive, '')]:
+        with ZipFile(target,'w',ZIP_DEFLATED) as zipped:
+            for path in sorted(EXT.rglob('*')):
+                if path.is_file():
+                    info_path = prefix + path.relative_to(EXT).as_posix()
+                    from zipfile import ZipInfo
+                    entry = ZipInfo(info_path,date_time=(2026,10,24,0,0,0)); entry.compress_type=ZIP_DEFLATED
+                    zipped.writestr(entry,path.read_bytes())
     print(f'Packaged {len(questions)} questions, {len(exhibits)} exhibits. ZIP: {archive.stat().st_size:,} bytes')
 
 if __name__ == '__main__': build()

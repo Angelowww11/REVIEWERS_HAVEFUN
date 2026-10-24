@@ -37,6 +37,9 @@
   iframe.src = chrome.runtime.getURL('panel.html');
   (document.body || document.documentElement).append(host);
   let expanded = true, visible = false, drag = null;
+  iframe.addEventListener('load', () => {
+    if (visible && expanded) iframe.contentWindow.postMessage({type:'pp-pocket-focus'}, new URL(iframe.src).origin);
+  });
   function place(left, top) {
     const rect = host.getBoundingClientRect();
     host.style.setProperty('right', 'auto', 'important');

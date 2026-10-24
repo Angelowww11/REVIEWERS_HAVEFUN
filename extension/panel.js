@@ -8,6 +8,7 @@
   let prefs = {query:'',deck:'all',answers:true,explanations:false};
   const revealed = new Map();
   const extension = typeof chrome !== 'undefined' && !!chrome.runtime?.id;
+  if (extension && parent === window) $('query').focus({preventScroll:true});
   const asset = file => extension ? chrome.runtime.getURL(file) : file;
   function persist() {
     prefs = {query:$('query').value,deck:$('deck').value,answers:$('answers').checked,explanations:$('explanations').checked};
@@ -96,11 +97,12 @@
       $('deck').value=['all','pools','ccst','summative3'].includes(prefs.deck)?prefs.deck:'all';
       $('answers').checked=prefs.answers!==false;$('explanations').checked=prefs.explanations===true;
       const response=await fetch(asset('bank-data.json'));if(!response.ok)throw Error('bank');
-      bank=(await response.json()).questions.map(q=>({...q,_stem:normalize(q.question),_stemTokens:new Set(normalize(q.question+' '+q.statements.join(' ')+' '+q.pairs.map(p=>p.target).join(' ')).split(' ')),_tokens:new Set(normalize([q.question,...q.options,...q.statements,...q.answers,...q.pairs.map(p=>p.target)].join(' ')).split(' '))}));
-      $('bankCount').textContent=`${bank.length} questions · offline v1.1.0`;
+      const bundled=await response.json();
+      bank=bundled.questions.map(q=>({...q,_stem:normalize(q.question),_stemTokens:new Set(normalize(q.question+' '+q.statements.join(' ')+' '+q.pairs.map(p=>p.target).join(' ')).split(' ')),_tokens:new Set(normalize([q.question,...q.options,...q.statements,...q.answers,...q.pairs.map(p=>p.target)].join(' ')).split(' '))}));
+      $('bankCount').textContent=`${bank.length} questions · ${extension?'offline v'+chrome.runtime.getManifest().version:'web search'}`;
       search();
     }catch{
-      $('status').textContent='Could not load the bundled bank. Reload the extension from your browser’s Extensions page.';
+      $('status').textContent=extension?'Could not load the bundled bank. Reload the extension from your browser’s Extensions page.':'Could not load the question bank. Check your connection and refresh this page.';
     }
   })();
 })();
