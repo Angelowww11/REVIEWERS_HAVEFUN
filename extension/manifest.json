@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Packet Party — Pocket Search",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "homepage_url": "https://packet-party-angelowww11s-projects.vercel.app/get-extension",
   "description": "Paste a networking question into a floating study panel. Search Packet Party's three offline question banks, answers and explanations.",
   "permissions": [
@@ -9,6 +9,7 @@
     "scripting",
     "storage"
   ],
+  "host_permissions": ["http://*/*", "https://*/*"],
   "commands": {
     "_execute_action": {
       "suggested_key": {
@@ -29,7 +30,9 @@
       "js": [
         "floating.js"
       ],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
     }
   ],
   "action": {

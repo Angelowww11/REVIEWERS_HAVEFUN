@@ -24,16 +24,16 @@ Includes 509 cards: 198 original question-pool cards, 99 CCST certification card
 
 Search works locally against the bundled bank, without an account or AI service. The extension stores your last question and display preferences on your device. It does not scrape page text or automatically read your clipboard. Questions are a release snapshot; later bank updates require a new extension version.
 
-Minimize to a floating square, or hide/reopen with backtick. The shortcut does not interrupt typing in other websites’ text fields. Browser settings/store pages and some viewers block webpage injection; the toolbar opens a small separate window there.
+Minimize to a floating square, or hide/reopen with backtick. The requested backtick shortcut also works in webpage text fields and embedded question frames. Showing/hiding preserves the panel state. Per-tab drafts are saved in extension session storage. Browser settings/store pages and some viewers block webpage injection; the toolbar opens a small separate window there.
 
 ## Draft single-purpose and permission declarations
 
 Single purpose: search supplied networking study questions and display their saved answers and explanations in a small user-controlled panel.
 
-- HTTP/HTTPS content scripts: listen for the requested backtick shortcut on regular webpages. No page text is extracted. The panel and question bank are created/loaded only when the user opens the panel.
+- HTTP/HTTPS content scripts and host access: listen for the requested backtick shortcut on regular webpages and their frames; repair listeners when tabs activate, pages finish loading or the extension starts. Background access checks current tab URLs only to select eligible pages. URLs and page text are not saved or transmitted. The panel and question bank load only when opened.
 - `activeTab`: temporary access for the explicit toolbar action.
 - `scripting`: initialize/toggle the panel when the toolbar action runs.
-- `storage`: last pasted query, chosen bank and answer/explanation display preferences in local extension storage.
+- `storage`: last pasted query, chosen bank and answer/explanation display preferences in local extension storage; per-tab drafts in session storage, removed when their tab closes.
 - `web_accessible_resources`: the extension-origin panel document can be embedded as the isolated floating iframe.
 - No remote code, network AI, account access, clipboard-read permission or analytics in the extension. External links only navigate when clicked.
 

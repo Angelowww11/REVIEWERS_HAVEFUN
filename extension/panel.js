@@ -5,22 +5,36 @@
   const normalize = text => String(text || '').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
   const escape = text => String(text ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let bank = [], matches = [], limit = 20, timer, saveTimer;
+  let draftKey = null, pendingSave = null, edited = false;
   let prefs = {query:'',deck:'all',answers:true,explanations:false};
   const revealed = new Map();
   const extension = typeof chrome !== 'undefined' && !!chrome.runtime?.id;
   if (extension && parent === window) $('query').focus({preventScroll:true});
   const asset = file => extension ? chrome.runtime.getURL(file) : file;
+  function flushSave() {
+    clearTimeout(saveTimer);
+    if(!pendingSave)return;
+    const snapshot=pendingSave;pendingSave=null;
+    if(extension) {
+      try {
+        chrome.storage.local.set({pocketPreferences:snapshot}).catch(()=>{});
+        if(draftKey&&chrome.storage.session)chrome.storage.session.set({[draftKey]:snapshot}).catch(()=>{});
+      }catch{}
+    } else {try{localStorage.setItem('pp_pocket_preview',JSON.stringify(snapshot));}catch{}}
+  }
   function persist() {
     prefs = {query:$('query').value,deck:$('deck').value,answers:$('answers').checked,explanations:$('explanations').checked};
+    pendingSave={...prefs};
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      if (extension) chrome.storage.local.set({pocketPreferences:prefs}).catch(()=>{});
-      else { try { localStorage.setItem('pp_pocket_preview',JSON.stringify(prefs)); } catch {} }
-    }, 250);
+    saveTimer = setTimeout(flushSave,200);
   }
+  function saveBeforeLeaving(){if(edited)persist();flushSave();}
+  window.addEventListener('pagehide',saveBeforeLeaving);
+  window.addEventListener('blur',saveBeforeLeaving);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)saveBeforeLeaving();});
   const highlight = escape;
-  function search() {
-    clearTimeout(timer); persist(); limit = 20; revealed.clear();
+  function search(save = true) {
+    clearTimeout(timer); if(save!==false)persist(); limit = 20; revealed.clear();
     const raw = $('query').value.trim(), query = normalize(raw);
     if (!query) {
       matches = []; $('status').textContent = `${bank.length} questions · ready`;
@@ -67,11 +81,11 @@
     return `<article class="result"><div class="meta"><span>${escape(labels[q.deck])} · #${q.id}</span><span>${type}</span></div><div class="prompt">${highlight(q.question)}</div>${images}${answer}${choiceDetails}<button type="button" class="reveal" data-reveal="${key}">${show?'Hide answer':'Show answer'}</button>${explanation}</article>`;
   }
   $('searchForm').addEventListener('submit',event=>{event.preventDefault();search();});
-  $('query').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(search,180);});
+  $('query').addEventListener('input',()=>{edited=true;persist();clearTimeout(timer);timer=setTimeout(search,180);});
   $('query').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();search();}});
-  $('clear').onclick = ()=>{$('query').value='';search();$('query').focus();};
-  $('deck').onchange = search;
-  for (const id of ['answers','explanations']) $(id).onchange = ()=>{persist();revealed.clear();if($('query').value.trim())render();else search();};
+  $('clear').onclick = ()=>{edited=true;$('query').value='';search();$('query').focus();};
+  $('deck').onchange = ()=>{edited=true;search();};
+  for (const id of ['answers','explanations']) $(id).onchange = ()=>{edited=true;persist();revealed.clear();if($('query').value.trim())render();else search();};
   $('more').onclick = ()=>{limit+=20;render();};
   $('results').addEventListener('click',event=>{
     const button=event.target.closest('[data-reveal]');if(!button)return;
@@ -79,28 +93,44 @@
     const position=$('resultScroll').scrollTop;render();$('resultScroll').scrollTop=position;
   });
   document.addEventListener('keydown',event=>{
-    if(!event.repeat && !event.isComposing && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && (event.key==='`' || event.code==='Backquote' && event.key==='Dead') && extension) {
+    if(!event.isComposing && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && (event.key==='`' || event.code==='Backquote') && extension) {
       event.preventDefault();event.stopImmediatePropagation();
+      if(event.repeat)return;
+      saveBeforeLeaving();
       if(parent!==window)parent.postMessage({type:'pp-pocket-toggle'},'*');
       else if(new URLSearchParams(location.search).has('standalone'))window.close();
     }
-    if(event.key==='Escape'&&extension&&parent!==window) parent.postMessage({type:'pp-pocket-minimize'},'*');
+    if(event.key==='Escape'&&extension&&parent!==window) {saveBeforeLeaving();parent.postMessage({type:'pp-pocket-minimize'},'*');}
   },true);
   window.addEventListener('message',event=>{
-    if(event.source===parent && event.data?.type==='pp-pocket-focus') $('query').focus({preventScroll:true});
+    if(event.source!==parent)return;
+    if(event.data?.type==='pp-pocket-focus') $('query').focus({preventScroll:true});
+    if(event.data?.type==='pp-pocket-hidden')saveBeforeLeaving();
+    if(event.data?.type==='pp-pocket-ping' && extension && parent!==window)parent.postMessage({type:'pp-pocket-pong',nonce:event.data.nonce},'*');
   });
   (async()=>{
     try {
-      if(extension) prefs={...prefs,...(await chrome.storage.local.get('pocketPreferences')).pocketPreferences};
+      if(extension) {
+        prefs={...prefs,...(await chrome.storage.local.get('pocketPreferences')).pocketPreferences};
+        try {
+          const context=await chrome.runtime.sendMessage({type:'pp-pocket-context'});
+          if(Number.isInteger(context?.tabId)&&chrome.storage.session){
+            draftKey=`pocketTab:${context.tabId}`;
+            prefs={...prefs,...(await chrome.storage.session.get(draftKey))[draftKey]};
+          }
+        }catch{}
+      }
       else {try{prefs={...prefs,...JSON.parse(localStorage.getItem('pp_pocket_preview')||'{}')};}catch{}}
-      $('query').value=typeof prefs.query==='string'?prefs.query:'';
-      $('deck').value=['all','pools','ccst','summative3'].includes(prefs.deck)?prefs.deck:'all';
-      $('answers').checked=prefs.answers!==false;$('explanations').checked=prefs.explanations===true;
+      if(!edited) {
+        $('query').value=typeof prefs.query==='string'?prefs.query:'';
+        $('deck').value=['all','pools','ccst','summative3'].includes(prefs.deck)?prefs.deck:'all';
+        $('answers').checked=prefs.answers!==false;$('explanations').checked=prefs.explanations===true;
+      }
       const response=await fetch(asset('bank-data.json'));if(!response.ok)throw Error('bank');
       const bundled=await response.json();
       bank=bundled.questions.map(q=>({...q,_stem:normalize(q.question),_stemTokens:new Set(normalize(q.question+' '+q.statements.join(' ')+' '+q.pairs.map(p=>p.target).join(' ')).split(' ')),_tokens:new Set(normalize([q.question,...q.options,...q.statements,...q.answers,...q.pairs.map(p=>p.target)].join(' ')).split(' '))}));
       $('bankCount').textContent=`${bank.length} questions · ${extension?'offline v'+chrome.runtime.getManifest().version:'web search'}`;
-      search();
+      search(edited);
     }catch{
       $('status').textContent=extension?'Could not load the bundled bank. Reload the extension from your browser’s Extensions page.':'Could not load the question bank. Check your connection and refresh this page.';
     }

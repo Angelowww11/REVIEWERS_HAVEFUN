@@ -1,4 +1,4 @@
-PACKET PARTY - POCKET SEARCH 1.2.0
+PACKET PARTY - POCKET SEARCH 1.2.1
 
 Desktop Chrome, Microsoft Edge and Brave (Manifest V3).
 
@@ -24,9 +24,12 @@ Press the backtick key (`) on a normal webpage to show/hide the compact
 360 x 440 question box. Type or paste your question into its own input.
 The answer appears directly below; choices and explanations can be expanded.
 The shortcut also hides the box while its question input is focused.
-While typing in OTHER sites' text fields, backtick types normally.
+Backtick shows/hides the box from webpage text fields and embedded frames too.
 Refresh already-open webpages after installing/updating to activate the shortcut.
-The toolbar icon and Ctrl+Shift+Y (Command+Shift+Y on Mac) also toggle the box.
+The toolbar icon and Ctrl+Shift+Y (Command+Shift+Y on Mac) also show/hide it.
+Showing/hiding keeps the extension running and preserves the question/results.
+Each tab keeps its own question draft for the current browser session.
+Returning to a tab repairs missing listeners, removed panels and unloaded frames.
 Results update as you type; Enter searches immediately.
 Use the bank filter to choose Original pools, CCST, Summative 3, or all three.
 Correct choices glow by default. Show/hide answers and expand explanations.
@@ -50,7 +53,8 @@ Download a newer ZIP and reload/reinstall to get later bank updates.
 
 PRIVACY / PERMISSIONS
 activeTab + scripting: show the floating panel on the tab you explicitly open it on.
-HTTP/HTTPS content-script access: listen for backtick on regular webpages.
+HTTP/HTTPS content-script and host access: listen for backtick in pages/frames
+and repair the listener when switching tabs, loading a page or updating.
 The question box is created only when opened; no page text is extracted.
 storage: remember your last pasted query, bank and answer/explanation settings.
 No page scraping, automatic clipboard reads, tracking, remote AI or account login.
