@@ -343,7 +343,6 @@ function updateStats() {
 function setView(view) {
   if (app.view === 'game' && view !== 'game' && view !== 'result') pauseRankedRun();
   app.view = view;
-  $(`${view}View`).style.minHeight = '';
   document.body.dataset.view = view;
   for (const id of ['home', 'bank', 'leaderboard', 'game', 'practice', 'live', 'result']) $(`${id}View`).hidden = id !== view;
   document.querySelectorAll('.nav-link').forEach(button => { const active = button.dataset.view === view; button.classList.toggle('is-active', active); if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
@@ -469,11 +468,11 @@ function openPractice() {
 }
 function retainQuestionScroll(container, render) {
   const x = window.scrollX, y = window.scrollY;
-  // Keep enough room for the current viewport when the next question is shorter.
-  const documentTop = container.getBoundingClientRect().top + y;
-  container.style.minHeight = `${Math.max(0, Math.ceil(y + window.innerHeight - documentTop))}px`;
+  const previousAnchor = container.style.overflowAnchor;
+  container.style.overflowAnchor = 'none';
   render();
   window.scrollTo({ left: x, top: y, behavior: 'instant' });
+  requestAnimationFrame(() => { container.style.overflowAnchor = previousAnchor; });
 }
 function practiceGoTo(index) {
   if (!Number.isInteger(index) || index < 0 || index >= app.questions.length) { toast(`Choose a number from 1 to ${app.questions.length}.`); return; }
