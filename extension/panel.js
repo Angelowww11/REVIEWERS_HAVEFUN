@@ -1,0 +1,106 @@
+(() => {
+  const $ = id => document.getElementById(id);
+  const labels = {pools:'Original pools',ccst:'CCST certification',summative3:'Summative 3'};
+  const stop = new Set('a an the of to is are was were in on at for with and or which what following group answer choices choose question refer exhibit'.split(' '));
+  const normalize = text => String(text || '').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+  const escape = text => String(text ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let bank = [], matches = [], limit = 20, timer, saveTimer;
+  let prefs = {query:'',deck:'all',answers:true,explanations:false};
+  const revealed = new Map();
+  const extension = typeof chrome !== 'undefined' && !!chrome.runtime?.id;
+  const asset = file => extension ? chrome.runtime.getURL(file) : file;
+  function persist() {
+    prefs = {query:$('query').value,deck:$('deck').value,answers:$('answers').checked,explanations:$('explanations').checked};
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      if (extension) chrome.storage.local.set({pocketPreferences:prefs}).catch(()=>{});
+      else { try { localStorage.setItem('pp_pocket_preview',JSON.stringify(prefs)); } catch {} }
+    }, 250);
+  }
+  function highlight(text) {
+    const terms = [...new Set(normalize($('query').value).split(' ').filter(t=>t.length>2 && !stop.has(t)))].slice(0,20);
+    if (!terms.length) return escape(text);
+    // Match literal query words only; never interpret pasted text as HTML or a regex.
+    const pattern = new RegExp(`(${terms.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')})`,'giu');
+    return String(text).split(pattern).map((part,i)=>i%2 ? `<mark>${escape(part)}</mark>` : escape(part)).join('');
+  }
+  function search() {
+    clearTimeout(timer); persist(); limit = 20; revealed.clear();
+    const raw = $('query').value.trim(), query = normalize(raw);
+    if (!query) {
+      matches = []; $('status').textContent = `${bank.length} questions ready · search stays on this device`;
+      $('results').innerHTML = '<div class="empty"><span class="orbit" aria-hidden="true">✦</span><strong>Your study sidekick.</strong>Paste a whole question, part of a statement, or a networking term. Correct answers appear beside the original choices.</div>';
+      $('more').hidden = true; return;
+    }
+    const tokens = [...new Set(query.split(' ').filter(t=>!stop.has(t)))];
+    const meaningful = tokens.length ? tokens : query.split(' ');
+    matches = bank.filter(q=>$('deck').value === 'all' || q.deck === $('deck').value).map(q => {
+      const stemHits = meaningful.filter(t=>q._stemTokens.has(t)).length;
+      const allHits = meaningful.filter(t=>q._tokens.has(t)).length;
+      const stemRatio = stemHits / meaningful.length;
+      let score = stemRatio * 70 + allHits / meaningful.length * 25;
+      if (q._stem === query) score += 150;
+      else if (query.length > 5 && q._stem.includes(query)) score += 95;
+      else if (q._stem.length > 20 && query.includes(q._stem)) score += 105;
+      if (meaningful.length === 1 && stemHits) score += 20;
+      const qualifies = meaningful.length <= 2 ? allHits === meaningful.length : allHits / meaningful.length >= .35 && stemHits >= Math.min(2,meaningful.length);
+      return {q,score,qualifies};
+    }).filter(r=>r.qualifies).sort((a,b)=>b.score-a.score || a.q.id-b.q.id).map(r=>r.q);
+    $('status').textContent = matches.length ? `${matches.length} matching question${matches.length===1?'':'s'} · closest wording first` : 'No matching question in the selected bank.';
+    render();
+  }
+  function render() {
+    $('results').innerHTML = matches.length ? matches.slice(0,limit).map(card).join('') : '<div class="empty"><strong>Try a shorter phrase.</strong>Use distinctive words from the question, check the selected bank, or remove the pasted answer choices. This searches saved questions; it does not invent answers.</div>';
+    $('more').hidden = matches.length <= limit;
+  }
+  function card(q) {
+    const key = `${q.deck}:${q.id}`, show = revealed.has(key) ? revealed.get(key) : $('answers').checked;
+    const group = q.type === 'true_false_group', matching = q.pairs.length > 0;
+    const type = group ? 'True / false statements' : matching ? 'Matching' : q.answers.length > 1 ? 'Multiple answers' : 'Multiple choice';
+    const images = q.images.map(path=>`<img class="exhibit" src="${escape(asset(path))}" alt="Question ${q.id} exhibit" loading="lazy">`).join('');
+    let choices = '';
+    if (group) choices = q.statements.map((statement,i)=>`<div class="group-row">${highlight(statement)}${show ? `<span class="verdict">✓ ${escape(q.answers[i])}</span>` : ''}</div>`).join('');
+    else if (matching) choices = `<div class="choices">${q.pairs.map(pair=>`<div class="group-row"><b>${highlight(pair.item)}</b>${show ? `<span class="verdict">→ ${escape(pair.target)}</span>` : ''}</div>`).join('')}</div>`;
+    else choices = `<ol class="choices">${q.options.map((choice,i)=>{
+      const correct = show && q.answers.includes(choice);
+      return `<li class="choice ${correct?'correct':''}"><b>${String.fromCharCode(65+i)}</b><span>${highlight(choice)}${correct?'<small class="correct-tag">✓ CORRECT ANSWER</small>':''}</span></li>`;
+    }).join('')}</ol>`;
+    const answer = show && !group && !matching ? `<div class="answer-summary"><strong>✓ CORRECT ANSWER${q.answers.length>1?'S':''}</strong>${q.answers.map(a=>`<p>${escape(a)}</p>`).join('')}</div>` : '';
+    const explanation = show && q.explanation ? `<details class="explanation" ${$('explanations').checked?'open':''}><summary>Explanation & memory cues</summary>${q.explanation.split(/\n\s*\n/).map(p=>`<p>${escape(p)}</p>`).join('')}${q.statementNotes.map((note,i)=>`<p><b>Statement ${i+1}:</b> ${escape(note)}</p>`).join('')}</details>` : '';
+    return `<article class="result"><div class="meta"><span>${escape(labels[q.deck])} · #${q.id}</span><span>${type}</span></div><div class="prompt">${highlight(q.question)}</div>${images}${choices}${answer}<button type="button" class="reveal" data-reveal="${key}">${show?'Hide answer':'Show answer'}</button>${explanation}</article>`;
+  }
+  $('searchForm').addEventListener('submit',event=>{event.preventDefault();search();});
+  $('query').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(search,180);});
+  $('query').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();search();}});
+  $('clear').onclick = ()=>{$('query').value='';search();$('query').focus();};
+  $('deck').onchange = search;
+  for (const id of ['answers','explanations']) $(id).onchange = ()=>{persist();revealed.clear();render();};
+  $('more').onclick = ()=>{limit+=20;render();};
+  $('results').addEventListener('click',event=>{
+    const button=event.target.closest('[data-reveal]');if(!button)return;
+    const key=button.dataset.reveal;revealed.set(key,!(revealed.has(key)?revealed.get(key):$('answers').checked));
+    const position=scrollY;render();scrollTo({top:position,behavior:'instant'});
+  });
+  // Prevent the host page's number-key quiz shortcuts from seeing panel input.
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&extension&&parent!==window) parent.postMessage({type:'pp-pocket-minimize'},'*');
+  });
+  window.addEventListener('message',event=>{
+    if(event.source===parent && event.data?.type==='pp-pocket-focus') $('query').focus({preventScroll:true});
+  });
+  (async()=>{
+    try {
+      if(extension) prefs={...prefs,...(await chrome.storage.local.get('pocketPreferences')).pocketPreferences};
+      else {try{prefs={...prefs,...JSON.parse(localStorage.getItem('pp_pocket_preview')||'{}')};}catch{}}
+      $('query').value=typeof prefs.query==='string'?prefs.query:'';
+      $('deck').value=['all','pools','ccst','summative3'].includes(prefs.deck)?prefs.deck:'all';
+      $('answers').checked=prefs.answers!==false;$('explanations').checked=prefs.explanations===true;
+      const response=await fetch(asset('bank-data.json'));if(!response.ok)throw Error('bank');
+      bank=(await response.json()).questions.map(q=>({...q,_stem:normalize(q.question),_stemTokens:new Set(normalize(q.question+' '+q.statements.join(' ')+' '+q.pairs.map(p=>p.target).join(' ')).split(' ')),_tokens:new Set(normalize([q.question,...q.options,...q.statements,...q.answers,...q.pairs.map(p=>p.target)].join(' ')).split(' '))}));
+      $('bankCount').textContent=`${bank.length} questions · offline bank v1.0.0`;
+      search();
+    }catch{
+      $('status').textContent='Could not load the bundled bank. Reload the extension from your browser’s Extensions page.';
+    }
+  })();
+})();

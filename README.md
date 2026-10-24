@@ -1,5 +1,13 @@
 # Packet Party
 
+## Pocket Search browser extension
+
+`/extension.html` provides a downloadable Manifest V3 extension for desktop Chrome, Edge and Brave. Extract `downloads/packet-party-pocket-search.zip`, enable Developer mode in the browser's Extensions page, and Load unpacked the folder containing `manifest.json`. This is an unpacked download, not a store listing.
+
+Click its toolbar icon to inject a draggable floating search panel on the current webpage. Minimize to a movable square, reopen, or close it. After navigation, click the icon again. Restricted pages fall back to a standalone extension search tab. The isolated extension iframe uses bundled question data and exhibits; it never scrapes the page or reads the clipboard automatically. Only activeTab, scripting and local storage permissions are used.
+
+The offline snapshot contains all 509 cards across the three decks, including matching pairs, grouped True/False statements, source variants and detailed explanations. Correct answers are visible by default and can be hidden; explanations can be expanded. Queries and preferences are local to the extension. Bank updates require a newer download. Regenerate data, icon sizes, exhibits and ZIP with `python build_extension.py` (Pillow is required). Update the manifest, panel version text, builder version and README when releasing a new version. No account credentials or server environment files are packaged.
+
 A playful, mobile-friendly networking quiz built from eight supplied question pools. The frontend is static, with Vercel Functions for live rooms and public leaderboards. Deploy this folder to Vercel with **Framework Preset: Other** and no build command.
 
 The **CCST certification** tab adds a separate 99-question deck built from `CCST_Networking_Reviewer_Notebook_Detailed-2.html`. It uses the same solo, practice, training, leaderboard, and live multiplayer modes. Progress and public scores are kept separate from the original question pools. See [CCST_REVIEW_NOTES.md](CCST_REVIEW_NOTES.md) for reviewed answers and corrections.

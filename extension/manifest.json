@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Packet Party — Pocket Search",
+  "version": "1.0.0",
+  "description": "Paste a networking question into a floating study panel. Search Packet Party's three offline question banks, answers and explanations.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "commands": {"_execute_action": {"suggested_key": {"default": "Ctrl+Shift+Y", "mac": "Command+Shift+Y"}}},
+  "background": {"service_worker": "background.js"},
+  "action": {
+    "default_title": "Open Packet Party question search",
+    "default_icon": {"16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png"}
+  },
+  "icons": {"16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png"},
+  "web_accessible_resources": [{"resources": ["panel.html"], "matches": ["http://*/*", "https://*/*"]}],
+  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'"}
+}
