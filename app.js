@@ -343,6 +343,7 @@ function updateStats() {
 function setView(view) {
   if (app.view === 'game' && view !== 'game' && view !== 'result') pauseRankedRun();
   app.view = view;
+  $(`${view}View`).style.minHeight = '';
   document.body.dataset.view = view;
   for (const id of ['home', 'bank', 'leaderboard', 'game', 'practice', 'live', 'result']) $(`${id}View`).hidden = id !== view;
   document.querySelectorAll('.nav-link').forEach(button => { const active = button.dataset.view === view; button.classList.toggle('is-active', active); if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
@@ -466,10 +467,19 @@ function openPractice() {
   setView('practice'); renderPractice();
   announce(`Practice path. Question ${practice.index + 1} of ${app.questions.length}.`);
 }
+function retainQuestionScroll(container, render) {
+  const x = window.scrollX, y = window.scrollY;
+  // Keep enough room for the current viewport when the next question is shorter.
+  const documentTop = container.getBoundingClientRect().top + y;
+  container.style.minHeight = `${Math.max(0, Math.ceil(y + window.innerHeight - documentTop))}px`;
+  render();
+  window.scrollTo({ left: x, top: y, behavior: 'instant' });
+}
 function practiceGoTo(index) {
   if (!Number.isInteger(index) || index < 0 || index >= app.questions.length) { toast(`Choose a number from 1 to ${app.questions.length}.`); return; }
-  practice.index = index; practice.selected = new Set(); savePractice(); renderPractice(); renderPracticeCard();
-  scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  retainQuestionScroll($('practiceView'), () => {
+    practice.index = index; practice.selected = new Set(); savePractice(); renderPractice(); renderPracticeCard();
+  });
   announce(`Question ${index + 1} of ${app.questions.length}.`);
 }
 function resetPractice() {
@@ -705,7 +715,8 @@ function nextQuestion() {
   g.questionAt = performance.now();
   if (g.mode === 'blitz') { g.remainingTime = Math.max(5, 15 - Math.floor(g.completed * .7)); g.timerLast = performance.now(); }
   const wagerRound = g.completed > 0 && g.completed % 5 === 0 && g.score >= 100 && difficulty(g.current) >= .55 && !['typing', 'training'].includes(g.mode);
-  if (wagerRound) renderWager(); else renderQuestion();
+  const renderNext = () => { if (wagerRound) renderWager(); else renderQuestion(); };
+  if (g.completed > 0) retainQuestionScroll($('gameView'), renderNext); else renderNext();
   updateHUD();
   saveRankedRun();
 }
@@ -745,7 +756,7 @@ function renderQuestion() {
   else answers = `<div class="game-choices" role="group" aria-label="Answer choices">${g.displayOptions.map((option, index) => `<button type="button" class="choice-button ${g.hiddenChoices.has(index) ? 'is-eliminated' : ''}" data-choice-index="${index}" aria-pressed="false" ${g.hiddenChoices.has(index) ? `disabled aria-label="Choice ${index + 1} eliminated"` : ''}><span class="choice-key">${index + 1}</span><span>${escapeHTML(option)}</span></button>`).join('')}</div>`;
   $('gameContent').innerHTML = `<article class="question-card"><div class="question-card-head"><span class="question-tag">${escapeHTML(typeName(q).toUpperCase())} · ${escapeHTML(sourceName(q).toUpperCase())}</span><span class="difficulty-tag">${difficulty(q) > .72 ? 'HARD' : difficulty(q) > .38 ? 'MEDIUM' : 'WARM-UP'} · ${100 + Math.round(difficulty(q) * 75)} PTS</span></div><div class="question-prompt" id="currentQuestion">${safeQuestionHTML(q)}</div>${answers}<div id="feedbackSlot"></div><div class="question-actions"><div class="question-actions-left">${powerMarkup(g, q)}<button type="button" class="hint-button" data-action="hint">💡 Hint bot</button></div><button type="button" id="answerAction" class="question-submit" data-action="${isType || isMulti ? 'submit' : 'skip'}" ${isType || isMulti ? 'disabled' : ''}>${isType || isMulti ? 'Check answer' : 'Skip question'}</button></div><div id="coachSlot"></div></article>`;
   if (group) $('answerAction').disabled = (g.groupDraft || []).length !== q.statements.length || g.groupDraft.some(answer => !answer);
-  if (isType) $('answerInput').focus();
+  if (isType) $('answerInput').focus({ preventScroll: true });
   g.questionAt = performance.now();
   announce(`Question ${g.completed + 1} of ${g.total}. ${q.question}`);
 }
