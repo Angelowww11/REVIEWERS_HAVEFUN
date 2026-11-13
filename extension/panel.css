@@ -5,3 +5,20 @@ button,textarea,select{font:inherit;color:inherit}button,select,summary{cursor:p
 .preferences{display:flex;flex-wrap:wrap;gap:8px 12px;margin:10px 0 0}.preferences label{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:400}input[type=checkbox]{accent-color:#333;width:14px;height:14px;margin:0}.status{font-size:11px;color:#555;margin:8px 0;overflow-wrap:anywhere}.result-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#bbb #fff}.result{padding:11px 0;margin:0;border-top:1px solid #ddd;background:#fff}.meta{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:10px;color:#666}.prompt{font-size:13px;line-height:1.5;font-weight:600;margin:8px 0;overflow-wrap:anywhere}.exhibit{display:block;width:100%;max-height:180px;object-fit:contain;background:#fff;margin:9px 0;border:1px solid #eee}
 .choices{list-style:none;padding:0;margin:6px 0}.choice{display:flex;gap:8px;align-items:baseline;padding:7px;border:1px solid #ddd;margin:5px 0;font-size:12px;overflow-wrap:anywhere}.choice b{font-size:11px;color:#555;flex:none}.choice.correct{border:2px solid #333;background:#f5f5f5;font-weight:600}.correct-tag{display:block;font-size:10px;margin-top:4px;font-weight:600}.answer-summary{border:1px solid #bbb;background:#f7f7f7;padding:8px;font-size:13px;overflow-wrap:anywhere}.answer-summary p{margin:4px 0 0;font-weight:700}.answer-summary strong{font-size:11px}.reveal{background:transparent;border:0;color:#164b91;text-decoration:underline;padding:5px 0;font-size:11px}.reveal:hover{background:transparent;color:#123864}.choice-details{font-size:12px;margin:7px 0;color:#444}.choice-details>summary{padding:3px 0}.explanation{padding-top:2px;margin-top:4px;font-size:12px}.explanation summary{font-size:12px;font-weight:600;padding:4px 0}.explanation p{margin:9px 0;line-height:1.65;white-space:pre-line;overflow-wrap:anywhere}.note{padding:8px;background:#f7f7f7;border:1px solid #ddd;font-size:11px}.group-row{padding:8px 0;border-bottom:1px solid #eee;font-size:12px}.group-row .verdict{display:block;margin-top:4px;font-weight:700}.more{padding:7px;width:100%;font-size:12px;margin-top:8px}footer{display:flex;flex-wrap:wrap;gap:4px 8px;justify-content:space-between;font-size:10px;color:#666;padding:8px 0 0;border-top:1px solid #eee}a{color:#164b91}.empty{padding:10px 0;font-size:12px;color:#666}.empty strong{display:block;color:#333;font-size:13px;margin-bottom:4px}[hidden]{display:none!important}
 @media(max-width:300px){main{padding:8px}.filters{flex-wrap:wrap}.search-button{flex:1}}
+
+/* The webpage shows through the entire search surface; only text and controls remain. */
+:root,html,body,main,.result,.answer-summary,.choice,.choice.correct,.note,.exhibit,
+button,button:hover,textarea,select,#clear:hover{background:transparent}
+:root{font-family:"Segoe UI",Arial,sans-serif;font-weight:300;color:#20242b}
+body{font-weight:300;text-shadow:0 0 2px #fff,0 0 5px #fff,0 0 8px #ffffffc0}
+button,textarea,select{font-weight:300;text-shadow:inherit}
+.prompt,label,.answer-summary p,.answer-summary strong,.choice.correct,.correct-tag,
+.explanation summary,.group-row .verdict,.empty strong,b,strong{font-weight:400}
+.answer-summary,.choice,.choice.correct,.result,.exhibit,.note,footer,.group-row{border:0}
+.answer-summary{padding:8px 0}.choice.correct{padding-left:7px}
+.result{margin-bottom:12px}.result-scroll{scrollbar-color:#7776 transparent}
+select option{background:#fff;color:#222;text-shadow:none}
+body.light-ink{color:#f5f7fa;text-shadow:0 1px 2px #000,0 0 3px #000}
+.light-ink :is(.status,.meta,.choice b,.choice-details,footer,.empty,.empty strong,a,.reveal,#clear){color:#edf2f8}
+.light-ink textarea::placeholder{color:#d7dfe9}
+.light-ink button,.light-ink textarea,.light-ink select{border-color:#cbd5e17a}

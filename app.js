@@ -1,9 +1,9 @@
 /* Solo progress stays in this browser; ranked scores and live rooms use the API. */
 const $ = id => document.getElementById(id);
 const deckParam = new URL(location.href).searchParams.get('deck');
-const deckId = deckParam === 'ccst' ? 'ccst-notebook' : deckParam === 'summative3' ? 'summative3' : 'pools';
-const deckFiles = deckId === 'summative3' ? ['summative3-questions.json', 'summative3-explanations.json'] : deckId === 'ccst-notebook' ? ['ccst-questions.json', 'ccst-explanations.json'] : ['questions.json', 'explanations.json'];
-function deckStorageKey(key) { return deckId === 'ccst-notebook' ? key.replace(/^pp_/, 'pp_ccst_notebook_') : deckId === 'summative3' ? key.replace(/^pp_/, 'pp_summative3_') : key; }
+const deckId = deckParam === 'ccst' ? 'ccst-notebook' : ['summative3','summative4'].includes(deckParam) ? deckParam : 'pools';
+const deckFiles = ['summative3','summative4'].includes(deckId) ? [`${deckId}-questions.json`, `${deckId}-explanations.json`] : deckId === 'ccst-notebook' ? ['ccst-questions.json', 'ccst-explanations.json'] : ['questions.json', 'explanations.json'];
+function deckStorageKey(key) { return deckId === 'ccst-notebook' ? key.replace(/^pp_/, 'pp_ccst_notebook_') : ['summative3','summative4'].includes(deckId) ? key.replace(/^pp_/, `pp_${deckId}_`) : key; }
 const modeInfo = {
   all: { name: 'All questions', eyebrow: 'COMPLETE DECK', description: 'The full deck, in order.' },
   shuffle: { name: 'Shuffle run', eyebrow: 'FRESH EACH TIME', description: 'The full deck, reshuffled.' },
@@ -100,7 +100,7 @@ function formatNumber(n) { return Number(n || 0).toLocaleString(); }
 function lifetimeRankedPoints() { return Math.max(0, Number(app.stats.rankedPoints) || 0); }
 function badgeForPoints(points) { return [...badgeTiers].reverse().find(tier => points >= tier.points) || badgeTiers[0]; }
 function leaderboardBadge(entry) { return badgeForPoints(Number(entry.lifetimePoints ?? entry.score) || 0); }
-function sourceName(q) { if (q.sourcePage) return `Reviewer p. ${q.sourcePage}`; if (String(q.sourceFile).startsWith('Summative 3 · ')) return q.sourceFile.replace('Summative 3 · ', ''); const match = String(q.sourceFile || '').match(/pool\s+(\w+)/i); return match ? `Pool ${match[1].replace(/^./, c => c.toUpperCase())}` : 'Question pool'; }
+function sourceName(q) { if (q.sourcePage) return `Reviewer p. ${q.sourcePage}`; if (/^Summative [34] · /.test(String(q.sourceFile))) return q.sourceFile.replace(/^Summative [34] · /, ''); const match = String(q.sourceFile || '').match(/pool\s+(\w+)/i); return match ? `Pool ${match[1].replace(/^./, c => c.toUpperCase())}` : 'Question pool'; }
 function typeName(q) { return q.type === 'matching_question' ? 'Drag to match' : q.type === 'true_false_group' ? '3 × True / False' : q.type === 'true_false_question' ? 'True / false' : q.type === 'short_answer_question' ? 'Short answer' : q.correctAnswers.length > 1 ? 'Multiple answers' : 'Multiple choice'; }
 function isDragMatch(q) { return q?.type === 'matching_question' && (Array.isArray(q.dragPairs) ? q.dragPairs.length : q.dragItems?.length) > 1; }
 function isTrueFalseGroup(q) { return q?.type === 'true_false_group' && Array.isArray(q.statements) && q.statements.length > 0; }
@@ -386,6 +386,14 @@ function renderDeckChrome() {
   $('poolsDeckLink').setAttribute('aria-current', deckId === 'pools' ? 'page' : 'false');
   $('ccstDeckLink').setAttribute('aria-current', deckId === 'ccst-notebook' ? 'page' : 'false');
   $('summative3DeckLink').setAttribute('aria-current', deckId === 'summative3' ? 'page' : 'false');
+  $('summative4DeckLink').setAttribute('aria-current', deckId === 'summative4' ? 'page' : 'false');
+  if (deckId === 'summative4') {
+    document.title = 'Summative 4 Review — Packet Party';
+    $('deckSwitchNote').textContent = 'Summative 4 networking review';
+    $('heroEyebrowText').textContent = 'SUMMATIVE 4 · NETWORKING';
+    $('heroLede').textContent = 'Your new exam deck. Practice at your pace, train your recall, or battle with friends.';
+    return;
+  }
   if (deckId === 'summative3') {
     document.title = 'Summative 3 Review — Packet Party';
     $('deckSwitchNote').textContent = 'Summative 3 networking review';
@@ -1283,7 +1291,7 @@ const live = {
 function liveInviteURL(code = live.code) {
   const url = new URL(location.href);
   url.searchParams.set('room', code);
-  if (deckId === 'ccst-notebook') url.searchParams.set('deck', 'ccst'); else if (deckId === 'summative3') url.searchParams.set('deck', 'summative3'); else url.searchParams.delete('deck');
+  if (deckId === 'ccst-notebook') url.searchParams.set('deck', 'ccst'); else if (['summative3','summative4'].includes(deckId)) url.searchParams.set('deck', deckId); else url.searchParams.delete('deck');
   url.hash = '';
   return url.toString();
 }

@@ -1,12 +1,12 @@
-const CACHE_NAME = 'packet-party-v63';
-const CORE_FILES = ['./', './index.html', './styles.css', './app.js', './focus.js', './ambient.js', './themes.css', './polish.css', './arcade.css', './themes.js', './account.js', './questions.json', './explanations.json', './ccst-questions.json', './ccst-explanations.json', './summative3-questions.json', './summative3-explanations.json', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'];
+const CACHE_NAME = 'packet-party-v64';
+const CORE_FILES = ['./', './index.html', './styles.css', './app.js', './focus.js', './ambient.js', './themes.css', './polish.css', './arcade.css', './themes.js', './account.js', './questions.json', './explanations.json', './ccst-questions.json', './ccst-explanations.json', './summative3-questions.json', './summative3-explanations.json', './summative4-questions.json', './summative4-explanations.json', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(CORE_FILES);
     const exhibits = new Set();
-    for (const deckPath of ['./questions.json', './ccst-questions.json', './summative3-questions.json']) {
+    for (const deckPath of ['./questions.json', './ccst-questions.json', './summative3-questions.json', './summative4-questions.json']) {
       const deck = await (await cache.match(deckPath)).json();
       for (const question of deck.questions || []) {
         for (const match of String(question.questionHtml || '').matchAll(/src=["'](exhibits\/[a-z0-9/._-]+\.(?:png|jpe?g|gif|webp|svg))["']/gi)) exhibits.add(`./${match[1]}`);

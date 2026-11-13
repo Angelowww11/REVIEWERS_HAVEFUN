@@ -1,0 +1,46 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const ws=new WebSocket(process.argv[2]);await new Promise(r=>ws.addEventListener('open',r,{once:true}));
+let id=0;const pending=new Map();ws.onmessage=e=>{const m=JSON.parse(e.data);if(pending.has(m.id)){const p=pending.get(m.id);pending.delete(m.id);m.error?p.reject(Error(m.error.message)):p.resolve(m.result);}};
+const call=(method,params={},sessionId)=>new Promise((resolve,reject)=>{const n=++id;pending.set(n,{resolve,reject});ws.send(JSON.stringify({id:n,method,params,...(sessionId?{sessionId}:{})}));});
+const targets=async()=>(await call('Target.getTargets')).targetInfos;
+const attach=async targetId=>(await call('Target.attachToTarget',{targetId,flatten:true})).sessionId;
+const ev=async(s,expression)=>{const r=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true},s);if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description);return r.result.value;};
+const wait=async(s,expression)=>{for(let i=0;i<100;i++){if(await ev(s,expression))return;await new Promise(r=>setTimeout(r,60));}throw Error(expression);};
+try{
+ const list=await targets(),top=list.find(t=>t.type==='page'&&t.url.includes('deck=summative4')),page=await attach(top.targetId);
+ let frame=list.find(t=>t.type==='iframe'&&t.url.includes('panel.html')),panel=await attach(frame.targetId);
+ await ev(panel,`document.getElementById('deck').value='summative4';document.getElementById('deck').dispatchEvent(new Event('change'));document.getElementById('query').value='administrative distance';document.getElementById('query').dispatchEvent(new Event('input'));`);
+ await wait(panel,`document.querySelector('.result')?.textContent.includes('Summative 4')`);
+ assert(await ev(panel,`[...document.querySelectorAll('.meta')].every(e=>e.textContent.includes('Summative 4'))`));
+ console.log('PASS selected bank limits search results');
+ await ev(panel,`document.getElementById('query').value='default route';document.getElementById('query').dispatchEvent(new Event('input'));`);
+ await wait(panel,`document.querySelector('.prompt')?.textContent.toLowerCase().includes('default')`);
+ assert.equal(await ev(panel,`document.getElementById('deck').value`),'summative4');
+ assert.equal(await ev(panel,`getComputedStyle(document.body).backgroundColor`),'rgba(0, 0, 0, 0)');
+ assert.equal(await ev(panel,`getComputedStyle(document.querySelector('.prompt')).fontWeight`),'400');
+ assert.equal(await ev(page,`getComputedStyle(document.querySelector('[data-packet-party-pocket]').shadowRoot.querySelector('.shell')).backgroundColor`),'rgba(0, 0, 0, 0)');
+ console.log('PASS replacement search retains bank; overlay and text surfaces are transparent');
+ await ev(page,`(()=>{document.querySelector('[data-packet-party-pocket]').shadowRoot.querySelector('.close').click();const t=document.createElement('textarea');t.id='qaCopy';t.value='show ip route';document.body.append(t);t.focus();t.select();})()`);
+ await call('Input.dispatchKeyEvent',{type:'keyDown',key:'c',code:'KeyC',modifiers:2,windowsVirtualKeyCode:67},page);
+ await call('Input.dispatchKeyEvent',{type:'keyUp',key:'c',code:'KeyC',modifiers:2,windowsVirtualKeyCode:67},page);
+ await wait(panel,`document.getElementById('query').value==='show ip route'`);
+ assert.equal(await ev(panel,`document.getElementById('deck').value`),'summative4');
+ assert.equal(await ev(page,`getComputedStyle(document.querySelector('[data-packet-party-pocket]')).display`),'none');
+ console.log('PASS hidden copy preserves bank without opening');
+ await ev(panel,`(async()=>{const context=await chrome.runtime.sendMessage({type:'pp-pocket-context'});await chrome.storage.session.set({['pocketTab:'+context.tabId]:{deck:'all',query:'show ip route'}});})()`);
+ await ev(page,`(()=>{const f=document.querySelector('[data-packet-party-pocket]').shadowRoot.querySelector('iframe');f.src=f.src;})()`);
+ await new Promise(r=>setTimeout(r,600));
+ frame=(await targets()).find(t=>t.type==='iframe'&&t.url.includes('panel.html'));panel=await attach(frame.targetId);
+ await wait(panel,`document.getElementById('bankCount').textContent.includes('704')`);
+ assert.equal(await ev(panel,`document.getElementById('deck').value`),'summative4');
+ console.log('PASS reloaded panel retains selected bank');
+ assert.equal(await ev(page,'app.questions.length'),195);
+ assert.equal(await ev(page,'Object.keys(app.explanations).length'),195);
+ await ev(page,`openSetup('all');document.getElementById('setupForm').requestSubmit()`);
+ await wait(page,`!!document.querySelector('.question-prompt')`);
+ console.log('PASS Summative 4 quiz starts with explanations');
+ const bank=JSON.parse(fs.readFileSync(new URL('./summative4-questions.json',import.meta.url)));
+ for(const q of bank.questions){assert(q.correctAnswers.length);for(const a of q.correctAnswers)if(q.type!=='short_answer_question')assert(q.options.includes(a));for(const m of q.questionHtml.matchAll(/src="([^"]+)"/g))assert(fs.existsSync(new URL('./'+m[1],import.meta.url)));}
+ console.log('PASS source keys and all local exhibit files validated');
+} finally {ws.close();}

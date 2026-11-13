@@ -14,13 +14,13 @@ Status: public website and unpacked download available; no Chrome Web Store or E
 
 Name: Packet Party — Pocket Search
 
-Short description: Paste a networking question into a floating study panel. Search three offline question banks, answers and explanations.
+Short description: Paste a networking question into a floating study panel. Search four offline question banks, answers and explanations.
 
 Description:
 
 Keep your networking question bank beside you. Press the backtick key on a regular webpage to open a compact, draggable question box. Type or paste a question to find matching saved questions, correct answers, original choices, explanations and exhibits.
 
-Includes 509 cards: 198 original question-pool cards, 99 CCST certification cards, and 212 Summative 3 cards. Grouped True/False and matching questions show their answers individually. Separate source variants remain visible when saved answer keys disagree.
+Includes 704 cards: 198 original question-pool cards, 99 CCST certification cards, and 212 Summative 3 cards. Grouped True/False and matching questions show their answers individually. Separate source variants remain visible when saved answer keys disagree.
 
 Search works locally against the bundled bank, without an account or AI service. The extension stores your last question and display preferences on your device. Optional Search copied text imports a selected passage when the user copies it on a webpage. It updates the saved question even while hidden/minimized, but never opens the box automatically or requests keyboard focus while hidden. It does not scan other page text or monitor the system clipboard. The box supports dragging, resizing, saved dimensions and Reset. Questions are a release snapshot; later bank updates require a new extension version.
 

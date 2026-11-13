@@ -1,0 +1,91 @@
+{
+  "sources": [
+    {
+      "file": "1.mhtml",
+      "displayQuestions": 100,
+      "questionRegions": 100,
+      "allQuestionPrompts": 100,
+      "complete": 100
+    },
+    {
+      "file": "2.mhtml",
+      "displayQuestions": 100,
+      "questionRegions": 100,
+      "allQuestionPrompts": 100,
+      "complete": 100
+    },
+    {
+      "file": "3.mhtml",
+      "displayQuestions": 100,
+      "questionRegions": 100,
+      "allQuestionPrompts": 100,
+      "complete": 100
+    },
+    {
+      "file": "4.mhtml",
+      "displayQuestions": 100,
+      "questionRegions": 100,
+      "allQuestionPrompts": 100,
+      "complete": 100
+    },
+    {
+      "file": "5.mhtml",
+      "displayQuestions": 100,
+      "questionRegions": 100,
+      "allQuestionPrompts": 100,
+      "complete": 100
+    },
+    {
+      "file": "6.mhtml",
+      "displayQuestions": 100,
+      "questionRegions": 100,
+      "allQuestionPrompts": 100,
+      "complete": 100
+    },
+    {
+      "file": "7.mhtml",
+      "displayQuestions": 100,
+      "questionRegions": 100,
+      "allQuestionPrompts": 100,
+      "complete": 100
+    },
+    {
+      "file": "8.mhtml",
+      "displayQuestions": 100,
+      "questionRegions": 100,
+      "allQuestionPrompts": 100,
+      "complete": 100
+    },
+    {
+      "file": "9.mhtml",
+      "displayQuestions": 100,
+      "questionRegions": 100,
+      "allQuestionPrompts": 100,
+      "complete": 100
+    },
+    {
+      "file": "10.mhtml",
+      "displayQuestions": 100,
+      "questionRegions": 100,
+      "allQuestionPrompts": 100,
+      "complete": 100
+    },
+    {
+      "file": "11.mhtml",
+      "displayQuestions": 100,
+      "questionRegions": 100,
+      "allQuestionPrompts": 100,
+      "complete": 100
+    }
+  ],
+  "missing": [],
+  "mismatches": [],
+  "incomplete": [],
+  "emptyTemplates": [],
+  "rawPromptDifferences": [],
+  "unsupportedChoices": [],
+  "sourceSelectedWrong": 41,
+  "bankCount": 195,
+  "coveredUniqueQuestions": 195,
+  "unreferencedBankIds": []
+}

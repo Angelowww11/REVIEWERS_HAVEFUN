@@ -88,6 +88,13 @@
       iframe{flex:1;width:100%;min-height:0;border:0;background:#fff;color-scheme:light}
       .launcher{width:46px;height:46px;display:grid;place-items:center;background:#fff;color:#222;touch-action:none}.launcher:hover{background:#eee}.launcher svg{width:24px;height:24px}
       .sizebar{display:flex;align-items:center;gap:6px;padding:3px 6px;background:#fafafa;border-top:1px solid #ddd;flex:none;font:10px/1.4 Arial,sans-serif}.sizebar label{display:flex;gap:3px;align-items:center}.sizebar input{width:48px;height:22px;padding:2px;border:1px solid #aaa;font:11px Arial,sans-serif;background:#fff;color:#222}.sizebar button{font-size:10px;padding:2px 5px;height:22px}.sizebar .resize-grip{margin-left:auto;width:24px;height:24px;cursor:nwse-resize;touch-action:none;font-size:18px;padding:0}.sizebar input:focus-visible{outline:2px solid #333;outline-offset:1px}
+      .shell,.handle,iframe,.sizebar,.sizebar input,button,.launcher{background:transparent;border-color:transparent;box-shadow:none}
+      .shell{border:0;border-radius:0;font-weight:300}
+      .handle,.sizebar,.launcher{font-family:'Segoe UI',Arial,sans-serif;font-weight:300;text-shadow:0 0 2px #fff,0 0 5px #fff,0 0 8px #ffffffc0}
+      .handle strong{font-weight:400}.handle button:hover,.launcher:hover{background:transparent}
+      .sizebar input{font-weight:300;text-shadow:inherit}
+      :host([data-light-ink]) .handle,:host([data-light-ink]) .sizebar,:host([data-light-ink]) .launcher{color:#f5f7fa;text-shadow:0 1px 2px #000,0 0 3px #000}
+      :host([data-light-ink]) button,:host([data-light-ink]) input{color:#f5f7fa}
       [hidden]{display:none!important}
     </style><section class="shell" aria-label="Packet Party floating question box"><div class="handle"><strong>Pocket Search <small style="font-size:10px;opacity:.65">· &#96; show/hide</small></strong><button class="minimize" aria-label="Minimize to floating square" title="Minimize">−</button><button class="close" aria-label="Hide question box" title="Hide · backtick to show again">×</button></div><iframe title="Packet Party question input and answers"></iframe></section><button class="launcher" aria-label="Show Packet Party search" title="Show question box" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg></button>`;
     const shell = root.querySelector('.shell'), launcher = root.querySelector('.launcher');
@@ -108,6 +115,13 @@
     };
     const attach = () => { if (!host.isConnected) document.documentElement.append(host); };
     const send = message => { try { iframe.contentWindow?.postMessage(message,frameOrigin); } catch {} };
+    function syncInk() {
+      let background=getComputedStyle(document.body||document.documentElement).backgroundColor;
+      if(background==='rgba(0, 0, 0, 0)')background=getComputedStyle(document.documentElement).backgroundColor;
+      const rgb=background.match(/[\d.]+/g)?.map(Number);
+      const light=!!rgb && (rgb.length<4||rgb[3]>.1) && (.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2]<130);
+      host.toggleAttribute('data-light-ink',light);send({type:'pp-pocket-ink',light});
+    }
     function applySize(save=false) {
       const maxW=Math.max(120,innerWidth-16),maxH=Math.max(160,innerHeight-16);
       const width=Math.min(maxW,Math.max(Math.min(260,maxW),preferredSize.width));
@@ -157,6 +171,7 @@
       iframe.focus({preventScroll:true});send({type:'pp-pocket-focus'});
     }
     function show(open=true) {
+      syncInk();
       attach();host.style.setProperty('display','block','important');visible=true;
       const r=host.getBoundingClientRect();expanded=open;
       shell.hidden=!open;launcher.hidden=open;applySize();
@@ -212,6 +227,7 @@
       stopDrag();
     }
     on(iframe,'load',() => {
+      syncInk();
       clearTimeout(healthTimer);healthTimer=null;lastProbe=0;
       if(visible&&expanded&&focusOnLoad&&!document.hidden){focusInput();focusOnLoad=false;}
       deliverText();

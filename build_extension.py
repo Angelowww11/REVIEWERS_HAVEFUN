@@ -23,7 +23,7 @@ class Prompt(HTMLParser):
 def build():
     questions, exhibits = [], set()
     version = json.loads((EXT / 'manifest.json').read_text(encoding='utf-8'))['version']
-    for deck, qfile, efile in [('pools','questions.json','explanations.json'),('ccst','ccst-questions.json','ccst-explanations.json'),('summative3','summative3-questions.json','summative3-explanations.json')]:
+    for deck, qfile, efile in [('pools','questions.json','explanations.json'),('ccst','ccst-questions.json','ccst-explanations.json'),('summative3','summative3-questions.json','summative3-explanations.json'),('summative4','summative4-questions.json','summative4-explanations.json')]:
         data = json.loads((ROOT / qfile).read_text(encoding='utf-8'))
         explanations = json.loads((ROOT / efile).read_text(encoding='utf-8'))
         for q in data['questions']:

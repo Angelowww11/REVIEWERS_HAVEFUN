@@ -1,4 +1,4 @@
-PACKET PARTY - POCKET SEARCH 1.3.1
+PACKET PARTY - POCKET SEARCH 1.4.0
 
 Desktop Chrome, Microsoft Edge and Brave (Manifest V3).
 
@@ -52,7 +52,7 @@ Restricted browser pages and some viewers do not allow floating panels;
 the toolbar icon opens a small separate search window there instead.
 Browser settings pages cannot receive the single backtick page shortcut.
 
-509 QUESTIONS / THREE BANKS
+704 QUESTIONS / THREE BANKS
 Original pools: 198. CCST certification: 99. Summative 3: 212.
 The bank is a bundled snapshot, including source disagreements and corrections
 already displayed on Packet Party. Different saved source keys are kept as
@@ -83,3 +83,8 @@ https://packet-party-angelowww11s-projects.vercel.app/extension.html
 
 PRIVACY
 https://packet-party-angelowww11s-projects.vercel.app/extension-privacy.html
+
+VERSION 1.4.0
+Summative 4 added: 195 unique questions with original diagrams.
+Selected exam persists across searches, copies, tab changes and panel reloads.
+Transparent panel background and lighter text. Copying keeps hidden panels hidden.

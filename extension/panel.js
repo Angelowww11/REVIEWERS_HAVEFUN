@@ -1,11 +1,12 @@
 (() => {
   const $ = id => document.getElementById(id);
-  const labels = {pools:'Original pools',ccst:'CCST certification',summative3:'Summative 3'};
+  const labels = {pools:'Original pools',ccst:'CCST certification',summative3:'Summative 3',summative4:'Summative 4'};
   const stop = new Set('a an the of to is are was were in on at for with and or which what following group answer choices choose question refer exhibit'.split(' '));
   const normalize = text => String(text || '').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
   const escape = text => String(text ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let bank = [], matches = [], limit = 20, timer, saveTimer;
   let draftKey = null, pendingSave = null, edited = false;
+  let preferencesReady = false, deckEdited = false;
   let prefs = {query:'',deck:'all',answers:true,explanations:false};
   const revealed = new Map();
   const extension = typeof chrome !== 'undefined' && !!chrome.runtime?.id;
@@ -24,6 +25,7 @@
     } else {try{localStorage.setItem('pp_pocket_preview',JSON.stringify(snapshot));}catch{}}
   }
   function persist() {
+    if (!preferencesReady) return;
     prefs = {query:$('query').value,deck:$('deck').value,answers:$('answers').checked,explanations:$('explanations').checked};
     pendingSave={...prefs};
     clearTimeout(saveTimer);
@@ -85,7 +87,11 @@
   $('query').addEventListener('input',()=>{edited=true;persist();clearTimeout(timer);timer=setTimeout(search,180);});
   $('query').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();search();}});
   $('clear').onclick = ()=>{edited=true;$('query').value='';search();$('query').focus();};
-  $('deck').onchange = ()=>{edited=true;search();};
+  $('deck').onchange = ()=>{
+    edited=true;deckEdited=true;
+    if(extension)chrome.storage.local.set({pocketDeck:$('deck').value}).catch(()=>{});
+    search();
+  };
   for (const id of ['answers','explanations']) $(id).onchange = ()=>{edited=true;persist();revealed.clear();if($('query').value.trim())render();else search();};
   $('more').onclick = ()=>{limit+=20;render();};
   $('results').addEventListener('click',event=>{
@@ -103,6 +109,7 @@
   },true);
   window.addEventListener('message',event=>{
     if(event.source!==parent)return;
+    if(event.data?.type==='pp-pocket-ink'&&extension)document.body.classList.toggle('light-ink',event.data.light===true);
     if(event.data?.type==='pp-pocket-focus') $('query').focus({preventScroll:true});
     if(event.data?.type==='pp-pocket-hidden')saveBeforeLeaving();
     if(event.data?.type==='pp-pocket-ping' && extension && parent!==window)parent.postMessage({type:'pp-pocket-pong',nonce:event.data.nonce},'*');
@@ -114,11 +121,19 @@
     }
   });
   $('autoCopy').onchange=()=>{if(extension)chrome.storage.local.set({pocketAutoCopy:$('autoCopy').checked}).catch(()=>{});};
-  if(extension)chrome.storage.onChanged.addListener((changes,area)=>{if(area==='local'&&changes.pocketAutoCopy)$('autoCopy').checked=changes.pocketAutoCopy.newValue!==false;});
+  if(extension)chrome.storage.onChanged.addListener((changes,area)=>{
+    if(area!=='local')return;
+    if(changes.pocketAutoCopy)$('autoCopy').checked=changes.pocketAutoCopy.newValue!==false;
+    if(changes.pocketDeck && [...$('deck').options].some(o=>o.value===changes.pocketDeck.newValue)){
+      deckEdited=true;$('deck').value=changes.pocketDeck.newValue;
+      if(bank.length)search();
+    }
+  });
   (async()=>{
     try {
       if(extension) {
-        const saved=await chrome.storage.local.get(['pocketPreferences','pocketAutoCopy']);
+        const saved=await chrome.storage.local.get(['pocketPreferences','pocketAutoCopy','pocketDeck']);
+        const selectedDeck=saved.pocketDeck || saved.pocketPreferences?.deck || 'all';
         prefs={...prefs,...saved.pocketPreferences};$('autoCopy').checked=saved.pocketAutoCopy!==false;
         try {
           const context=await chrome.runtime.sendMessage({type:'pp-pocket-context'});
@@ -127,16 +142,19 @@
             prefs={...prefs,...(await chrome.storage.session.get(draftKey))[draftKey]};
           }
         }catch{}
+        prefs.deck=selectedDeck;
       }
       else {try{prefs={...prefs,...JSON.parse(localStorage.getItem('pp_pocket_preview')||'{}')};}catch{}}
       if(!edited) {
         $('query').value=typeof prefs.query==='string'?prefs.query:'';
-        $('deck').value=['all','pools','ccst','summative3'].includes(prefs.deck)?prefs.deck:'all';
         $('answers').checked=prefs.answers!==false;$('explanations').checked=prefs.explanations===true;
       }
+      if(!deckEdited)$('deck').value=['all','pools','ccst','summative3','summative4'].includes(prefs.deck)?prefs.deck:'all';
+      preferencesReady=true;
       const response=await fetch(asset('bank-data.json'));if(!response.ok)throw Error('bank');
       const bundled=await response.json();
       bank=bundled.questions.map(q=>({...q,_stem:normalize(q.question),_stemTokens:new Set(normalize(q.question+' '+q.statements.join(' ')+' '+q.pairs.map(p=>p.target).join(' ')).split(' ')),_tokens:new Set(normalize([q.question,...q.options,...q.statements,...q.answers,...q.pairs.map(p=>p.target)].join(' ')).split(' '))}));
+      for(const option of $('deck').options)if(labels[option.value])option.textContent=`${labels[option.value]} · ${bank.filter(q=>q.deck===option.value).length}`;
       $('bankCount').textContent=`${bank.length} questions · ${extension?'offline v'+chrome.runtime.getManifest().version:'web search'}`;
       search(edited);
     }catch{
