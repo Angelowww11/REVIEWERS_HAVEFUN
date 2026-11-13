@@ -1,4 +1,4 @@
-PACKET PARTY - POCKET SEARCH 1.4.0
+PACKET PARTY - POCKET SEARCH 1.4.1
 
 Desktop Chrome, Microsoft Edge and Brave (Manifest V3).
 
@@ -84,7 +84,7 @@ https://packet-party-angelowww11s-projects.vercel.app/extension.html
 PRIVACY
 https://packet-party-angelowww11s-projects.vercel.app/extension-privacy.html
 
-VERSION 1.4.0
+VERSION 1.4.1
 Summative 4 added: 195 unique questions with original diagrams.
 Selected exam persists across searches, copies, tab changes and panel reloads.
 Transparent panel background and lighter text. Copying keeps hidden panels hidden.

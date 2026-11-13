@@ -1,7 +1,6 @@
 (() => {
   const $ = id => document.getElementById(id);
   const labels = {pools:'Original pools',ccst:'CCST certification',summative3:'Summative 3',summative4:'Summative 4'};
-  const stop = new Set('a an the of to is are was were in on at for with and or which what following group answer choices choose question refer exhibit'.split(' '));
   const normalize = text => String(text || '').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
   const escape = text => String(text ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let bank = [], matches = [], limit = 20, timer, saveTimer;
@@ -44,21 +43,11 @@
       $('results').innerHTML = '<div class="empty"><strong>Your answer goes here.</strong>Paste a question above. Matching questions and their correct answers appear here.</div>';
       $('more').hidden = true; return;
     }
-    const tokens = [...new Set(query.split(' ').filter(t=>!stop.has(t)))];
-    const meaningful = tokens.length ? tokens : query.split(' ');
-    matches = bank.filter(q=>$('deck').value === 'all' || q.deck === $('deck').value).map(q => {
-      const stemHits = meaningful.filter(t=>q._stemTokens.has(t)).length;
-      const allHits = meaningful.filter(t=>q._tokens.has(t)).length;
-      const stemRatio = stemHits / meaningful.length;
-      let score = stemRatio * 70 + allHits / meaningful.length * 25;
-      if (q._stem === query) score += 150;
-      else if (query.length > 5 && q._stem.includes(query)) score += 95;
-      else if (q._stem.length > 20 && query.includes(q._stem)) score += 105;
-      if (meaningful.length === 1 && stemHits) score += 20;
-      const qualifies = meaningful.length <= 2 ? allHits === meaningful.length : allHits / meaningful.length >= .35 && stemHits >= Math.min(2,meaningful.length);
-      return {q,score,qualifies};
-    }).filter(r=>r.qualifies).sort((a,b)=>b.score-a.score || a.q.id-b.q.id).map(r=>r.q);
-    $('status').textContent = matches.length ? `${matches.length} matching question${matches.length===1?'':'s'} · closest wording first` : 'No matching question in the selected bank.';
+    const result = PocketMatch.find(bank,raw,$('deck').value);
+    matches = result.questions;
+    $('status').textContent = matches.length
+      ? result.kind==='exact' ? `${matches.length} exact question match${matches.length===1?'':'es'}${matches.length>1?' · check the choices or exhibit':''}` : `${matches.length} literal phrase match${matches.length===1?'':'es'} · no exact question found`
+      : 'No exact question or literal phrase found in the selected bank.';
     $('resultScroll').scrollTop = 0;
     render();
   }
@@ -153,7 +142,7 @@
       preferencesReady=true;
       const response=await fetch(asset('bank-data.json'));if(!response.ok)throw Error('bank');
       const bundled=await response.json();
-      bank=bundled.questions.map(q=>({...q,_stem:normalize(q.question),_stemTokens:new Set(normalize(q.question+' '+q.statements.join(' ')+' '+q.pairs.map(p=>p.target).join(' ')).split(' ')),_tokens:new Set(normalize([q.question,...q.options,...q.statements,...q.answers,...q.pairs.map(p=>p.target)].join(' ')).split(' '))}));
+      bank=bundled.questions;
       for(const option of $('deck').options)if(labels[option.value])option.textContent=`${labels[option.value]} · ${bank.filter(q=>q.deck===option.value).length}`;
       $('bankCount').textContent=`${bank.length} questions · ${extension?'offline v'+chrome.runtime.getManifest().version:'web search'}`;
       search(edited);
