@@ -367,6 +367,11 @@ function setView(view) {
 function renderHome() {
   const sources = new Set(app.questions.map(q => q.sourceFile).filter(Boolean));
   $('questionCount').textContent = formatNumber(app.questions.length);
+  const route = $('summativeRoute');
+  route.hidden = deckId !== 'combined';
+  if (deckId === 'combined') {
+    route.innerHTML = `<div class="route-heading"><div><span class="section-kicker">YOUR COMPLETE REVIEW ROUTE</span><h2 id="summativeRouteTitle">Three stops. One big picture.</h2></div><span class="route-total">${app.questions.length} unique questions <i>↗</i></span></div><div class="route-stops">${[['Question pools','/','Foundations','◈'],['Summative 3','/?deck=summative3','Build the connections','⌘'],['Summative 4','/?deck=summative4','Go the distance','⚡']].map(([name,url,label,icon])=>`<a class="route-stop" href="${url}"><span class="route-symbol" aria-hidden="true">${icon}</span><span class="route-copy"><small>${label}</small><strong>${name}</strong><span>${app.questions.filter(q=>(q.sections||[]).includes(name)).length} questions</span></span><b aria-hidden="true">↗</b></a>`).join('')}</div><p class="route-caption">Play any mode below to mix all three, or open a stop to focus your review.</p>`;
+  }
   $('sourceCount').textContent = deckId === 'ccst-notebook' ? '1' : formatNumber(app.sourceFileCount || sources.size || 8);
   $('bankCountBadge').textContent = `${formatNumber(app.questions.length)} questions`;
   updateStats();
@@ -1117,10 +1122,11 @@ function exportGhost() {
 
 async function loadQuestions() {
   try {
+    const notesPromise = fetch(`./${deckFiles[1]}`, { cache: 'no-cache' }).then(response => response.ok ? response.json() : {}).catch(() => ({}));
     const response = await fetch(`./${deckFiles[0]}`, { cache: 'no-cache' }); if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json(); if (!Array.isArray(data.questions)) throw new Error('Missing questions');
     app.sourceFileCount = Array.isArray(data.sourceFiles) ? data.sourceFiles.length : 0;
-    try { const notesResponse = await fetch(`./${deckFiles[1]}`, { cache: 'no-cache' }); if (notesResponse.ok) app.explanations = await notesResponse.json(); } catch { /* Quiz still works if the notes are unavailable. */ }
+    app.explanations = await notesPromise;
     app.questions = data.questions.filter(q => q && q.question && Array.isArray(q.correctAnswers) && q.correctAnswers.length && Array.isArray(q.options)).map((q, index) => ({ ...q, id: Number(q.id) || index + 1 }));
     const fullTraining = $('trainingLengthSelect').querySelector('option[value="99"]');
     if (fullTraining) { fullTraining.value = String(app.questions.length); fullTraining.textContent = `${app.questions.length} questions · full deck`; }
