@@ -3,7 +3,7 @@ import { isIP } from 'node:net';
 
 const MODES = new Set(['all', 'shuffle', 'adaptive', 'blitz']);
 const HEARTS = new Set(['1', '3', '5', 'unlimited']);
-const DECKS = new Set(['pools', 'ccst', 'ccst-notebook', 'summative3', 'summative4']);
+const DECKS = new Set(['pools', 'ccst', 'ccst-notebook', 'summative3', 'summative4', 'combined']);
 const BADGE_TIERS = [
   ['Noob', 0], ['Beginner', 1000], ['Intermediate', 5000],
   ['Pro', 15000], ['Packet Hacker', 40000], ['Packet Gods', 100000]
@@ -116,7 +116,7 @@ async function submitScore(request) {
   const name = cleanName(body.name);
   const score = integer(body.score, 1, 1_000_000_000, 'score');
   const lifetimePoints = integer(body.lifetimePoints ?? score, score, 1_000_000_000, 'lifetime points');
-  const total = integer(body.total, 1, 200, 'question count');
+  const total = integer(body.total, 1, 1000, 'question count');
   const correct = integer(body.correct, 0, total, 'correct count');
   const duration = integer(body.duration, 1, 86_400_000, 'time');
   await limitSubmissions(request);

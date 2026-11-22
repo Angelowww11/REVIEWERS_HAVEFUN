@@ -1,5 +1,7 @@
 # Packet Party
 
+The **All summatives** deck combines the original question pools, Summative 3, and Summative 4. It contains 604 unique questions after removing one exact duplicate. The duplicate remains tagged with both source sections. CCST certification is separate. Regenerate the combined data with `node build_combined.mjs` after changing any source bank or explanation file.
+
 ## Pocket Search browser extension
 
 `/get-extension` (also `/extension.html`) provides a downloadable Manifest V3 extension for desktop Chrome, Edge and Brave. Extract `downloads/packet-party-pocket-search.zip`, enable Developer mode in the browser's Extensions page, and Load unpacked the folder containing `manifest.json`. This is an unpacked download, not a store listing.

@@ -1,9 +1,9 @@
 /* Solo progress stays in this browser; ranked scores and live rooms use the API. */
 const $ = id => document.getElementById(id);
 const deckParam = new URL(location.href).searchParams.get('deck');
-const deckId = deckParam === 'ccst' ? 'ccst-notebook' : ['summative3','summative4'].includes(deckParam) ? deckParam : 'pools';
-const deckFiles = ['summative3','summative4'].includes(deckId) ? [`${deckId}-questions.json`, `${deckId}-explanations.json`] : deckId === 'ccst-notebook' ? ['ccst-questions.json', 'ccst-explanations.json'] : ['questions.json', 'explanations.json'];
-function deckStorageKey(key) { return deckId === 'ccst-notebook' ? key.replace(/^pp_/, 'pp_ccst_notebook_') : ['summative3','summative4'].includes(deckId) ? key.replace(/^pp_/, `pp_${deckId}_`) : key; }
+const deckId = deckParam === 'ccst' ? 'ccst-notebook' : ['summative3','summative4','combined'].includes(deckParam) ? deckParam : 'pools';
+const deckFiles = ['summative3','summative4','combined'].includes(deckId) ? [`${deckId}-questions.json`, `${deckId}-explanations.json`] : deckId === 'ccst-notebook' ? ['ccst-questions.json', 'ccst-explanations.json'] : ['questions.json', 'explanations.json'];
+function deckStorageKey(key) { return deckId === 'ccst-notebook' ? key.replace(/^pp_/, 'pp_ccst_notebook_') : ['summative3','summative4','combined'].includes(deckId) ? key.replace(/^pp_/, `pp_${deckId}_`) : key; }
 const modeInfo = {
   all: { name: 'All questions', eyebrow: 'COMPLETE DECK', description: 'The full deck, in order.' },
   shuffle: { name: 'Shuffle run', eyebrow: 'FRESH EACH TIME', description: 'The full deck, reshuffled.' },
@@ -100,7 +100,7 @@ function formatNumber(n) { return Number(n || 0).toLocaleString(); }
 function lifetimeRankedPoints() { return Math.max(0, Number(app.stats.rankedPoints) || 0); }
 function badgeForPoints(points) { return [...badgeTiers].reverse().find(tier => points >= tier.points) || badgeTiers[0]; }
 function leaderboardBadge(entry) { return badgeForPoints(Number(entry.lifetimePoints ?? entry.score) || 0); }
-function sourceName(q) { if (q.sourcePage) return `Reviewer p. ${q.sourcePage}`; if (/^Summative [34] · /.test(String(q.sourceFile))) return q.sourceFile.replace(/^Summative [34] · /, ''); const match = String(q.sourceFile || '').match(/pool\s+(\w+)/i); return match ? `Pool ${match[1].replace(/^./, c => c.toUpperCase())}` : 'Question pool'; }
+function sourceName(q) { if (deckId === 'combined') return `${(q.sections || [q.section]).join(' + ')} · ${q.sourceFile.replace(/^Summative [34] · /, '').replace(/\.html$/i, '')}`; if (q.sourcePage) return `Reviewer p. ${q.sourcePage}`; if (/^Summative [34] · /.test(String(q.sourceFile))) return q.sourceFile.replace(/^Summative [34] · /, ''); const match = String(q.sourceFile || '').match(/pool\s+(\w+)/i); return match ? `Pool ${match[1].replace(/^./, c => c.toUpperCase())}` : 'Question pool'; }
 function typeName(q) { return q.type === 'matching_question' ? 'Drag to match' : q.type === 'true_false_group' ? '3 × True / False' : q.type === 'true_false_question' ? 'True / false' : q.type === 'short_answer_question' ? 'Short answer' : q.correctAnswers.length > 1 ? 'Multiple answers' : 'Multiple choice'; }
 function isDragMatch(q) { return q?.type === 'matching_question' && (Array.isArray(q.dragPairs) ? q.dragPairs.length : q.dragItems?.length) > 1; }
 function isTrueFalseGroup(q) { return q?.type === 'true_false_group' && Array.isArray(q.statements) && q.statements.length > 0; }
@@ -377,7 +377,10 @@ function renderHome() {
   renderLeaderboardModeTabs();
   loadHomeLeaderboard();
   const sourceSelect = $('bankSource');
-  [...sources].sort((a, b) => { const an = +(a.match(/\d+/)?.[0] || 0), bn = +(b.match(/\d+/)?.[0] || 0); return an - bn; }).forEach(source => { const option = document.createElement('option'); option.value = source; option.textContent = source.replace(/\.html$/i, ''); sourceSelect.append(option); });
+  if (deckId === 'combined') {
+    sourceSelect.firstElementChild.textContent = 'All summatives';
+    for (const section of ['Question pools', 'Summative 3', 'Summative 4']) { const option = document.createElement('option'); option.value = `section:${section}`; option.textContent = section; sourceSelect.append(option); }
+  } else [...sources].sort((a, b) => { const an = +(a.match(/\d+/)?.[0] || 0), bn = +(b.match(/\d+/)?.[0] || 0); return an - bn; }).forEach(source => { const option = document.createElement('option'); option.value = source; option.textContent = source.replace(/\.html$/i, ''); sourceSelect.append(option); });
   if (!sources.size) sourceSelect.parentElement.hidden = true;
 }
 
@@ -387,6 +390,14 @@ function renderDeckChrome() {
   $('ccstDeckLink').setAttribute('aria-current', deckId === 'ccst-notebook' ? 'page' : 'false');
   $('summative3DeckLink').setAttribute('aria-current', deckId === 'summative3' ? 'page' : 'false');
   $('summative4DeckLink').setAttribute('aria-current', deckId === 'summative4' ? 'page' : 'false');
+  $('combinedDeckLink').setAttribute('aria-current', deckId === 'combined' ? 'page' : 'false');
+  if (deckId === 'combined') {
+    document.title = 'All Summatives — Packet Party';
+    $('deckSwitchNote').textContent = 'Question pools + Summative 3 + Summative 4';
+    $('heroEyebrowText').textContent = 'ALL SUMMATIVES · NETWORKING';
+    $('heroLede').textContent = 'One consolidated deck across your summative reviews. Study, train, or play together.';
+    return;
+  }
   if (deckId === 'summative4') {
     document.title = 'Summative 4 Review — Packet Party';
     $('deckSwitchNote').textContent = 'Summative 4 networking review';
@@ -415,7 +426,7 @@ function renderDeckChrome() {
 function filteredBank() {
   const query = $('bankSearch').value.trim().toLocaleLowerCase(); const source = $('bankSource').value; const type = $('bankType').value;
   return app.questions.filter(q => {
-    if (source !== 'all' && q.sourceFile !== source) return false;
+    if (source !== 'all' && (source.startsWith('section:') ? !(q.sections || [q.section]).includes(source.slice(8)) : q.sourceFile !== source)) return false;
     if (type === 'favorites' && !app.favorites.has(q.id)) return false;
     if (type !== 'all' && type !== 'favorites' && q.type !== type) return false;
     if (!query) return true;
@@ -1291,7 +1302,7 @@ const live = {
 function liveInviteURL(code = live.code) {
   const url = new URL(location.href);
   url.searchParams.set('room', code);
-  if (deckId === 'ccst-notebook') url.searchParams.set('deck', 'ccst'); else if (['summative3','summative4'].includes(deckId)) url.searchParams.set('deck', deckId); else url.searchParams.delete('deck');
+  if (deckId === 'ccst-notebook') url.searchParams.set('deck', 'ccst'); else if (['summative3','summative4','combined'].includes(deckId)) url.searchParams.set('deck', deckId); else url.searchParams.delete('deck');
   url.hash = '';
   return url.toString();
 }
