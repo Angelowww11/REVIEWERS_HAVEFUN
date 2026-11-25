@@ -7,7 +7,7 @@ const COOKIE = '__Host-pp_account';
 const SESSION_SECONDS = 30 * 24 * 60 * 60;
 const MAX_BODY = 1024 * 1024;
 const KDF = { N: 131072, r: 8, p: 1, maxmem: 160 * 1024 * 1024 };
-const DATA_KEY = /^(?:pp_(?:ccst_(?:notebook_)?|summative[34]_)?(?:practice_v1|stats|favorites|heart_limit|ranked_run_(?:all|shuffle|adaptive|blitz))|pp_(?:theme|motion|sound|leaderboard_name|live_name))$/;
+const DATA_KEY = /^(?:pp_(?:ccst_(?:notebook_)?|summative[34]_|combined_)?(?:practice_v1|stats|favorites|heart_limit|ranked_run_(?:all|shuffle|adaptive|blitz|training))|pp_(?:theme|motion|sound|leaderboard_name|live_name|correct_first|hide_answers|explanations_visible|key_idea_visible))$/;
 const RATE = `local n=redis.call('INCR',KEYS[1]); if n==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return n`;
 const REGISTER = `
 if redis.call('EXISTS',KEYS[1])==1 then return 0 end
@@ -117,7 +117,7 @@ async function startSession(user, oldRequest) {
   return token;
 }
 function validateData(data) {
-  if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).length > 32) throw new ApiError(400, 'Invalid progress data.');
+  if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).length > 96) throw new ApiError(400, 'Invalid progress data.');
   let nodes = 0;
   function walk(value, depth = 0) {
     if (++nodes > 75000 || depth > 16) throw new ApiError(400, 'Progress data is too complex.');

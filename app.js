@@ -32,6 +32,7 @@ const quotes = [
   'A wrong answer is useful data', 'You know more than you think', 'Stay curious, stay connected'
 ];
 const app = {
+  correctFirst: readJSON('pp_correct_first', readJSON(deckStorageKey('pp_practice_v1'), {}).correctFirst || false) === true,
   questions: [], explanations: {}, mode: 'shuffle', view: 'home', game: null, bankLimit: 16,
   hideAnswers: readJSON('pp_hide_answers', false) === true, bankAll: false, bankRevealAll: false, bankRevealed: new Set(), bankHidden: new Set(), explanationsVisible: readJSON('pp_explanations_visible', true), keyIdeaVisible: readJSON('pp_key_idea_visible', true), importedGhost: null,
   favorites: new Set(readJSON(deckStorageKey('pp_favorites'), [])),
@@ -40,6 +41,17 @@ const app = {
 };
 
 function readJSON(key, fallback) { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; } }
+function setCorrectFirst(value) {
+  app.correctFirst = Boolean(value); writeJSON('pp_correct_first', app.correctFirst);
+  practice.correctFirst = app.correctFirst;
+  practice.choiceOrder = {}; practice.groupChoiceOrders = {}; practice.dragItemOrders = {}; practice.dragTargetOrders = {};
+  if (app.questions.length) savePractice();
+  $('correctFirstToggle').checked = app.correctFirst;
+  $('practiceCorrectFirst').checked = app.correctFirst;
+  if (app.view === 'practice') renderPractice();
+  updateSetupRankNote();
+  window.dispatchEvent(new CustomEvent('packet:answer-order', { detail: { correctFirst: app.correctFirst } }));
+}
 function writeJSON(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); window.packetAccountProgressChanged?.(key); } catch { /* Private browsing can disable storage. */ } }
 function savedRunKey(mode) { return deckStorageKey(`pp_ranked_run_${mode}`); }
 function readSavedRun(mode) {
@@ -125,10 +137,10 @@ function displayOrder(length, previous = null) {
   return order;
 }
 function validDisplayOrder(order, length) { return Array.isArray(order) && order.length === length && new Set(order).size === length && order.every(index => Number.isInteger(index) && index >= 0 && index < length); }
-function renderDragMatch(q, mapping, disabled = false, side = 'solo', itemOrder = null, targetOrder = null, correctFirst = false) {
+function renderDragMatch(q, mapping, disabled = false, side = 'solo', itemOrder = null, targetOrder = null, correctFirst = false, randomize = true) {
   const id = side === 'live' ? 'liveDrag' : side === 'practice' ? 'practiceDrag' : 'drag';
-  const items = dragItems(q), targetList = dragTargets(q), itemIndexes = validDisplayOrder(itemOrder, items.length) ? itemOrder : items.map((_, index) => index), targets = validDisplayOrder(targetOrder, targetList.length) ? targetOrder : shuffle(targetList.map((_, index) => index));
-  if (!correctFirst && targets.length > 1 && targets.every((targetIndex, index) => targetIndex === index)) targets.push(targets.shift());
+  const items = dragItems(q), targetList = dragTargets(q), itemIndexes = validDisplayOrder(itemOrder, items.length) ? [...itemOrder] : items.map((_, index) => index), targets = validDisplayOrder(targetOrder, targetList.length) ? [...targetOrder] : randomize ? shuffle(targetList.map((_, index) => index)) : targetList.map((_, index) => index);
+  if (randomize && !correctFirst && targets.length > 1 && targets.every((targetIndex, index) => targetIndex === index)) targets.push(targets.shift());
   const targetFor = index => mapping?.[index] ?? '';
   const left = itemIndexes.map(index => { const item = items[index], rowTargets = correctFirst ? [index, ...targets.filter(targetIndex => targetIndex !== index)] : targets; return `<div class="drag-match-row"><button type="button" class="drag-match-prompt" data-drag-prompt="${index}" aria-label="Choose prompt ${escapeHTML(item)}" ${disabled ? 'disabled' : ''}><span class="drag-match-grip" aria-hidden="true">⠿</span><span>${escapeHTML(item)}</span></button><span class="drag-match-connector" aria-hidden="true">↔</span><select class="drag-match-slot drag-match-target ${targetFor(index) !== '' && targetFor(index) >= 0 ? 'has-match' : ''}" data-drag-slot="${index}" data-drag-select="${index}" aria-label="Drop or choose a match for ${escapeHTML(item)}" ${disabled ? 'disabled' : ''}><option value="">Drop answer here</option>${rowTargets.map(targetIndex => `<option value="${targetIndex}" ${String(targetFor(index)) === String(targetIndex) ? 'selected' : ''}>${escapeHTML(targetList[targetIndex])}</option>`).join('')}</select></div>`; }).join('');
   const right = targets.map(targetIndex => { const target = targetList[targetIndex]; return `<button type="button" class="drag-match-chip" draggable="${!disabled}" data-drag-right="${targetIndex}" aria-label="Choose answer ${escapeHTML(target)}" aria-pressed="false" ${disabled ? 'disabled' : ''}><span aria-hidden="true">⠿</span>${escapeHTML(target)}</button>`; }).join('');
@@ -456,20 +468,21 @@ function renderBank() {
   }).join('') : `<div class="bank-empty"><strong>No questions found</strong>Try a different search or filter.</div>`;
 }
 
-const practice = { index: 0, entries: {}, selected: new Set(), groupDrafts: {}, groupChoiceOrders: {}, shuffleChoices: false, correctFirst: false, choiceOrder: {}, dragMappings: {}, dragItemOrders: {}, dragTargetOrders: {} };
+const practice = { index: 0, entries: {}, selected: new Set(), groupDrafts: {}, groupChoiceOrders: {}, shuffleChoices: false, correctFirst: app.correctFirst, choiceOrder: {}, dragMappings: {}, dragItemOrders: {}, dragTargetOrders: {} };
 function restorePractice() {
   const saved = readJSON(deckStorageKey('pp_practice_v1'), null);
   const appendedSummativeQuestion = deckId === 'summative3' && [209, 210].includes(saved?.count) && app.questions.length === 212;
   if (!saved || saved.version !== practiceStateVersion || (saved.count !== app.questions.length && !appendedSummativeQuestion)) return;
   practice.index = Number.isInteger(saved.index) ? Math.max(0, Math.min(app.questions.length - 1, saved.index)) : 0;
   practice.shuffleChoices = saved.shuffleChoices === true;
-  practice.correctFirst = saved.correctFirst === true;
+  practice.correctFirst = app.correctFirst;
+  const sameAnswerOrder = Boolean(saved.correctFirst) === practice.correctFirst;
   if (saved.groupDrafts && typeof saved.groupDrafts === 'object') practice.groupDrafts = saved.groupDrafts;
-  if (saved.groupChoiceOrders && typeof saved.groupChoiceOrders === 'object') practice.groupChoiceOrders = saved.groupChoiceOrders;
+  if (sameAnswerOrder && saved.groupChoiceOrders && typeof saved.groupChoiceOrders === 'object') practice.groupChoiceOrders = saved.groupChoiceOrders;
   if (saved.dragMappings && typeof saved.dragMappings === 'object') practice.dragMappings = saved.dragMappings;
-  if (saved.dragItemOrders && typeof saved.dragItemOrders === 'object') practice.dragItemOrders = saved.dragItemOrders;
-  if (saved.dragTargetOrders && typeof saved.dragTargetOrders === 'object') practice.dragTargetOrders = saved.dragTargetOrders;
-  if (saved.choiceOrder && typeof saved.choiceOrder === 'object') {
+  if (sameAnswerOrder && saved.dragItemOrders && typeof saved.dragItemOrders === 'object') practice.dragItemOrders = saved.dragItemOrders;
+  if (sameAnswerOrder && saved.dragTargetOrders && typeof saved.dragTargetOrders === 'object') practice.dragTargetOrders = saved.dragTargetOrders;
+  if (sameAnswerOrder && saved.choiceOrder && typeof saved.choiceOrder === 'object') {
     for (const q of app.questions) {
       const order = saved.choiceOrder[q.id];
       if (Array.isArray(order) && order.length === q.options.length && new Set(order).size === order.length && order.every(index => Number.isInteger(index) && index >= 0 && index < q.options.length)) practice.choiceOrder[q.id] = order;
@@ -543,7 +556,7 @@ function practiceOptionsOrder(q) {
 }
 function practiceDragOrders(q, reroll = false) {
   const items = dragItems(q), targets = dragTargets(q);
-  if (practice.correctFirst) return { items: items.map((_, index) => index), targets: targets.map((_, index) => index) };
+  if (practice.correctFirst || !practice.shuffleChoices) return { items: items.map((_, index) => index), targets: targets.map((_, index) => index) };
   if (reroll || !validDisplayOrder(practice.dragItemOrders[q.id], items.length)) practice.dragItemOrders[q.id] = displayOrder(items.length, practice.dragItemOrders[q.id]);
   if (reroll || !validDisplayOrder(practice.dragTargetOrders[q.id], targets.length)) practice.dragTargetOrders[q.id] = displayOrder(targets.length, practice.dragTargetOrders[q.id]);
   return { items: practice.dragItemOrders[q.id], targets: practice.dragTargetOrders[q.id] };
@@ -559,7 +572,7 @@ function renderPractice() {
   let answers;
   if (typed) answers = `<label class="sr-only" for="practiceAnswerInput">Type your answer</label><input id="practiceAnswerInput" class="answer-input" type="text" autocomplete="off" spellcheck="false" placeholder="Type your answer…" value="${escapeHTML(record?.response || '')}" ${answered ? 'disabled' : ''}><p class="input-helper">${q.type === 'short_answer_question' ? 'Follow the format in the question.' : 'Capitalization is ignored.'}</p>`;
   else if (group) answers = renderTrueFalseGroup(q, answered ? response : practice.groupDrafts[q.id] || [], answered, answered, practiceGroupChoiceOrder(q));
-  else if (drag) { const savedMap = Array.isArray(record?.mapping) ? record.mapping : practice.dragMappings[q.id]; const order = practiceDragOrders(q); answers = renderDragMatch(q, savedMap, answered, 'practice', order.items, order.targets, practice.correctFirst); }
+  else if (drag) { const savedMap = Array.isArray(record?.mapping) ? record.mapping : practice.dragMappings[q.id]; const order = practiceDragOrders(q); answers = renderDragMatch(q, savedMap, answered, 'practice', order.items, order.targets, practice.correctFirst, practice.shuffleChoices); }
   else answers = `<div class="game-choices" role="group" aria-label="Answer choices${practice.shuffleChoices ? ' in shuffled order' : ' in original order'}">${practiceOptionsOrder(q).map((originalIndex, displayIndex) => { const option = q.options[originalIndex]; const picked = response.some(item => normalize(item) === normalize(option)); const correct = isCorrectOption(q, option); const cls = answered ? correct ? 'is-correct' : picked ? 'is-wrong' : '' : practice.selected.has(originalIndex) ? 'is-selected' : ''; return `<button type="button" class="choice-button ${cls}" data-practice-choice="${originalIndex}" aria-pressed="${picked || practice.selected.has(originalIndex)}" ${answered ? 'disabled' : ''}><span class="choice-key">${displayIndex + 1}</span><span>${escapeHTML(option)}</span></button>`; }).join('')}</div>`;
   const feedback = answered ? `<div class="feedback ${record.status === 'correct' ? 'is-correct' : 'is-wrong'}" role="status"><strong>${record.status === 'correct' ? 'You got it!' : record.status === 'revealed' ? 'Answer revealed' : 'Good one to review.'}</strong>${answerComparison(q, record.status === 'wrong' && response.length ? isTrueFalseGroup(q) ? formatGroupAnswers(response) : response.join(' · ') : '')}${explanationHtml(q)}<small class="recall-cue">Try explaining the idea in your own words before moving on.</small></div>` : record?.status === 'skipped' ? '<p class="practice-skipped-note">You skipped this one. Try it whenever you’re ready.</p>' : '';
   const action = answered ? '<button type="button" class="practice-retry" data-practice-action="retry">Try this question again</button>' : `<div class="practice-answer-actions">${typed || multi || drag ? `<button type="button" class="question-submit" data-practice-action="check" ${typed || drag || group ? 'disabled' : !practice.selected.size ? 'disabled' : ''}>Check answer</button>` : ''}<button type="button" class="practice-reveal" data-practice-action="reveal">Show answer</button></div>`;
@@ -603,8 +616,8 @@ function openSetup(mode) {
   $('setupDialog').querySelector('.setup-more').hidden = mode === 'training';
   $('heartLimitSelect').value = String(readJSON(deckStorageKey('pp_heart_limit'), '3'));
   if (!['1', '3', '5', 'unlimited'].includes($('heartLimitSelect').value)) $('heartLimitSelect').value = '3';
-  $('correctFirstToggle').checked = false;
-  $('correctFirstToggle').closest('.switch-row').hidden = mode === 'typing' || mode === 'matching' || mode === 'training';
+  $('correctFirstToggle').checked = app.correctFirst;
+  $('correctFirstToggle').closest('.switch-row').hidden = mode === 'typing';
   const saved = readSavedRun(mode);
   $('setupResume').hidden = !saved;
   if (saved) {
@@ -619,7 +632,7 @@ function openSetup(mode) {
 }
 function updateSetupRankNote() {
   const practice = !$('correctFirstToggle').closest('.switch-row').hidden && $('correctFirstToggle').checked;
-  $('setupNote').textContent = app.mode === 'training' ? 'Unlimited hearts · every miss returns in the next pass.' : practice ? 'Practice only · this run is unranked.' : rankedModes.includes(app.mode) ? `${modeInfo[app.mode].name} runs can enter the public board.` : 'This mode is for practice; choose a ranked mode to enter the board.';
+  $('setupNote').textContent = app.mode === 'training' ? `Unlimited hearts · every miss returns in the next pass.${practice ? ' Correct answers appear first.' : ''}` : practice ? 'Practice only · this run is unranked.' : rankedModes.includes(app.mode) ? `${modeInfo[app.mode].name} runs can enter the public board.` : 'This mode is for practice; choose a ranked mode to enter the board.';
 }
 function typingPool() { return app.questions.filter(q => q.correctAnswers.length === 1 && q.correctAnswers[0].length <= 52 && !hasImage(q)); }
 function matchingPool() {
@@ -656,7 +669,7 @@ function startGame() {
     answered: false, wager: 0, hiddenChoices: new Set(), hintStep: 0, coachOpen: false,
     used: { fifty: false, shield: false, freeze: false }, activeShield: false,
     startedAt: performance.now(), questionAt: performance.now(), timerLast: performance.now(), remainingTime: 0, freezeUntil: 0,
-    events: [], history: [], ghost, firstCorrect: !['typing', 'matching', 'training'].includes(mode) && $('correctFirstToggle').checked, matchPairs: [], matchChoice: { left: null, right: null }, lastResult: null, pausedAt: null,
+    events: [], history: [], ghost, firstCorrect: mode !== 'typing' && $('correctFirstToggle').checked, matchPairs: [], matchChoice: { left: null, right: null }, lastResult: null, pausedAt: null,
     training: mode === 'training' ? { originalTotal: order.length, pass: 1, misses: [] } : null
   };
   $('gameModeEyebrow').textContent = modeInfo[mode].eyebrow; $('gameModeName').textContent = modeInfo[mode].name;
@@ -957,7 +970,7 @@ function renderMatchBoard() {
   if (g.completed >= g.total || g.hearts <= 0) { finishGame(); return; }
   const group = g.order.slice(g.completed, g.completed + Math.min(4, g.total - g.completed));
   g.matchPairs = group.map(q => ({ q, matched: false })); g.matchChoice = { left: null, right: null };
-  const answers = shuffle(group);
+  const answers = g.firstCorrect ? [...group] : shuffle(group);
   $('gameContent').innerHTML = `<div class="match-card"><span class="question-tag">MATCH MAKER · ROUND ${Math.floor(g.completed / 4) + 1}</span><h2>Connect the dots.</h2><p>Tap a question, then its answer. Keyboard: 1–4 for a question, then 1–4 for an answer.</p><div class="match-grid"><div class="match-column"><h3>QUESTIONS</h3>${group.map((q, index) => `<button type="button" class="match-option" data-match-side="left" data-match-id="${q.id}"><span class="match-number">${index + 1}</span>${escapeHTML(q.question)}</button>`).join('')}</div><div class="match-column"><h3>ANSWERS</h3>${answers.map((q, index) => `<button type="button" class="match-option" data-match-side="right" data-match-id="${q.id}"><span class="match-number">${index + 1}</span>${escapeHTML(answerText(q))}</button>`).join('')}</div></div><div id="matchFeedback" class="match-feedback" role="status"></div></div>`;
   announce(`Match maker round ${Math.floor(g.completed / 4) + 1}. Match four questions with their answers.`);
   updateHUD();
@@ -1157,7 +1170,7 @@ function attachEvents() {
   document.querySelectorAll('.mode-card').forEach(button => button.addEventListener('click', () => button.dataset.mode === 'practice' ? openPractice() : openSetup(button.dataset.mode)));
   $('leavePractice').addEventListener('click', () => setView('home'));
   $('practiceShuffleChoices').addEventListener('change', event => { practice.shuffleChoices = event.target.checked; practice.choiceOrder = {}; practice.groupChoiceOrders = {}; practice.dragItemOrders = {}; practice.dragTargetOrders = {}; savePractice(); renderPractice(); });
-  $('practiceCorrectFirst').addEventListener('change', event => { practice.correctFirst = event.target.checked; practice.choiceOrder = {}; practice.groupChoiceOrders = {}; practice.dragItemOrders = {}; practice.dragTargetOrders = {}; savePractice(); renderPractice(); });
+  $('practiceCorrectFirst').addEventListener('change', event => setCorrectFirst(event.target.checked));
   $('practicePrevious').addEventListener('click', () => practiceGoTo(practice.index - 1));
   $('practiceNext').addEventListener('click', () => practiceGoTo(practice.index + 1));
   $('practiceSkip').addEventListener('click', () => { const q = app.questions[practice.index]; if (!practiceAnswered(practiceRecord(q))) practice.entries[q.id] = { status: 'skipped', response: '' }; practiceGoTo(practice.index + 1); });
@@ -1203,7 +1216,7 @@ function attachEvents() {
   $('setupForm').addEventListener('submit', event => { event.preventDefault(); $('setupDialog').close(); startGame(); });
   $('setupResumeButton').addEventListener('click', () => { const mode = app.mode; $('setupDialog').close(); resumeRankedRun(mode); });
   $('trainingLengthSelect').addEventListener('change', () => { if (app.mode === 'training') $('setupQuestionCount').textContent = `${Math.min(Number($('trainingLengthSelect').value), app.questions.length)} questions`; });
-  $('correctFirstToggle').addEventListener('change', updateSetupRankNote);
+  $('correctFirstToggle').addEventListener('change', event => setCorrectFirst(event.target.checked));
   $('leaderboardHearts').addEventListener('change', loadLeaderboard);
   $('homeLeadersModes').addEventListener('click', event => { const mode = event.target.closest('[data-board-mode]')?.dataset.boardMode; if (!rankedModes.includes(mode)) return; homeLeaderboardMode = mode; renderLeaderboardModeTabs(); loadHomeLeaderboard(); });
   $('homeLeadersList').addEventListener('click', event => { if (event.target.closest('[data-home-play]')) openSetup(homeLeaderboardMode); });
@@ -1765,5 +1778,8 @@ function setupInstall() {
   window.addEventListener('appinstalled', () => { button.hidden = true; deferredInstall = null; toast('Packet Party is installed!'); });
 }
 
+writeJSON('pp_correct_first', app.correctFirst);
 renderDeckChrome(); updateSoundButton(); updateStats(); renderLeaderboardModeTabs(); attachEvents(); attachLiveEvents(); setupInstall(); loadQuestions(); liveResume();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
+
+window.addEventListener('packet:set-answer-order',event=>setCorrectFirst(event.detail.correctFirst));

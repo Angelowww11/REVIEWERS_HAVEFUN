@@ -14,6 +14,8 @@ The public landing page detects Chrome, Edge and Brave and offers a three-step s
 
 A playful, mobile-friendly networking quiz built from eight supplied question pools. The frontend is static, with Vercel Functions for live rooms and public leaderboards. Deploy this folder to Vercel with **Framework Preset: Other** and no build command.
 
+Account saves include progress for every deck, Training loop continuation, and global answer visibility and answer-order preferences. Run `node check_integration.mjs` to check the client and server save filters.
+
 The **CCST certification** tab adds a separate 99-question deck built from `CCST_Networking_Reviewer_Notebook_Detailed-2.html`. It uses the same solo, practice, training, leaderboard, and live multiplayer modes. Progress and public scores are kept separate from the original question pools. See [CCST_REVIEW_NOTES.md](CCST_REVIEW_NOTES.md) for reviewed answers and corrections.
 
 ## Play
@@ -27,7 +29,7 @@ The **CCST certification** tab adds a separate 99-question deck built from `CCST
 - Unfinished ranked runs save automatically on this device, one per ranked mode. Use **Continue a run** on the home page or **Continue** in that mode’s setup to pick up the same question, choice order, score, hearts, and power-ups. Boss blitz pauses its timer when you leave, close, or hide the page. Starting a new run in the same mode replaces its saved run; finishing clears it.
 - Beginning with this update, completed ranked runs add their final points to a lifetime total on this device. Titles unlock at 0 **Noob**, 1,000 **Beginner**, 5,000 **Intermediate**, 15,000 **Pro**, 40,000 **Packet Hacker**, and 100,000 **Packet Gods** points. The home page shows your title and progress; leaderboard entries show the title earned when that score was posted. Older entries use their run score as a fallback title because lifetime totals were not stored yet.
 - In solo question modes, use **Previous answer** or the Backspace key to review answered questions. Browse older and newer answers in the review dialog; this is review only, so scores, answers, and leaderboard eligibility stay intact. Boss blitz pauses while the review dialog is open.
-- Turn on **Correct answer first** for a single practice run. The switch resets to off for each new run, and those practice scores are never submitted.
+- Turn on **Correct answer first** in Settings, Practice path, or solo setup. The preference stays active across decks and new solo rounds, including Training loop and Match maker. It also applies to drag-and-drop lists and grouped True/False rows. Assisted runs remain unranked. Live matches keep the same shuffled layout for every player; typing mode has no choices. Saved rounds retain their original answer-order setting.
 - Try Level up, Boss blitz, Match maker, and Type it out for shorter rounds.
 - Build streaks, choose a heart limit, use 50/50 and Shield on each question, request study hints, and wager points before selected hard questions. Power-ups cost earned points: 50/50 costs 70, Shield costs 45, and Freeze costs 60. They can each be used once per question when affordable. Boss blitz offers Freeze, which pauses the clock for four seconds. Shield saves a streak after a wrong answer. The 50/50 power-up crosses out two wrong choices on desktop and mobile.
 - Export a completed run as a ghost file and share it with a friend to race their progress offline.
